@@ -1,26 +1,16 @@
-<div align="center">
+# YourLivestock
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=30&duration=3000&pause=1000&color=1D9E75&center=true&vCenter=true&width=600&lines=YourLivestock;Digital+Identity+for+Every+Animal;Livestock+Management+Platform" alt="YourLivestock" />
+A centralized digital platform for unique identification, real-time tracking of livestock ownership, health, and movement, improving transparency, disease control, and farmer support across India.
 
-<br/>
+## Project Links
 
-[License: MIT](LICENSE)
-[Laravel 13.x](https://laravel.com)
-[React 18.x](https://reactjs.org)
-[MySQL 8.0](https://mysql.com)
-[Status: In Development]()
-
-<br/>
-
-> A centralized digital platform for unique identification, real-time tracking of livestock ownership, health, and movement, improving transparency, disease control, and farmer support across India.
-
-<br/>
-
-[Live Demo](#) · [Documentation](#) · [Report Bug](#) · [Request Feature](#)
+- License: MIT
+- Laravel: 13.x
+- React: 18.x
+- MySQL: 8.0
+- Status: In Development
 
 ---
-
-</div>
 
 ## Table of Contents
 
