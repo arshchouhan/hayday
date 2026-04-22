@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        color-scheme: dark;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply min-h-screen bg-slate-950 text-slate-100 antialiased;
+    }
+
+    #app {
+        min-height: 100vh;
+    }
+}
