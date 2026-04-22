@@ -17,6 +17,14 @@ export default function Navbar() {
                     >
                         Home
                     </NavLink>
+                    <NavLink
+                        to="/dashboard"
+                        className={({ isActive }) =>
+                            `rounded-full px-4 py-2 transition ${isActive ? 'bg-white text-slate-950' : 'hover:bg-white/10 hover:text-white'}`
+                        }
+                    >
+                        Dashboard
+                    </NavLink>
                 </nav>
             </div>
         </header>
