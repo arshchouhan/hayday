@@ -1,363 +1,326 @@
-# YourLivestock
+# Contributing Guide - Laravel + React Architecture
 
-A centralized digital platform for unique identification, real-time tracking of livestock ownership, health, and movement, improving transparency, disease control, and farmer support across India.
-
-## Project Links
-
-- License: MIT
-- Laravel: 13.x
-- React: 18.x
-- MySQL: 8.0
-- Status: In Development
+> **Must read before writing a single line of code.**
+> This document explains exactly how this project is structured, how Laravel and React work together, and what rules every contributor must follow.
 
 ---
 
 ## Table of Contents
 
-- [About The Project](#about-the-project)
-- [The Problem](#the-problem)
-- [Key Features](#key-features)
-- [System Architecture](#system-architecture)
-- [Tech Stack](#tech-stack)
-- [Database Schema](#database-schema)
-- [API Endpoints](#api-endpoints)
+- [How This Project Works](#how-this-project-works)
 - [Project Structure](#project-structure)
+- [The Two Servers](#the-two-servers)
+- [Request Flow](#request-flow)
+- [Routing Rules](#routing-rules)
+- [API Rules](#api-rules)
+- [File Responsibilities](#file-responsibilities)
+- [What Goes Where](#what-goes-where)
+- [Rules You Must Follow](#rules-you-must-follow)
 - [Getting Started](#getting-started)
-- [Screenshots](#screenshots)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
 
 ---
 
-## About The Project
+## How This Project Works
 
-YourLivestock is a government-aligned digital livestock management system inspired by India's National Digital Livestock Mission (NDLM). It provides every animal with a unique 12-digit UID, like Aadhaar for animals, enabling farmers, veterinarians, and government officials to manage livestock data from a single platform.
+This project uses **React inside Laravel**. Laravel is not just an API - it also serves the React app. React handles everything the user sees. Laravel handles all data, auth, and business logic.
 
-<div align="center">
+Think of it like this:
 
-| 535M+ | 12-Digit UID | 28 States | Real-time Health |
-|:---:|:---:|:---:|:---:|
-| Animals in India | Unique per animal | Coverage goal | Alerts and tracking |
-
-</div>
-
----
-
-## The Problem
-
-India has over 535 million livestock animals but no unified digital system to manage them. This causes:
-
-- Disease outbreaks spread unchecked, including FMD, Brucellosis, and Lumpy Skin Disease
-- Subsidy fraud when the same animal is claimed multiple times across schemes
-- No health history when buying or selling animals at mandis
-- Livestock theft with no ownership proof system
-- Delayed government response during disease alerts due to no real-time data
-- No movement control at inter-district or inter-state checkposts
-
----
-
-## Key Features
-
-### Unique Animal Identification
-- Auto-generated 12-digit UID per animal, for example HP-COW-00423
-- QR code and RFID ear tag integration
-- Species, breed, age, sex, color, and photo storage
-
-### Farmer Dashboard
-- Register and manage all owned animals
-- View upcoming vaccination schedules
-- Check subsidy eligibility
-- Receive SMS and app disease alerts
-
-### Health Record Management
-- Full vaccination history with dates and vaccine names
-- Vet visit logs with diagnosis notes
-- Disease status tracking per animal
-- Insurance claim trail
-
-### Movement Tracking
-- Log animal movement between districts and states
-- Digital movement permits that replace paper forms
-- Entry and exit logs at mandis and checkposts
-- GPS trail support for IoT-ready tracking
-
-### Government Admin Panel
-- Disease outbreak heatmaps by district
-- Regional livestock census data
-- Approve or reject movement permits
-- Push disease alerts to farmers by region
-
-### Security and Auth
-- Aadhaar OTP-based farmer registration
-- JWT and Laravel Sanctum for API security
-- Role-based access for farmer, vet, and admin
-
----
-
-## System Architecture
-
-```text
-React Frontend
-Landing Page + Farmer Dashboard + Admin
-						|
-						| HTTPS using Axios and JWT
-						v
-Laravel REST API
-Auth | Animals | Health | Movement | Alerts
-						|
-	 -------------------------
-	 |           |           |
-	 v           v           v
- MySQL       Redis      Storage
-main data  sessions/cache  animal photos
+```
+Laravel  ->  serves the HTML shell (one blade file)
+React    ->  renders all pages inside that shell
+Laravel  ->  provides data via API routes
+React    ->  fetches that data using axios
 ```
 
----
-
-## Tech Stack
-
-### Backend
-| Technology | Purpose |
-|---|---|
-| Laravel 13 | REST API framework |
-| Laravel Sanctum | Token-based authentication |
-| MySQL 8.0 | Primary relational database |
-| Redis | Session caching and queue jobs |
-| Intervention Image | Animal photo upload and resize |
-| Spatie Permissions | Role management |
-| Twilio | SMS alerts to farmers |
-
-### Frontend
-| Technology | Purpose |
-|---|---|
-| React 18 | UI framework |
-| React Router DOM | Client-side routing |
-| Axios | API communication |
-| Tailwind CSS | Styling |
-| Recharts | Dashboard charts and graphs |
-| React Toastify | Notifications |
-| React Query | Server state management |
-
-### DevOps and Tools
-| Technology | Purpose |
-|---|---|
-| AWS EC2 | Backend hosting |
-| Vercel | Frontend deployment |
-| MongoDB Atlas | Optional movement logs |
-| Docker | Local development environment |
-| GitHub Actions | CI/CD pipeline |
-
----
-
-## Database Schema
-
-```sql
--- Farmers / Users
-users
-	id, name, aadhaar_number, phone, email, village,
-	district, state, role (farmer/vet/admin), created_at
-
--- Animals
-animals
-	id, uid (12-digit), species, breed, age, sex, color,
-	photo_url, owner_id (FK -> users), birth_date, created_at
-
--- Health Records
-health_records
-	id, animal_id (FK), date, diagnosis, treatment,
-	vaccine_name, vet_name, next_due_date, created_at
-
--- Movement Logs
-movements
-	id, animal_id (FK), from_location, to_location,
-	purpose, permit_number, status, moved_at
-
--- Disease Alerts
-alerts
-	id, title, type, affected_district, animal_species,
-	message, severity (low/medium/high), created_by, created_at
-
--- Ownership Transfers
-transfers
-	id, animal_id (FK), from_owner (FK), to_owner (FK),
-	transfer_date, reason, verified_by
-```
-
----
-
-## API Endpoints
-
-### Auth
-```text
-POST   /api/auth/register          Register farmer with Aadhaar
-POST   /api/auth/login             Login and get JWT token
-POST   /api/auth/logout            Revoke token
-```
-
-### Animals
-```text
-GET    /api/animals                List all animals of logged-in farmer
-POST   /api/animals                Register a new animal
-GET    /api/animals/{uid}          Get single animal by UID
-PUT    /api/animals/{uid}          Update animal details
-DELETE /api/animals/{uid}          Remove animal record
-```
-
-### Health Records
-```text
-GET    /api/health/{animal_id}     Get all health records for an animal
-POST   /api/health                 Add new health record or vaccine log
-GET    /api/health/upcoming        Get animals with upcoming vaccines
-```
-
-### Movement
-```text
-POST   /api/movement               Log animal movement
-GET    /api/movement/{animal_id}   Get movement history
-PUT    /api/movement/{id}/approve  Admin approves movement permit
-```
-
-### Dashboard and Alerts
-```text
-GET    /api/dashboard/stats        Summary counts for farmer dashboard
-GET    /api/alerts                 Get active alerts for farmer's district
-POST   /api/alerts                 Admin creates new disease alert
-```
+**Laravel is the backend. React is the frontend. They live in the same codebase.**
 
 ---
 
 ## Project Structure
 
-```text
-yourlivestock/
+```
+project-root/
 |
 |-- app/
-|   |-- Http/Controllers/
-|   |-- Models/
-|   `-- Providers/
-|-- bootstrap/
-|-- config/
-|-- database/
-|   |-- factories/
-|   |-- migrations/
-|   `-- seeders/
-|-- public/
-|-- resources/
-|   |-- css/
-|   |-- js/
-|   `-- views/
+|   \-- Http/
+|       \-- Controllers/        # All business logic lives here
+|
 |-- routes/
-|-- storage/
-|-- tests/
-|-- composer.json
-|-- package.json
-`-- README.md
+|   |-- web.php                 # ONE catch-all route only - do not add more
+|   \-- api.php                 # ALL your API endpoints go here
+|
+|-- resources/
+|   |-- views/
+|   |   \-- welcome.blade.php   # The HTML shell - do not add content here
+|   |
+|   |-- css/
+|   |   \-- app.css             # Global CSS + Tailwind directives
+|   |
+|   \-- js/                     # <- ENTIRE React app lives here
+|       |-- app.jsx             # React entry point (like main.jsx)
+|       |-- App.jsx             # Root component + React Router
+|       |
+|       |-- pages/              # One file per route/page
+|       |   |-- Home.jsx
+|       |   |-- Dashboard.jsx
+|       |   \-- NotFound.jsx
+|       |
+|       |-- components/         # Reusable UI components
+|       |   |-- Navbar.jsx
+|       |   \-- Button.jsx
+|       |
+|       |-- hooks/              # Custom React hooks
+|       |
+|       |-- context/            # React Context providers
+|       |
+|       \-- api/
+|           \-- axios.js        # Axios instance - import this for all API calls
+|
+|-- public/
+|   \-- build/                  # WARNING: Auto-generated by Vite - NEVER touch this manually
+|
+|-- vite.config.js              # Vite config - do not change unless you know what you're doing
+\-- .env                        # Environment variables
 ```
+
+---
+
+## The Two Servers
+
+When developing locally you must run **both** of these at the same time:
+
+| Command | Port | Purpose |
+|---|---|---|
+| `php artisan serve` | `127.0.0.1:8000` | Serves the actual app - open this in your browser |
+| `npm run dev` | `localhost:5173` | Vite asset compiler + hot reload - runs in background |
+
+> **You always open `127.0.0.1:8000` in your browser. Never open `5173` directly.**
+
+`5173` is not your app. It is Vite working silently in the background to compile your JS/CSS and push hot updates to the browser. If you open it directly you will see nothing useful.
+
+---
+
+## Request Flow
+
+### Page Load
+
+```
+User opens 127.0.0.1:8000/dashboard
+        ↓
+Laravel web.php catch-all matches it
+        ↓
+Laravel returns welcome.blade.php (HTML shell)
+        ↓
+Browser loads React JS bundle via @vite directive
+        ↓
+React boots up, App.jsx runs
+        ↓
+React Router reads "/dashboard" from the URL
+        ↓
+<Dashboard /> component renders
+        ↓
+User sees the page
+```
+
+### API Call (Data Fetch)
+
+```
+User clicks a button in React
+        ↓
+axios.get('/api/users') fires from resources/js/api/axios.js
+        ↓
+Laravel api.php matches Route::get('/users')
+        ↓
+Goes to UserController@index
+        ↓
+Controller queries database via Eloquent Model
+        ↓
+Returns JSON response
+        ↓
+React receives JSON -> updates state -> re-renders UI
+```
+
+---
+
+## Routing Rules
+
+### `web.php` - Fixed, Do Not Change
+
+`web.php` has **one job only** - return the React shell for every URL so React Router can take over.
+
+```php
+<?php
+
+use Illuminate\Support\Facades\Route;
+
+Route::get('/{any}', function () {
+    return view('welcome');
+})->where('any', '.*');
+```
+
+**Do not add any other routes to `web.php`.** If you add a route here, it competes with the catch-all and causes unpredictable behaviour.
+
+**Why the catch-all exists:**
+React Router handles page navigation entirely in the browser. When a user visits `/dashboard`, Laravel doesn't know what `/dashboard` is - there's no blade view for it. The catch-all tells Laravel: *"Whatever URL comes in, just return the same blade shell and let React figure out what to show."*
+
+The `->where('any', '.*')` regex (`.*` = match anything including slashes) ensures even deep URLs like `/products/123/edit` are caught correctly.
+
+### `api.php` - All Your Routes Go Here
+
+Every endpoint that returns data goes in `api.php`. Laravel automatically:
+- Prefixes all routes with `/api` (so `/users` becomes `/api/users`)
+- Applies stateless middleware (no sessions)
+- Skips CSRF token checks
+- Applies rate limiting
+
+```php
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProductController;
+
+Route::get('/users', [UserController::class, 'index']);
+Route::post('/users', [UserController::class, 'store']);
+Route::get('/users/{id}', [UserController::class, 'show']);
+Route::put('/users/{id}', [UserController::class, 'update']);
+Route::delete('/users/{id}', [UserController::class, 'destroy']);
+
+Route::get('/products', [ProductController::class, 'index']);
+```
+
+> **Never write API routes in `web.php`.** POST/PUT/DELETE routes in `web.php` will fail with a 419 CSRF error because Laravel's web middleware requires a CSRF token that React won't send.
+
+---
+
+## API Rules
+
+All API calls from React must go through the shared axios instance:
+
+```js
+// resources/js/api/axios.js
+import axios from 'axios'
+
+const api = axios.create({
+  baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  }
+})
+
+export default api
+```
+
+**Import and use it like this in your components:**
+
+```js
+import api from '../api/axios'
+
+// GET
+const response = await api.get('/users')
+
+// POST
+const response = await api.post('/users', { name: 'Arsh' })
+
+// DELETE
+const response = await api.delete(`/users/${id}`)
+```
+
+> **Never use raw `fetch()` or create a new axios instance in a component.** Always import from `api/axios.js`.
+
+---
+
+## File Responsibilities
+
+| File | Responsibility | Who touches it |
+|---|---|---|
+| `welcome.blade.php` | HTML shell only, loads React | Nobody - set once, never changed |
+| `web.php` | Catch-all route | Nobody - set once, never changed |
+| `api.php` | All API endpoints | Backend contributors |
+| `Controllers/` | Business logic, DB queries | Backend contributors |
+| `resources/js/pages/` | Page-level React components | Frontend contributors |
+| `resources/js/components/` | Reusable UI components | Frontend contributors |
+| `resources/js/api/axios.js` | Axios base config | Nobody - set once, never changed |
+| `public/build/` | Vite compiled output | Nobody - auto-generated |
+
+---
+
+## What Goes Where
+
+| You want to... | Where to put it |
+|---|---|
+| Add a new page (e.g. Settings page) | `resources/js/pages/Settings.jsx` + add route in `App.jsx` |
+| Add a reusable component (e.g. Modal) | `resources/js/components/Modal.jsx` |
+| Add a new API endpoint | `routes/api.php` + new Controller method |
+| Add global CSS | `resources/css/app.css` |
+| Add component-level styles | `.css` file next to the component in `resources/js/` |
+| Store auth token or global state | `resources/js/context/` |
+| Write a reusable React hook | `resources/js/hooks/` |
+| Add an environment variable for frontend | `.env` with `VITE_` prefix (e.g. `VITE_APP_NAME`) |
+| Add an environment variable for backend | `.env` without prefix (e.g. `DB_HOST`) |
+
+---
+
+## Rules You Must Follow
+
+1. **Never manually put files in `public/build/`** - Vite owns this folder. Anything you put here will be overwritten.
+
+2. **Never write API routes in `web.php`** - they will fail with CSRF errors.
+
+3. **Never add routes to `web.php` other than the catch-all** - you will break React Router.
+
+4. **Never touch `welcome.blade.php` content** - it is only an HTML shell. No logic, no styling, no content goes here.
+
+5. **Always use the shared axios instance** from `resources/js/api/axios.js` for API calls.
+
+6. **Use functional components and hooks only** - no class components.
+
+7. **Use `VITE_` prefix for frontend env variables** - without this prefix, Vite will not expose them to React.
+
+8. **All pages go in `resources/js/pages/`** and must be registered in `App.jsx` with a `<Route>`.
+
+9. **Run both servers during development** - `php artisan serve` and `npm run dev` must both be running.
+
+10. **For production** - run `npm run build` first, then only `php artisan serve` is needed. Vite is not needed in production.
 
 ---
 
 ## Getting Started
 
-### Prerequisites
-
 ```bash
-PHP >= 8.3
-Composer
-Node.js >= 18.x
-MySQL 8.0
-Redis (optional)
-```
-
-### Backend Setup
-
-```bash
-git clone https://github.com/yourusername/yourlivestock.git
-cd yourlivestock
-
+# 1. Clone and install dependencies
+git clone <repo-url>
+cd <project>
 composer install
+npm install
 
+# 2. Set up environment
 cp .env.example .env
 php artisan key:generate
 
-php artisan migrate --seed
+# 3. Set up database
+# Edit .env with your DB credentials
+php artisan migrate
 
-php artisan serve
+# 4. Run both servers in separate terminals
+php artisan serve       # Terminal 1
+npm run dev             # Terminal 2
+
+# 5. Open in browser
+# http://127.0.0.1:8000
 ```
 
-### Frontend Setup
-
-```bash
-npm install
-npm run dev
-```
-
-### Docker
-
-```bash
-docker-compose up --build
-```
+> For production build:
+> ```bash
+> npm run build
+> php artisan serve
+> ```
 
 ---
 
-## Screenshots
-
-| Landing Page | Farmer Dashboard |
-|---|---|
-| Hero section with registration CTA | Stats, animal list, alerts |
-
-| Animal Profile | Health Records |
-|---|---|
-| Full UID card with QR code | Vaccination timeline |
-
----
-
-## Roadmap
-
-- Project planning and architecture
-- Database schema design
-- Laravel API auth module
-- Laravel API animal CRUD
-- Laravel API health records
-- Laravel API movement permits
-- React landing page
-- React farmer dashboard
-- React animal registration form
-- QR code generation per animal
-- SMS alert system via Twilio
-- Government admin panel
-- Disease heatmap using Google Maps API
-- Mobile app using React Native
-- RFID and IoT integration
-
----
-
-## Contributing
-
-Contributions are welcome. Please follow these steps:
-
-```bash
-1. Fork the project
-2. Create your feature branch: git checkout -b feature/AmazingFeature
-3. Commit your changes: git commit -m 'Add AmazingFeature'
-4. Push to the branch: git push origin feature/AmazingFeature
-5. Open a Pull Request
-```
-
----
-
-## License
-
-Distributed under the MIT License. See LICENSE for more information.
-
----
-
-<div align="center">
-
-Made with love for Indian farmers
-
-Inspired by India's National Digital Livestock Mission (NDLM) and the Department of Animal Husbandry and Dairying, Government of India
-
-Star this repo if you find it useful.
-
-</div>
+> If something isn't working, check these three things first:
+> 1. Is `npm run dev` running?
+> 2. Does `welcome.blade.php` have `@viteReactRefresh` and `@vite([...])`?
+> 3. Does `web.php` have the catch-all route at the bottom?
