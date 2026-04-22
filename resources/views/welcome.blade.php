@@ -4,7 +4,7 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ config('app.name', 'hayday') }}</title>
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/main.jsx'])
     </head>

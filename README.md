@@ -1,4 +1,4 @@
-# Contributing Guide - Laravel + React Architecture
+# Hayday Contributing Guide - Laravel + React Architecture
 
 > **Must read before writing a single line of code.**
 > This document explains exactly how this project is structured, how Laravel and React work together, and what rules every contributor must follow.
