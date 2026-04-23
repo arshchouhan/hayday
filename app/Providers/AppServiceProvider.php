@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use Illuminate\Console\Events\CommandStarting;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +23,27 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Event::listen(CommandStarting::class, function (CommandStarting $event): void {
+            if ($event->command !== 'serve') {
+                return;
+            }
+
+            $connectionName = (string) config('database.default', 'default');
+
+            try {
+                $connection = DB::connection($connectionName);
+
+                if (method_exists($connection, 'getDatabase')) {
+                    $connection->getDatabase()->command(['ping' => 1])->toArray();
+                } else {
+                    $connection->getPdo();
+                }
+
+                $event->output->writeln("<info>[DB] Connected ({$connectionName})</info>");
+            } catch (Throwable $exception) {
+                $message = strtok($exception->getMessage(), "\n") ?: 'Unknown error';
+                $event->output->writeln("<error>[DB] Connection failed ({$connectionName}): {$message}</error>");
+            }
+        });
     }
 }
