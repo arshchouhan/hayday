@@ -8,10 +8,21 @@
     }
 
     body {
-        @apply min-h-screen bg-white text-black antialiased;
+        @apply min-h-screen text-black antialiased;
+        background-color: #D7E3EF;
     }
 
     #app {
         min-height: 100vh;
+    }
+}
+
+@layer utilities {
+    .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
     }
 }

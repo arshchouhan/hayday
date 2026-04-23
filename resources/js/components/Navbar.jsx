@@ -1,24 +1,44 @@
 import { NavLink } from 'react-router-dom';
 
 const links = [
-    { label: 'Dashboard', to: '/dashboard', end: true },
-    { label: 'People', to: '/dashboard/people' },
-    { label: 'Hiring', to: '/dashboard/hiring' },
-    { label: 'Devices', to: '/dashboard/devices' },
-    { label: 'Calendar', to: '/dashboard/calendar' },
+    { label: 'Lifecycle', to: '/dashboard', end: true },
+    { label: 'Health', to: '/dashboard/health' },
+    { label: 'Breeding', to: '/dashboard/breeding' },
+    { label: 'Pedigree', to: '/dashboard/pedigree' },
 ];
 
 export default function Navbar() {
     return (
-        <header className="bg-white">
+        <header className="bg-transparent">
             <div className="flex w-full items-center justify-between px-3 py-3 sm:px-4">
-                <NavLink
-                    to="/"
-                    className="rounded-full px-5 py-2 text-sm font-semibold tracking-wide text-gray-900"
-                    aria-label="Go to landing page"
-                >
-                    HayDay
-                </NavLink>
+                <div className="flex items-center">
+                    <div className="mr-3 md:w-44 lg:w-48">
+                        <NavLink
+                            to="/"
+                            className="text-sm font-bold tracking-tight text-gray-900"
+                            aria-label="Go to landing page"
+                        >
+                            HayDay
+                        </NavLink>
+                    </div>
+
+                    <NavLink
+                        to="/dashboard/people"
+                        className={({ isActive }) =>
+                            [
+                                'flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 shadow-[0_8px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-lg ring-1 ring-black/10',
+                                isActive
+                                    ? 'bg-[#D7E3EF] text-slate-800'
+                                    : 'bg-white text-gray-700 hover:bg-gray-50',
+                            ].join(' ')
+                        }
+                    >
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                            <path d="M12 5v14M5 12h14" />
+                        </svg>
+                        <span>Register Animal</span>
+                    </NavLink>
+                </div>
 
                 <div className="flex items-center justify-end gap-2">
                     <nav aria-label="Dashboard navigation" className="flex flex-wrap items-center justify-end gap-2">
@@ -29,10 +49,10 @@ export default function Navbar() {
                                 end={item.end}
                                 className={({ isActive }) =>
                                     [
-                                        'rounded-full px-4 py-2 text-sm transition',
+                                        'rounded-full px-4 py-2 text-sm shadow-md transition hover:shadow-lg',
                                         isActive
-                                            ? 'bg-gray-900 text-white'
-                                            : 'bg-gray-100 text-gray-800 hover:bg-gray-200',
+                                            ? 'bg-[#E9EEF6] text-gray-900 ring-1 ring-black/25 hover:ring-black/40'
+                                            : 'bg-[#E9EEF6] text-gray-700 ring-1 ring-black/25 hover:bg-white hover:ring-black/40',
                                     ].join(' ')
                                 }
                             >
@@ -44,7 +64,7 @@ export default function Navbar() {
                     <button
                         type="button"
                         aria-label="Settings"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-gray-700 hover:bg-gray-100"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-gray-700 hover:bg-gray-200"
                     >
                         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <path d="M12 3v2" />
@@ -62,7 +82,7 @@ export default function Navbar() {
                     <button
                         type="button"
                         aria-label="Profile"
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-gray-700 hover:bg-gray-100"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-gray-700 hover:bg-gray-200"
                     >
                         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                             <circle cx="12" cy="8" r="4" />
