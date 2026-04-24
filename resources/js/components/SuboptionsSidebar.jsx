@@ -4,21 +4,11 @@ import { NavLink } from 'react-router-dom';
 function SidebarIcon({ optionKey }) {
     const common = 'h-5 w-5';
 
-    if (optionKey.includes('all') || optionKey.includes('overview')) {
+    if (optionKey.includes('all') || optionKey.includes('overview') || optionKey.includes('register')) {
         return (
             <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
                 <path d="M3 10.5 12 3l9 7.5" />
                 <path d="M6.5 10v10h11V10" />
-            </svg>
-        );
-    }
-
-    if (optionKey.includes('register') || optionKey.includes('add')) {
-        return (
-            <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 8v8" />
-                <path d="M8 12h8" />
             </svg>
         );
     }
@@ -55,16 +45,6 @@ function SidebarIcon({ optionKey }) {
         );
     }
 
-    if (optionKey.includes('details') || optionKey.includes('info')) {
-        return (
-            <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4" />
-                <path d="M12 8h.01" />
-            </svg>
-        );
-    }
-
     if (optionKey.includes('hiring') || optionKey.includes('pipeline') || optionKey.includes('interview') || optionKey.includes('role')) {
         return (
             <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
@@ -72,6 +52,16 @@ function SidebarIcon({ optionKey }) {
                 <rect x="6" y="4" width="12" height="12" rx="2" />
                 <path d="M10 8h4" />
                 <path d="M10 12h4" />
+            </svg>
+        );
+    }
+
+    if (optionKey.includes('details') || optionKey.includes('info')) {
+        return (
+            <svg viewBox="0 0 24 24" className={common} fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 16v-4" />
+                <path d="M12 8h.01" />
             </svg>
         );
     }

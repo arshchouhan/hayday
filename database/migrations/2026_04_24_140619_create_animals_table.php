@@ -37,6 +37,7 @@ return new class extends Migration
             $table->date('yearling_date')->nullable();
             $table->decimal('yearling_weight', 8, 2)->nullable();
             
+            $table->enum('ownership', ['purchased', 'raised'])->default('raised');
             $table->text('notes')->nullable();
             $table->timestamps();
         });

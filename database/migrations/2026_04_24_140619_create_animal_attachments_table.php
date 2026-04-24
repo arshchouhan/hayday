@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('animal_attachments', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('animal_id')->constrained('animals')->onDelete('cascade');
+            $table->string('file_path');
+            $table->string('file_name');
             $table->timestamps();
         });
     }

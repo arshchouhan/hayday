@@ -2,21 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Scrollbar Styles */
 @layer base {
-    html {
-        scroll-behavior: smooth;
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
     }
 
-    body {
-        @apply min-h-screen text-black antialiased;
-        background-color: #D7E3EF;
+    ::-webkit-scrollbar-track {
+        background: transparent;
     }
 
-    #app {
-        min-height: 100vh;
+    ::-webkit-scrollbar-thumb {
+        background: #D7E3EF;
+        border-radius: 10px;
+        transition: background 0.3s ease;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #1a1a2e;
+    }
+
+    /* Firefox Support */
+    * {
+        scrollbar-width: thin;
+        scrollbar-color: #D7E3EF transparent;
     }
 }
 
+/* Hide scrollbar for elements with .scrollbar-hide */
 @layer utilities {
     .scrollbar-hide::-webkit-scrollbar {
         display: none;
