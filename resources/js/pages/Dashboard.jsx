@@ -2,13 +2,16 @@ import Navbar from '../components/Navbar';
 import ManageCattleDashboard from '../components/ManageCattleDashboard';
 import SuboptionsSidebar from '../components/SuboptionsSidebar';
 import { NavLink, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const sectionConfig = {
     dashboard: {
         title: 'Dashboard',
         suboptions: [
-            { key: 'all', label: 'All Animals', to: '/dashboard' },
+            { key: 'details', label: 'Animal Details', to: '/dashboard' },
+            { key: 'register', label: 'Register Animal', to: '/dashboard/register' },
+            { key: 'scheduler', label: 'Scheduler', to: '/dashboard/scheduler' },
+            { key: 'groups', label: 'Groups', to: '/dashboard/groups' },
         ],
     },
     people: {
@@ -57,7 +60,18 @@ export default function Dashboard() {
     const { pathname } = useLocation();
     const activeKey = getActiveSection(pathname);
     const activeSection = sectionConfig[activeKey];
-    const [selectedAnimal, setSelectedAnimal] = useState('All Animals');
+    const [selectedAnimal, setSelectedAnimal] = useState(null);
+
+    // Sync selectedAnimal with active suboption on route change
+    useEffect(() => {
+        if (activeKey === 'dashboard') {
+            const currentSub = activeSection.suboptions.find(opt => opt.to === pathname);
+            if (currentSub) {
+                setSelectedAnimal(currentSub.label);
+            }
+        }
+    }, [pathname, activeKey, activeSection]);
+
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-[#D7E3EF]">

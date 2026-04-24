@@ -23,7 +23,7 @@ export default function Navbar() {
                     </div>
 
                     <NavLink
-                        to="/dashboard/people"
+                        to="/dashboard/register"
                         className={({ isActive }) =>
                             [
                                 'flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 shadow-[0_8px_20px_-4px_rgba(0,0,0,0.1)] hover:shadow-lg ring-1 ring-black/10',
