@@ -1,76 +1,77 @@
 import Navbar from '../components/Navbar';
 import ManageCattleDashboard from '../components/ManageCattleDashboard';
 import SuboptionsSidebar from '../components/SuboptionsSidebar';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 
 const sectionConfig = {
-    dashboard: {
-        title: 'Dashboard',
+    lifecycle: {
+        title: 'Lifecycle',
         suboptions: [
-            { key: 'details', label: 'Animal Details', to: '/dashboard' },
-            { key: 'register', label: 'Register Animal', to: '/dashboard/register' },
-            { key: 'scheduler', label: 'Scheduler', to: '/dashboard/scheduler' },
-            { key: 'groups', label: 'Groups', to: '/dashboard/groups' },
-        ],
-    },
-    people: {
-        title: 'Register Animal',
-        suboptions: [
-            { key: 'employees', label: 'Employees', to: '/dashboard/people' },
-            { key: 'teams', label: 'Teams', to: '/dashboard/people/teams' },
-            { key: 'attendance', label: 'Attendance', to: '/dashboard/people/attendance' },
+            { key: 'details', label: 'Animal Details', to: '/lifecycle/details' },
+            { key: 'register', label: 'Register Animal', to: '/lifecycle/register' },
+            { key: 'scheduler', label: 'Scheduler', to: '/lifecycle/scheduler' },
+            { key: 'groups', label: 'Groups', to: '/lifecycle/groups' },
         ],
     },
     health: {
         title: 'Health',
         suboptions: [
-            { key: 'records', label: 'Health Records', to: '/dashboard/health' },
-            { key: 'vaccinations', label: 'Vaccinations', to: '/dashboard/health/vaccinations' },
-            { key: 'treatments', label: 'Treatments', to: '/dashboard/health/treatments' },
+            { key: 'records', label: 'Health Records', to: '/health' },
+            { key: 'vaccinations', label: 'Vaccinations', to: '/health/vaccinations' },
+            { key: 'treatments', label: 'Treatments', to: '/health/treatments' },
         ],
     },
     breeding: {
         title: 'Breeding',
         suboptions: [
-            { key: 'inventory', label: 'Livestock', to: '/dashboard/breeding' },
-            { key: 'assigned', label: 'Assigned Groups', to: '/dashboard/breeding/groups' },
-            { key: 'maintenance', label: 'Breeding History', to: '/dashboard/breeding/history' },
+            { key: 'inventory', label: 'Livestock', to: '/breeding' },
+            { key: 'assigned', label: 'Assigned Groups', to: '/breeding/groups' },
+            { key: 'maintenance', label: 'Breeding History', to: '/breeding/history' },
         ],
     },
     pedigree: {
         title: 'Pedigree',
         suboptions: [
-            { key: 'lineage', label: 'Lineage Tree', to: '/dashboard/pedigree' },
-            { key: 'ancestry', label: 'Ancestry Records', to: '/dashboard/pedigree/ancestry' },
-            { key: 'progeny', label: 'Progeny Reports', to: '/dashboard/pedigree/progeny' },
+            { key: 'lineage', label: 'Lineage Tree', to: '/pedigree' },
+            { key: 'ancestry', label: 'Ancestry Records', to: '/pedigree/ancestry' },
+            { key: 'progeny', label: 'Progeny Reports', to: '/pedigree/progeny' },
         ],
     },
 };
 
 function getActiveSection(pathname) {
     const segments = pathname.split('/').filter(Boolean);
-    if (segments[0] !== 'dashboard') {
-        return 'dashboard';
-    }
-    return sectionConfig[segments[1]] ? segments[1] : 'dashboard';
+    const firstSegment = segments[0] || 'lifecycle';
+    return sectionConfig[firstSegment] ? firstSegment : 'lifecycle';
 }
 
 export default function Dashboard() {
     const { pathname } = useLocation();
+    const navigate = useNavigate();
     const activeKey = getActiveSection(pathname);
     const activeSection = sectionConfig[activeKey];
     const [selectedAnimal, setSelectedAnimal] = useState(null);
 
     // Sync selectedAnimal with active suboption on route change
     useEffect(() => {
-        if (activeKey === 'dashboard') {
+        const rootPath = `/${activeKey}`;
+        if (pathname === rootPath) {
+            setSelectedAnimal(null); // No suboption selected
+        } else {
             const currentSub = activeSection.suboptions.find(opt => opt.to === pathname);
             if (currentSub) {
                 setSelectedAnimal(currentSub.label);
             }
         }
     }, [pathname, activeKey, activeSection]);
+
+    const handleSidebarBackgroundClick = (e) => {
+        if (e.target === e.currentTarget) {
+            navigate(`/${activeKey}`);
+            setSelectedAnimal(null);
+        }
+    };
 
 
     return (
@@ -79,12 +80,16 @@ export default function Dashboard() {
             <main className="w-full flex-1 overflow-hidden px-3 pb-3 sm:px-4 sm:pb-4">
                 <div className="flex h-full min-h-0 flex-col gap-3 md:flex-row md:items-start">
                     <div className="flex flex-col md:h-full md:w-44 md:shrink-0 lg:w-48">
-                        <div className="flex-1 overflow-auto scrollbar-hide">
+                        <div 
+                            className="flex-1 overflow-auto scrollbar-hide cursor-pointer"
+                            onClick={handleSidebarBackgroundClick}
+                        >
                             <SuboptionsSidebar
                                 section={activeSection.title}
                                 suboptions={activeSection.suboptions}
                                 selectedAnimal={selectedAnimal}
                                 onSelectAnimal={setSelectedAnimal}
+                                rootPath={`/${activeKey}`}
                             />
                         </div>
                         <div className="mt-auto pt-4">
@@ -103,11 +108,14 @@ export default function Dashboard() {
                         </div>
                     </div>
                     <section className="h-full min-h-0 w-full min-w-0 overflow-auto rounded-md bg-[#E9EEF6] p-0">
-                        {activeKey === 'dashboard' ? (
+                        {activeKey === 'lifecycle' ? (
                             <ManageCattleDashboard selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />
                         ) : (
-                            <div className="flex h-full items-center justify-center rounded-md border border-dashed border-slate-300 bg-white/60 text-sm font-medium text-slate-500">
-                                {activeSection.title} workspace
+                            <div className="flex h-full flex-col items-center justify-center rounded-md bg-white p-8 text-center">
+                                <h2 className="text-2xl font-bold text-[#1a1a2e]">{activeSection.title} Workspace</h2>
+                                <p className="mt-2 text-gray-500 max-w-md">
+                                    This is the {activeSection.title} section. Select a suboption from the sidebar to view specific details or records.
+                                </p>
                             </div>
                         )}
                     </section>

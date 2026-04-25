@@ -13,6 +13,19 @@ use Illuminate\Support\Facades\Validator;
 
 class AnimalController extends Controller
 {
+    public function index()
+    {
+        // Fetch animals from the default 'animals' collection
+        $animals = Animal::with(['breed', 'location', 'group'])->get();
+        // Also fetch cattle from the dedicated 'cattle' collection (Cattle model)
+        $cattle = Cattle::with(['breed', 'location', 'group'])->get();
+        // Also fetch sheep from the dedicated 'sheeps' collection (Sheep model)
+        $sheep = Sheep::with(['breed', 'location', 'group'])->get();
+        // Merge all collections into a single list
+        $combined = $animals->merge($cattle)->merge($sheep);
+        return response()->json($combined);
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -40,24 +53,30 @@ class AnimalController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Illuminate\Support\Facades\Log::warning('Validation failed for animal registration:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors()
             ], 422);
         }
 
-        // Determine which model to use based on species
+        // Determine which model to use based on species for persistence
         $species = strtolower($request->input('species'));
-        $modelClass = Animal::class;
-
-        if ($species === 'sheep') {
-            $modelClass = Sheep::class;
-        } elseif ($species === 'cow' || $species === 'cattle') {
-            $modelClass = Cattle::class;
+        // Choose the correct model instance
+        if (in_array($species, ['cow', 'cattle'])) {
+            $animal = new \App\Models\Cattle();
+        } elseif ($species === 'sheep') {
+            $animal = new \App\Models\Sheep();
+        } else {
+            $animal = new \App\Models\Animal();
         }
-
-        $animal = $modelClass::create($request->all());
-
+        // Fill and save the model
+        $animal->fill($request->all());
+        $saved = $animal->save();
+        if (! $saved) {
+            throw new \Exception('Model save() returned false');
+        }
+        \Illuminate\Support\Facades\Log::info('Animal saved successfully ID: ' . $animal->id);
         return response()->json([
             'success' => true,
             'message' => ucfirst($species) . ' registered successfully',
@@ -67,13 +86,20 @@ class AnimalController extends Controller
 
     public function getFormData()
     {
+        $sires = Animal::whereIn('type', ['bull', 'ram'])->get(['id', 'ear_tag', 'animal_name'])
+            ->merge(Cattle::whereIn('type', ['bull', 'ram'])->get(['id', 'ear_tag', 'animal_name']))
+            ->merge(Sheep::whereIn('type', ['bull', 'ram'])->get(['id', 'ear_tag', 'animal_name']));
+            
+        $dams = Animal::whereIn('type', ['cow', 'ewe'])->get(['id', 'ear_tag', 'animal_name'])
+            ->merge(Cattle::whereIn('type', ['cow', 'ewe'])->get(['id', 'ear_tag', 'animal_name']))
+            ->merge(Sheep::whereIn('type', ['cow', 'ewe'])->get(['id', 'ear_tag', 'animal_name']));
+
         return response()->json([
             'breeds' => Breed::all(),
             'locations' => Location::all(),
             'groups' => Group::all(),
-            // For now, return all bulls/cows as sires/dams, but you can filter by species later if needed
-            'sires' => Animal::whereIn('type', ['bull', 'ram'])->get(['id', 'ear_tag', 'animal_name']),
-            'dams' => Animal::whereIn('type', ['cow', 'ewe'])->get(['id', 'ear_tag', 'animal_name']),
+            'sires' => $sires,
+            'dams' => $dams,
         ]);
     }
 }

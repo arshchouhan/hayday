@@ -11,7 +11,10 @@ export default function App() {
           <Routes>
             <Route path="/" element={<LandingPage />} />
             <Route path="/home" element={<LandingPage />} />
-            <Route path="/dashboard/*" element={<Dashboard />} />
+            <Route path="/lifecycle/*" element={<Dashboard />} />
+            <Route path="/health/*" element={<Dashboard />} />
+            <Route path="/breeding/*" element={<Dashboard />} />
+            <Route path="/pedigree/*" element={<Dashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>

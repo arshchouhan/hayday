@@ -91,16 +91,17 @@ export default function SuboptionsSidebar({ section, suboptions, selectedAnimal,
                     <NavLink
                         key={option.key}
                         to={option.to}
-                        end={option.to === '/dashboard'}
+                        end={option.to === '/lifecycle'}
                         onClick={() => onSelectAnimal(option.label)}
-                        className={({ isActive }) =>
-                            [
+                        className={({ isActive }) => {
+                            const isSelected = selectedAnimal === option.label;
+                            return [
                                 'flex items-center justify-between gap-3 rounded-lg border border-transparent px-2 py-2 text-sm transition',
-                                isActive
+                                isSelected
                                     ? 'bg-[#E9EEF6] text-black font-medium'
                                     : 'text-black/85 hover:border-white hover:bg-[#DDE7F3] hover:text-black',
-                            ].join(' ')
-                        }
+                            ].join(' ');
+                        }}
                     >
                         <span className="inline-flex items-center gap-3">
                             <SideArrowIcon className="h-4 w-4 text-black/60" />
