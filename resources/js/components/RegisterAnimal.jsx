@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const FloatingLabel = ({ label, required }) => (
-    <label className="absolute -top-3.5 left-3 bg-[#F8FAFD] px-1 text-[15px] font-bold text-[#1a1a2e] z-10">
+    <label className="absolute -top-3 left-3 bg-[#F8FAFD] px-1 text-[13px] font-bold text-[#1a1a2e] z-10">
         {label} {required && <span className="text-red-500 font-bold">*</span>}
     </label>
 );
@@ -11,10 +11,10 @@ const FloatingLabel = ({ label, required }) => (
 const FormInput = ({ label, required, placeholder, value, onChange, icon, helperLink, type = "text", error }) => (
     <div className="relative w-full">
         <FloatingLabel label={label} required={required} />
-        <div className={`flex h-[56px] items-center rounded-lg border bg-[#E9EEF6] px-4 transition-colors shadow-sm ${error ? 'border-red-500 ring-1 ring-red-500' : 'border-[#80888F] focus-within:ring-1 focus-within:ring-[#1a1a2e]'}`}>
+        <div className={`flex h-[48px] items-center rounded-lg border bg-[#E9EEF6] px-4 transition-colors shadow-sm ${error ? 'border-red-500 ring-1 ring-red-500' : 'border-[#80888F] focus-within:ring-1 focus-within:ring-[#1a1a2e]'}`}>
             <input
                 type={type}
-                className="w-full bg-transparent text-[17px] font-medium text-[#1a1a2e] outline-none placeholder:text-gray-400"
+                className="w-full bg-transparent text-[15px] font-medium text-[#1a1a2e] outline-none placeholder:text-gray-400"
                 placeholder={placeholder}
                 value={value}
                 onChange={onChange}
@@ -52,9 +52,9 @@ const CustomSelect = ({ label, required, placeholder, value, onChange, options =
             <FloatingLabel label={label} required={required} />
             <div
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex h-[56px] cursor-pointer items-center justify-between rounded-lg border bg-[#E9EEF6] px-4 shadow-sm transition-all ${error ? 'border-red-500 ring-1 ring-red-500' : 'border-[#80888F]'} ${isOpen ? 'ring-1 ring-[#1a1a2e]' : ''}`}
+                className={`flex h-[48px] cursor-pointer items-center justify-between rounded-lg border bg-[#E9EEF6] px-4 shadow-sm transition-all ${error ? 'border-red-500 ring-1 ring-red-500' : 'border-[#80888F]'} ${isOpen ? 'ring-1 ring-[#1a1a2e]' : ''}`}
             >
-                <span className={`text-[17px] font-medium ${!selectedOption ? 'text-gray-400' : 'text-[#1a1a2e]'}`}>
+                <span className={`text-[15px] font-medium ${!selectedOption ? 'text-gray-400' : 'text-[#1a1a2e]'}`}>
                     {displayText}
                 </span>
                 <svg
@@ -68,7 +68,7 @@ const CustomSelect = ({ label, required, placeholder, value, onChange, options =
             {error && <p className="mt-1 text-[12px] font-bold text-red-500">{Array.isArray(error) ? error[0] : error}</p>}
 
             {isOpen && (
-                <div className="absolute top-[50px] left-0 z-50 w-full rounded-xl border border-[#80888F] bg-white py-2 shadow-xl animate-in fade-in zoom-in duration-150">
+                <div className="absolute top-[44px] left-0 z-50 w-full rounded-xl border border-[#80888F] bg-white py-2 shadow-xl animate-in fade-in zoom-in duration-150">
                     <div className="max-h-60 overflow-auto scrollbar-hide">
                         {options.length === 0 ? (
                             <div className="px-4 py-2 text-[13px] text-gray-400 italic">No options available</div>

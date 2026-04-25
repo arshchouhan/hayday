@@ -20,6 +20,7 @@ const searchTargets = [
     { label: 'Lineage Tree', to: '/pedigree' },
     { label: 'Ancestry Records', to: '/pedigree/ancestry' },
     { label: 'Progeny Reports', to: '/pedigree/progeny' },
+    { label: 'Farm', to: '/farm' },
 ];
 
 const links = [
@@ -59,7 +60,7 @@ export default function Navbar() {
                 <div className="flex items-center gap-3 flex-row w-full">
                     <div className="flex items-center shrink-0 md:w-44 lg:w-48">
                         <NavLink
-                            to="/"
+                            to="/farm"
                             className="flex items-center transition-transform hover:scale-105 ml-2"
                             aria-label="Go to landing page"
                         >
