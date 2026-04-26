@@ -8,6 +8,9 @@ import hayIcon from '../assets/noun-hay-7549821.svg';
 import cowIcon from '../assets/noun-cow-8349503.svg';
 import sheepIcon from '../assets/noun-sheep-8349507.svg';
 import RegisterAnimal from './RegisterAnimal';
+import AnimalDetail from './AnimalDetail';
+import Loader from './Loader';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronRight, MapPin, Layers, Users, Grid, List } from 'lucide-react';
 
 const FilterDropdown = ({ label, value, options, onChange, placeholder }) => {
@@ -113,14 +116,30 @@ const StatCard = ({ icon, count, label }) => (
     </div>
 );
 
-const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color, id, _id, isSelected, onToggleSelect }) => {
+const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color, id, _id, isSelected, onToggleSelect, onViewAnimal }) => {
     const animalId = id || _id;
+    const breedStr = typeof breed === 'string' ? breed : breed?.name || '';
+    const isCow = (
+        species?.toLowerCase().includes('cow') ||
+        species?.toLowerCase().includes('cattle') ||
+        type?.toLowerCase().includes('cow') ||
+        type?.toLowerCase().includes('bull') ||
+        type?.toLowerCase().includes('calf') ||
+        type?.toLowerCase().includes('heifer') ||
+        type?.toLowerCase().includes('steer')
+    );
+    const animalType = isCow ? 'cow' : 'sheep';
+
     return (
         <div
-            onClick={() => onToggleSelect(animalId)}
+            onClick={(e) => {
+                if (e.target.type !== 'checkbox') {
+                    onViewAnimal(animalId, animalType);
+                }
+            }}
             className={`group relative flex flex-col gap-3 rounded-2xl border p-4 shadow-sm transition-all cursor-pointer ${isSelected
-                    ? 'border-[#1a1a2e] bg-blue-50/50 ring-1 ring-[#1a1a2e]'
-                    : 'border-[#80888F]/20 bg-white hover:border-[#80888F] hover:shadow-none hover:ring-0'
+                ? 'border-[#1a1a2e] bg-blue-50/50 ring-1 ring-[#1a1a2e]'
+                : 'border-[#80888F]/20 bg-white hover:border-[#80888F] hover:shadow-none hover:ring-0'
                 }`}
         >
             <div className="absolute top-3 right-3 z-10">
@@ -128,32 +147,30 @@ const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color,
                     type="checkbox"
                     className="h-4 w-4 rounded border-gray-300 accent-[#1a1a2e]"
                     checked={isSelected}
-                    readOnly
+                    onChange={(e) => {
+                        e.stopPropagation();
+                        onToggleSelect(animalId);
+                    }}
                 />
             </div>
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                     <div className={`flex h-8 w-8 items-center justify-center rounded-full text-gray-400 shadow-sm ring-1 ring-black/5 ${ear_tag_color || 'bg-white'}`}>
                         <img
-                            src={(
-                                species?.toLowerCase().includes('sheep') ||
-                                species?.toLowerCase().includes('lamb') ||
-                                type?.toLowerCase().includes('sheep') ||
-                                type?.toLowerCase().includes('ram') ||
-                                type?.toLowerCase().includes('ewe') ||
-                                type?.toLowerCase().includes('lamb') ||
-                                type?.toLowerCase().includes('wether') ||
-                                breed?.toLowerCase().includes('sheep') ||
-                                breed?.toLowerCase().includes('merino') ||
-                                breed?.toLowerCase().includes('suffolk') ||
-                                breed?.toLowerCase().includes('dorper') ||
-                                name?.toLowerCase().includes('sheep')
-                            ) ? sheepIcon : cowIcon}
+                            src={animalType === 'sheep' ? sheepIcon : cowIcon}
                             className="h-5.5 w-5.5 opacity-80"
                             alt={type}
                         />
                     </div>
-                    <span className="text-[16px] font-bold text-[#1a1a2e]">{earTag}</span>
+                    <span
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onViewAnimal(animalId, animalType);
+                        }}
+                        className="text-[16px] font-bold text-[#1a1a2e] hover:underline"
+                    >
+                        {earTag}
+                    </span>
                 </div>
             </div>
 
@@ -174,7 +191,7 @@ const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color,
     );
 };
 
-const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDeselectAll }) => {
+const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDeselectAll, onViewAnimal }) => {
     const isAllSelected = animals.length > 0 && animals.every(a => selectedIds.includes(a.id || a._id));
     const hasSelection = selectedIds.length > 0;
 
@@ -210,6 +227,16 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                         {animals.map((animal, idx) => {
                             const animalId = animal.id || animal._id;
                             const isSelected = selectedIds.includes(animalId);
+                            const isCowList = (
+                                animal.species?.toLowerCase().includes('cow') ||
+                                animal.species?.toLowerCase().includes('cattle') ||
+                                animal.type?.toLowerCase().includes('cow') ||
+                                animal.type?.toLowerCase().includes('bull') ||
+                                animal.type?.toLowerCase().includes('calf') ||
+                                animal.type?.toLowerCase().includes('heifer') ||
+                                animal.type?.toLowerCase().includes('steer')
+                            );
+                            const animalTypeList = isCowList ? 'cow' : 'sheep';
                             return (
                                 <tr key={idx} className={`hover:bg-gray-50 transition-colors group ${isSelected ? 'bg-blue-50/30' : ''}`}>
                                     <td className="sticky left-0 z-20 p-4 bg-inherit border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
@@ -224,25 +251,20 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                                         <div className="flex items-center gap-2">
                                             <div className={`flex h-8 w-8 items-center justify-center rounded-full text-gray-400 shadow-sm ring-1 ring-black/5 ${animal.ear_tag_color || 'bg-white'}`}>
                                                 <img
-                                                    src={(
-                                                        animal.species?.toLowerCase().includes('sheep') ||
-                                                        animal.species?.toLowerCase().includes('lamb') ||
-                                                        animal.type?.toLowerCase().includes('sheep') ||
-                                                        animal.type?.toLowerCase().includes('ram') ||
-                                                        animal.type?.toLowerCase().includes('ewe') ||
-                                                        animal.type?.toLowerCase().includes('lamb') ||
-                                                        animal.type?.toLowerCase().includes('wether') ||
-                                                        animal.breed?.toLowerCase().includes('sheep') ||
-                                                        animal.breed?.toLowerCase().includes('merino') ||
-                                                        animal.breed?.toLowerCase().includes('suffolk') ||
-                                                        animal.breed?.toLowerCase().includes('dorper') ||
-                                                        animal.name?.toLowerCase().includes('sheep')
-                                                    ) ? sheepIcon : cowIcon}
+                                                    src={animalTypeList === 'sheep' ? sheepIcon : cowIcon}
                                                     className="h-5.5 w-5.5 opacity-80"
                                                     alt={animal.type}
                                                 />
                                             </div>
-                                            <span className="font-bold text-[#1a1a2e] border-b border-[#1a1a2e] leading-tight cursor-pointer whitespace-nowrap">{animal.earTag}</span>
+                                            <span
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleViewAnimal(animalId, animalTypeList);
+                                                }}
+                                                className="font-bold text-[#1a1a2e] border-b border-[#1a1a2e] leading-tight cursor-pointer whitespace-nowrap hover:text-blue-600 hover:border-blue-600"
+                                            >
+                                                {animal.earTag}
+                                            </span>
                                         </div>
                                     </td>
                                     <td className="p-4 text-[14px] font-medium text-gray-600 whitespace-nowrap border-r border-gray-100/50">{animal.name}</td>
@@ -306,6 +328,33 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
     );
 };
 export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }) {
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+
+    // Check if we are viewing a specific animal
+    const animalMatch = pathname.match(/\/lifecycle\/details\/([^\/]+)/);
+    const viewingAnimalId = animalMatch ? animalMatch[1] : null;
+
+    const handleViewAnimal = (id, animalType) => {
+        let finalType = animalType;
+        if (!finalType) {
+            const animal = animals.find(a => (a.id || a._id) === id);
+            if (animal) {
+                const isCow = (
+                    animal.species?.toLowerCase().includes('cow') ||
+                    animal.species?.toLowerCase().includes('cattle') ||
+                    animal.type?.toLowerCase().includes('cow') ||
+                    animal.type?.toLowerCase().includes('bull') ||
+                    animal.type?.toLowerCase().includes('calf') ||
+                    animal.type?.toLowerCase().includes('heifer') ||
+                    animal.type?.toLowerCase().includes('steer')
+                );
+                finalType = isCow ? 'cow' : 'sheep';
+            }
+        }
+        navigate(`/lifecycle/details/${id}?type=${finalType || 'cow'}`);
+    };
+
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
     const [animals, setAnimals] = useState([]);
     const [locations, setLocations] = useState([]);
@@ -374,26 +423,10 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
         }
     }, [selectedAnimal, hasFetched]);
 
-    if (selectedAnimal === 'Register Animal') {
-        return (
-            <section className="h-full min-h-0 w-full overflow-auto bg-[#F8FAFD] p-4 sm:p-8">
-                <RegisterAnimal />
-            </section>
-        );
-    }
+
 
     if (loading && selectedAnimal === 'Animal Details') {
-        return (
-            <div className="flex h-full items-center justify-center bg-[#F8FAFD] rounded-md">
-                <div className="flex flex-col items-center gap-6">
-                    <div className="relative flex h-32 w-32 items-center justify-center">
-                        <div className="absolute inset-0 rounded-full bg-[#D7E3EF] animate-ping opacity-50"></div>
-                        <img src={hayIcon} alt="Loading" className="relative z-10 h-24 w-24 animate-bounce drop-shadow-xl" />
-                    </div>
-                    <p className="text-[15px] font-bold text-[#1a1a2e]">Loading Animals...</p>
-                </div>
-            </div>
-        );
+        return <Loader message="Loading livestock database..." />;
     }
 
     const renderDashboard = () => {
@@ -409,12 +442,6 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
 
         return (
             <section className="flex h-full w-full flex-col bg-[#F8FAFD] px-6 pt-6 pb-2 gap-6 overflow-hidden">
-                <div className="flex items-center justify-between shrink-0">
-                    <div className="space-y-1">
-                        <h1 className="text-2xl font-black text-[#1a1a2e] tracking-tight">Manage Animals</h1>
-                    </div>
-                </div>
-
                 <div className="flex flex-wrap items-start gap-4 shrink-0">
                     <StatCard
                         label="Total Animals"
@@ -495,6 +522,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                                         {...animal}
                                         isSelected={selectedIds.includes(animal.id || animal._id)}
                                         onToggleSelect={handleToggleSelect}
+                                        onViewAnimal={handleViewAnimal}
                                     />
                                 ))}
                             </div>
@@ -567,6 +595,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                         onToggleSelect={handleToggleSelect}
                         onSelectAll={handleSelectAll}
                         onDeselectAll={handleDeselectAll}
+                        onViewAnimal={handleViewAnimal}
                     />
                 )}
             </section>
@@ -602,6 +631,18 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
     // Swap as requested:
     // Lifecycle (null) -> Illustration
     // Animal Details ('Animal Details') -> Manage Cattle Dashboard
+    if (selectedAnimal === 'Register Animal') {
+        return (
+            <section className="h-full min-h-0 w-full overflow-auto bg-[#F8FAFD] p-4 sm:p-8">
+                <RegisterAnimal />
+            </section>
+        );
+    }
+
+    if (viewingAnimalId) {
+        return <AnimalDetail animalId={viewingAnimalId} />;
+    }
+
     if (selectedAnimal === 'Animal Details') {
         return renderDashboard();
     }

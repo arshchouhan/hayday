@@ -16,10 +16,6 @@ const searchTargets = [
     { label: 'Livestock', to: '/breeding' },
     { label: 'Assigned Groups', to: '/breeding/groups' },
     { label: 'Breeding History', to: '/breeding/history' },
-    { label: 'Pedigree', to: '/pedigree' },
-    { label: 'Lineage Tree', to: '/pedigree' },
-    { label: 'Ancestry Records', to: '/pedigree/ancestry' },
-    { label: 'Progeny Reports', to: '/pedigree/progeny' },
     { label: 'Farm', to: '/farm' },
 ];
 
@@ -27,7 +23,6 @@ const links = [
     { label: 'Lifecycle', to: '/lifecycle', end: true },
     { label: 'Health', to: '/health' },
     { label: 'Breeding', to: '/breeding' },
-    { label: 'Pedigree', to: '/pedigree' },
 ];
 
 export default function Navbar() {

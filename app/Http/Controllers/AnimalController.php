@@ -26,6 +26,23 @@ class AnimalController extends Controller
         return response()->json($combined);
     }
 
+    public function show($id)
+    {
+        $animal = Animal::with(['breed', 'location', 'group', 'sire', 'dam'])->find($id);
+        if (!$animal) {
+            $animal = Cattle::with(['breed', 'location', 'group', 'sire', 'dam'])->find($id);
+        }
+        if (!$animal) {
+            $animal = Sheep::with(['breed', 'location', 'group', 'sire', 'dam'])->find($id);
+        }
+
+        if (!$animal) {
+            return response()->json(['message' => 'Animal not found'], 404);
+        }
+
+        return response()->json($animal);
+    }
+
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [

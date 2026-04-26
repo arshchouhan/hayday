@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import Loader from './Loader';
 
 const FloatingLabel = ({ label, required }) => (
     <label className="absolute -top-3 left-3 bg-[#F8FAFD] px-1 text-[13px] font-bold text-[#1a1a2e] z-10">
@@ -265,21 +266,8 @@ export default function RegisterAnimal() {
         <div className="relative w-full space-y-8 pb-4">
             {/* Model Switch Loader Overlay */}
             {isSwitchingModel && (
-                <div className="absolute inset-0 z-[100] flex items-center justify-center rounded-3xl bg-[#F8FAFD]/60 backdrop-blur-[2px] transition-all">
-                    <div className="flex flex-col items-center gap-4">
-                        <div className="relative h-12 w-12">
-                            <div className="absolute inset-0 animate-ping rounded-full bg-[#D7E3EF] opacity-75"></div>
-                            <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-[#1a1a2e] shadow-lg">
-                                <svg className="h-6 w-6 animate-spin text-white" viewBox="0 0 24 24" fill="none">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                                </svg>
-                            </div>
-                        </div>
-                        <p className="text-sm font-bold text-[#1a1a2e] tracking-tight">
-                            Initializing {formData.species === 'Cow' ? 'Sheep' : 'Cattle'} Model...
-                        </p>
-                    </div>
+                <div className="absolute inset-0 z-[100] flex items-center justify-center rounded-3xl bg-[#F8FAFD]/80 backdrop-blur-[4px] transition-all">
+                    <Loader message={`Initializing ${formData.species === 'Cow' ? 'Sheep' : 'Cattle'} Model...`} />
                 </div>
             )}
 
