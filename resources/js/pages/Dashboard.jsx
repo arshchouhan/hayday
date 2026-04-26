@@ -4,8 +4,10 @@ import SuboptionsSidebar from '../components/SuboptionsSidebar';
 import Pedigree from './Pedigree';
 import Timeline from './Timeline';
 import AI from './AI';
+import Location from './Location';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { Map as MapIcon } from 'lucide-react';
 
 const sectionConfig = {
     lifecycle: {
@@ -13,7 +15,7 @@ const sectionConfig = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/lifecycle/details' },
             { key: 'register', label: 'Register Animal', to: '/lifecycle/register' },
-            { key: 'scheduler', label: 'Scheduler', to: '/lifecycle/scheduler' },
+            { key: 'scheduler', label: 'Activity', to: '/lifecycle/scheduler' },
             { key: 'groups', label: 'Groups', to: '/lifecycle/groups' },
         ],
     },
@@ -26,7 +28,7 @@ const sectionConfig = {
         ],
     },
     breeding: {
-        title: 'Breeding',
+        title: 'Inventory',
         suboptions: [
             { key: 'inventory', label: 'Livestock', to: '/breeding' },
             { key: 'assigned', label: 'Assigned Groups', to: '/breeding/groups' },
@@ -39,6 +41,14 @@ const sectionConfig = {
             { key: 'lineage', label: 'Lineage Tree', to: '/pedigree' },
             { key: 'ancestry', label: 'Ancestry Records', to: '/pedigree/ancestry' },
             { key: 'progeny', label: 'Progeny Reports', to: '/pedigree/progeny' },
+        ],
+    },
+    location: {
+        title: 'Location',
+        suboptions: [
+            { key: 'map', label: 'Map View', to: '/location' },
+            { key: 'listing', label: 'Location Listing', to: '/location/listing' },
+            { key: 'add', label: 'Add Location', to: '/location/add' },
         ],
     },
 };
@@ -118,6 +128,7 @@ export default function Dashboard() {
                     <section className="h-full min-h-0 w-full min-w-0 overflow-auto rounded-md bg-[#E9EEF6] p-0">
                         {activeKey === 'lifecycle' && <ManageCattleDashboard selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />}
                         {activeKey === 'pedigree' && <Pedigree />}
+                        {activeKey === 'location' && <Location />}
                         {activeKey === 'health' && (
                             <div className="flex h-full flex-col items-center justify-center rounded-md bg-white p-8 text-center">
                                 <h2 className="text-2xl font-bold text-[#1a1a2e]">Health Workspace</h2>
@@ -131,7 +142,7 @@ export default function Dashboard() {
                             </div>
                         )}
                         {/* Fallback if no specific component is matched for an activeKey */}
-                        {!['lifecycle', 'pedigree', 'health', 'breeding'].includes(activeKey) && (
+                        {!['lifecycle', 'pedigree', 'health', 'breeding', 'location'].includes(activeKey) && (
                             <div className="flex h-full flex-col items-center justify-center rounded-md bg-white p-8 text-center">
                                 <h2 className="text-2xl font-bold text-[#1a1a2e]">{activeSection.title} Workspace</h2>
                                 <p className="mt-2 text-gray-500 max-w-md">

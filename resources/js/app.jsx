@@ -16,6 +16,7 @@ export default function App() {
             <Route path="/lifecycle/*" element={<Dashboard />} />
             <Route path="/health/*" element={<Dashboard />} />
             <Route path="/breeding/*" element={<Dashboard />} />
+            <Route path="/location/*" element={<Dashboard />} />
             <Route path="/pedigree/*" element={<Dashboard />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -259,7 +259,7 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                                             <span
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    handleViewAnimal(animalId, animalTypeList);
+                                                    onViewAnimal(animalId, animalTypeList);
                                                 }}
                                                 className="font-bold text-[#1a1a2e] border-b border-[#1a1a2e] leading-tight cursor-pointer whitespace-nowrap hover:text-blue-600 hover:border-blue-600"
                                             >

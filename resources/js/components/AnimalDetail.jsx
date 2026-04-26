@@ -246,17 +246,6 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                             Timeline
                         </button>
                         <button 
-                            onClick={() => setActiveTab('ai')}
-                            className={`flex items-center gap-2 text-[15px] font-medium pb-3 px-1 transition-colors -mb-[1px] ${
-                                activeTab === 'ai' 
-                                    ? 'text-[#059669] border-b-[2px] border-[#059669]' 
-                                    : 'text-[#1a1a2e] border-b-[2px] border-transparent hover:text-gray-600'
-                            }`}
-                        >
-                            Ask AI
-                            <span className="rounded-full bg-[#f4a261] px-2 py-0.5 text-[10px] font-black text-white uppercase tracking-wider shadow-sm">BETA</span>
-                        </button>
-                        <button 
                             onClick={() => setActiveTab('pedigree')}
                             className={`text-[15px] font-medium pb-3 px-1 transition-colors -mb-[1px] ${
                                 activeTab === 'pedigree' 

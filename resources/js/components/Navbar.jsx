@@ -12,17 +12,16 @@ const searchTargets = [
     { label: 'Health Records', to: '/health' },
     { label: 'Vaccinations', to: '/health/vaccinations' },
     { label: 'Treatments', to: '/health/treatments' },
-    { label: 'Breeding', to: '/breeding' },
-    { label: 'Livestock', to: '/breeding' },
-    { label: 'Assigned Groups', to: '/breeding/groups' },
-    { label: 'Breeding History', to: '/breeding/history' },
+    { label: 'Inventory', to: '/breeding' },
+    { label: 'Location', to: '/location' },
     { label: 'Farm', to: '/farm' },
 ];
 
 const links = [
+    { label: 'Location', to: '/location' },
     { label: 'Lifecycle', to: '/lifecycle', end: true },
     { label: 'Health', to: '/health' },
-    { label: 'Breeding', to: '/breeding' },
+    { label: 'Inventory', to: '/breeding' },
 ];
 
 export default function Navbar() {
