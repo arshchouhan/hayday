@@ -11,9 +11,9 @@ const LocationPage = () => {
     const [ownership, setOwnership] = useState('Owned');
 
     useEffect(() => {
-        if (pathname === '/location/add') {
+        if (pathname === '/farm/location/add') {
             setView('add');
-        } else if (pathname === '/location/listing') {
+        } else if (pathname === '/farm/location/listing') {
             setView('list');
             setActiveTab('Location Listing');
         } else {
@@ -23,11 +23,11 @@ const LocationPage = () => {
     }, [pathname]);
 
     const handleGoToAdd = () => {
-        navigate('/location/add');
+        navigate('/farm/location/add');
     };
 
     const handleGoToList = () => {
-        navigate('/location');
+        navigate('/farm/location');
     };
 
     if (view === 'add') {
@@ -211,8 +211,8 @@ const LocationPage = () => {
                     <button
                         key={tab}
                         onClick={() => {
-                            if (tab === 'Map View') navigate('/location');
-                            else navigate('/location/listing');
+                            if (tab === 'Map View') navigate('/farm/location');
+                            else navigate('/farm/location/listing');
                         }}
                         className={`relative px-4 py-3 text-[14px] font-bold transition-colors ${
                             activeTab === tab ? 'text-[#1a1a2e]' : 'text-gray-400 hover:text-gray-600'

@@ -91,7 +91,7 @@ export default function SuboptionsSidebar({ section, suboptions, selectedAnimal,
                     <NavLink
                         key={option.key}
                         to={option.to}
-                        end={option.to === '/lifecycle'}
+                        end={option.to === '/lifecycle' || option.to === '/farm'}
                         onClick={() => onSelectAnimal(option.label)}
                         className={({ isActive }) => {
                             const isSelected = selectedAnimal === option.label;

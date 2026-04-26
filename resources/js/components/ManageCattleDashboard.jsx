@@ -191,6 +191,8 @@ const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color,
     );
 };
 
+
+
 const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDeselectAll, onViewAnimal }) => {
     const isAllSelected = animals.length > 0 && animals.every(a => selectedIds.includes(a.id || a._id));
     const hasSelection = selectedIds.length > 0;
@@ -201,7 +203,7 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                 <table className="w-full text-left border-collapse relative">
                     <thead className="sticky top-0 z-40">
                         <tr className="border-b border-gray-100 bg-[#F8FAFD]">
-                            <th className="sticky left-0 z-50 p-4 w-12 bg-[#F8FAFD] border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                            <th className="sticky left-0 z-50 p-4 w-12 bg-[#F8FAFD] border-r border-gray-200">
                                 <input
                                     type="checkbox"
                                     className="h-4 w-4 rounded border-gray-300 accent-[#1a1a2e]"
@@ -209,7 +211,7 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                                     onChange={isAllSelected ? onDeselectAll : onSelectAll}
                                 />
                             </th>
-                            <th className="sticky left-12 z-50 p-4 text-[13px] font-black text-[#1a1a2e] uppercase tracking-wider bg-[#F8FAFD] border-r border-gray-200 shadow-[4px_0_10px_-3px_rgba(0,0,0,0.1)]">
+                            <th className="sticky left-12 z-50 p-4 text-[13px] font-black text-[#1a1a2e] uppercase tracking-wider bg-[#F8FAFD] border-r border-gray-200">
                                 Animal Eartag
                             </th>
                             <th className="p-4 text-[13px] font-black text-[#1a1a2e] uppercase tracking-wider whitespace-nowrap border-r border-gray-100/50">Animal Name</th>
@@ -238,8 +240,8 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                             );
                             const animalTypeList = isCowList ? 'cow' : 'sheep';
                             return (
-                                <tr key={idx} className={`hover:bg-gray-50 transition-colors group ${isSelected ? 'bg-blue-50/30' : ''}`}>
-                                    <td className="sticky left-0 z-20 p-4 bg-inherit border-r border-gray-100 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                                <tr key={idx} className={`hover:bg-gray-50 transition-colors group ${isSelected ? 'bg-blue-50' : 'bg-white'}`}>
+                                    <td className={`sticky left-0 z-20 p-4 border-r border-gray-200 bg-white ${isSelected ? '!bg-blue-50' : 'bg-white'}`}>
                                         <input
                                             type="checkbox"
                                             className="h-4 w-4 rounded border-gray-300 accent-[#1a1a2e]"
@@ -247,7 +249,7 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                                             onChange={() => onToggleSelect(animalId)}
                                         />
                                     </td>
-                                    <td className="sticky left-12 z-20 p-4 bg-inherit border-r border-gray-200 shadow-[4px_0_10px_-3px_rgba(0,0,0,0.1)]">
+                                    <td className={`sticky left-12 z-20 p-4 border-r border-gray-200 bg-white ${isSelected ? '!bg-blue-50' : 'bg-white'}`}>
                                         <div className="flex items-center gap-2">
                                             <div className={`flex h-8 w-8 items-center justify-center rounded-full text-gray-400 shadow-sm ring-1 ring-black/5 ${animal.ear_tag_color || 'bg-white'}`}>
                                                 <img
@@ -332,7 +334,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
     const { pathname } = useLocation();
 
     // Check if we are viewing a specific animal
-    const animalMatch = pathname.match(/\/lifecycle\/details\/([^\/]+)/);
+    const animalMatch = pathname.match(/\/(?:lifecycle|farm)\/details\/([^\/]+)/);
     const viewingAnimalId = animalMatch ? animalMatch[1] : null;
 
     const handleViewAnimal = (id, animalType) => {
@@ -352,7 +354,8 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                 finalType = isCow ? 'cow' : 'sheep';
             }
         }
-        navigate(`/lifecycle/details/${id}?type=${finalType || 'cow'}`);
+        const root = pathname.startsWith('/farm') ? '/farm' : '/lifecycle';
+        navigate(`${root}/details/${id}?type=${finalType || 'cow'}`);
     };
 
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
@@ -393,9 +396,15 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
             setLoading(true);
 
             // Fetch animals
-            const fetchAnimals = fetch('/api/animals').then(res => res.json());
+            const fetchAnimals = fetch('/api/farm/animals').then(res => {
+                if (!res.ok) throw new Error('API failure');
+                return res.json();
+            });
             // Fetch form data for filters
-            const fetchFormData = fetch('/api/animals/form-data').then(res => res.json());
+            const fetchFormData = fetch('/api/farm/animals/form-data').then(res => {
+                if (!res.ok) throw new Error('API failure');
+                return res.json();
+            });
 
             Promise.all([fetchAnimals, fetchFormData])
                 .then(([animalData, formData]) => {
@@ -653,8 +662,8 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
 
     const getContent = () => {
         switch (selectedAnimal) {
-            case 'Scheduler':
-                return { title: 'Farm Scheduler', description: 'Manage upcoming tasks, vaccinations, breeding dates, and feeding schedules.' };
+            case 'Activity':
+                return { title: 'Activity', description: 'Manage and schedule your farm activities.' };
             case 'Groups':
                 return { title: 'Livestock Groups', description: 'Organize your animals into pastures, groups, or pens.' };
             default:

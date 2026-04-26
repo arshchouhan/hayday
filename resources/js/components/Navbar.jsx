@@ -3,11 +3,11 @@ import { useState } from 'react';
 import hayIcon from '../assets/noun-hay-7549821.svg';
 
 const searchTargets = [
-    { label: 'Lifecycle', to: '/lifecycle' },
-    { label: 'Animal Details', to: '/lifecycle/details' },
-    { label: 'Register Animal', to: '/lifecycle/register' },
-    { label: 'Scheduler', to: '/lifecycle/scheduler' },
-    { label: 'Groups', to: '/lifecycle/groups' },
+    { label: 'Lifecycle', to: '/farm' },
+    { label: 'Animal Details', to: '/farm/details' },
+    { label: 'Register Animal', to: '/farm/register' },
+    { label: 'Scheduler', to: '/farm/scheduler' },
+    { label: 'Groups', to: '/farm/groups' },
     { label: 'Health', to: '/health' },
     { label: 'Health Records', to: '/health' },
     { label: 'Vaccinations', to: '/health/vaccinations' },
@@ -18,10 +18,9 @@ const searchTargets = [
 ];
 
 const links = [
-    { label: 'Location', to: '/location' },
-    { label: 'Lifecycle', to: '/lifecycle', end: true },
-    { label: 'Health', to: '/health' },
-    { label: 'Inventory', to: '/breeding' },
+    { label: 'Location', to: '/farm/location' },
+    { label: 'Groups', to: '/farm/groups' },
+    { label: 'Inventory', to: '/farm/inventory' },
 ];
 
 export default function Navbar() {
@@ -33,7 +32,7 @@ export default function Navbar() {
         if (e.key === 'Enter' && searchQuery.trim() !== '') {
             const queryParts = searchQuery.split(':');
             const query = queryParts[queryParts.length - 1].toLowerCase().trim();
-            
+
             if (!query) return;
 
             const match = searchTargets.find(t => t.label.toLowerCase().includes(query));

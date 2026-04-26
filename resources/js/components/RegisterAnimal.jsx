@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Loader from './Loader';
 
@@ -86,8 +86,8 @@ const CustomSelect = ({ label, required, placeholder, value, onChange, options =
                                             setIsOpen(false);
                                         }}
                                         className={`cursor-pointer px-4 py-2 text-[13px] transition-colors ${isSelected
-                                                ? 'bg-[#D7E3EF] font-bold text-[#1a1a2e]'
-                                                : 'text-gray-700 hover:bg-[#F8FAFD] hover:text-[#1a1a2e]'
+                                            ? 'bg-[#D7E3EF] font-bold text-[#1a1a2e]'
+                                            : 'text-gray-700 hover:bg-[#F8FAFD] hover:text-[#1a1a2e]'
                                             }`}
                                     >
                                         {optLabel}
@@ -128,11 +128,10 @@ const PillToggleGroup = ({ label, required, options, value, onChange, helperText
                     key={opt}
                     type="button"
                     onClick={() => onChange(opt)}
-                    className={`rounded-full border px-8 py-2.5 text-[15px] font-bold transition-all ${
-                        value === opt
+                    className={`rounded-full border px-8 py-2.5 text-[15px] font-bold transition-all ${value === opt
                             ? 'border-transparent bg-[#D7E3EF] text-[#1a1a2e] shadow-sm'
                             : 'border-[#80888F] bg-white text-gray-700 hover:border-gray-500'
-                    }`}
+                        }`}
                 >
                     {opt}
                 </button>
@@ -151,6 +150,7 @@ const DateIcon = () => (
 
 export default function RegisterAnimal() {
     const navigate = useNavigate();
+    const { pathname } = useLocation();
     const [lookupData, setLookupData] = useState({ breeds: [], locations: [], groups: [], sires: [], dams: [] });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSwitchingModel, setIsSwitchingModel] = useState(false);
@@ -181,7 +181,7 @@ export default function RegisterAnimal() {
     });
 
     useEffect(() => {
-        axios.get('/api/animals/form-data').then(res => {
+        axios.get('/api/farm/animals/form-data').then(res => {
             setLookupData(res.data);
         });
     }, []);
@@ -239,10 +239,11 @@ export default function RegisterAnimal() {
         };
 
         try {
-            const response = await axios.post('/api/animals', payload);
+            const response = await axios.post('/api/farm/animals', payload);
             if (response.data.success) {
                 alert('Animal registered successfully!');
-                navigate('/lifecycle/details');
+                const root = pathname.startsWith('/farm') ? '/farm' : '/lifecycle';
+                navigate(`${root}/details`);
             }
         } catch (err) {
             console.error('Save error:', err);
@@ -279,7 +280,10 @@ export default function RegisterAnimal() {
                 </div>
                 <div className="flex gap-3">
                     <button
-                        onClick={() => navigate('/lifecycle/details')}
+                        onClick={() => {
+                            const root = pathname.startsWith('/farm') ? '/farm' : '/lifecycle';
+                            navigate(`${root}/details`);
+                        }}
                         disabled={isSubmitting || isSwitchingModel}
                         className="rounded-full bg-gray-100 px-8 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200"
                     >
