@@ -21,8 +21,9 @@ class AnimalController extends Controller
         $cattle = Cattle::with(['breed', 'location', 'group'])->get();
         // Also fetch sheep from the dedicated 'sheeps' collection (Sheep model)
         $sheep = Sheep::with(['breed', 'location', 'group'])->get();
-        // Merge all collections into a single list
-        $combined = $animals->merge($cattle)->merge($sheep);
+        // Merge all collections into a single list and sort by latest created_at
+        $combined = $animals->merge($cattle)->merge($sheep)->sortByDesc('created_at')->values();
+        
         return response()->json($combined);
     }
 

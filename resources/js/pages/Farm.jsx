@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Routes, Route } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import SuboptionsSidebar from '../components/SuboptionsSidebar';
 import Activity from './Activity';
+import AnimalSelection from './AnimalSelection';
+import HealthActivity from './HealthActivity';
+import BreedingActivity from './BreedingActivity';
+import MovementActivity from './MovementActivity';
+import SalesActivity from './SalesActivity';
 import Livestock from '../components/ManageCattleDashboard';
 import RegisterAnimal from '../components/RegisterAnimal';
 import Pedigree from './Pedigree';
 import Location from './Location';
 
-// Placeholders for missing components
-const Groups = () => <div className="p-8 text-center text-gray-500">Groups Component (Coming Soon)</div>;
-const Health = () => <div className="p-8 text-center text-gray-500">Health Component (Coming Soon)</div>;
-const Breeding = () => <div className="p-8 text-center text-gray-500">Breeding Component (Coming Soon)</div>;
 
 const sectionConfigs = {
     farm: {
@@ -20,7 +21,7 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'register', label: 'Register Animal', to: '/farm/register' },
-            { key: 'scheduler', label: 'Activity', to: '/farm/scheduler' },
+            { key: 'activity', label: 'Activity', to: '/farm/activity' },
         ],
     },
     health: {
@@ -38,7 +39,7 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'register', label: 'Register Animal', to: '/farm/register' },
-            { key: 'scheduler', label: 'Activity', to: '/farm/scheduler' },
+            { key: 'activity', label: 'Activity', to: '/farm/activity' },
             { key: 'inventory', label: 'Inventory', to: '/farm/inventory' },
         ],
     },
@@ -57,7 +58,7 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'register', label: 'Register Animal', to: '/farm/register' },
-            { key: 'scheduler', label: 'Activity', to: '/farm/scheduler' },
+            { key: 'activity', label: 'Activity', to: '/farm/activity' },
             { key: 'location', label: 'Location', to: '/farm/location' },
         ],
     },
@@ -67,7 +68,7 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'register', label: 'Register Animal', to: '/farm/register' },
-            { key: 'scheduler', label: 'Activity', to: '/farm/scheduler' },
+            { key: 'activity', label: 'Activity', to: '/farm/activity' },
             { key: 'groups', label: 'Groups', to: '/farm/groups' },
         ],
     },
@@ -150,29 +151,36 @@ export default function Farm() {
                     </div>
 
                     <section className="h-full min-h-0 w-full min-w-0 overflow-auto rounded-md bg-[#E9EEF6] p-0">
-                        {/* Content Rendering based on section and selected suboption */}
-                        {activeKey === 'farm' && (
-                            <>
-                                {(!selectedAnimal || selectedAnimal === 'Animal Details' || selectedAnimal === 'Register Animal') && (
-                                    <Livestock selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />
-                                )}
-                                {selectedAnimal === 'Activity' && <Activity />}
-                            </>
-                        )}
-
-                        {activeKey === 'groups' && <Groups />}
-                        {activeKey === 'location' && <Location />}
-                        {activeKey === 'inventory' && <Breeding />}
-
-                        {activeKey === 'health' && <Health />}
-                        {activeKey === 'pedigree' && <Pedigree />}
-
-                        {!sectionConfigs[activeKey] && (
-                            <div className="flex h-full flex-col items-center justify-center p-8 text-center bg-[#F8FAFD]">
-                                <h2 className="text-2xl font-bold text-[#1a1a2e]">Workspace</h2>
-                                <p className="mt-2 text-gray-500 max-w-md">Manage your farm activities here.</p>
-                            </div>
-                        )}
+                        {/* Nested Routes handle all sub-page navigation */}
+                        <Routes>
+                            {/* Farm / Lifecycle routes */}
+                            <Route index element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />} />
+                            <Route path="details" element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />} />
+                            <Route path="details/:id" element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />} />
+                            <Route path="register" element={
+                                <section className="h-full min-h-0 w-full overflow-auto bg-[#F8FAFD] p-4 sm:p-8">
+                                    <RegisterAnimal />
+                                </section>
+                            } />
+                            <Route path="activity" element={<Activity />} />
+                            <Route path="activity/:activityType" element={<AnimalSelection />} />
+                            <Route path="activity/health/:animalId" element={<HealthActivity />} />
+                            <Route path="activity/breeding/:animalId" element={<BreedingActivity />} />
+                            <Route path="activity/movement/:animalId" element={<MovementActivity />} />
+                            <Route path="activity/sales/:animalId" element={<SalesActivity />} />
+                            <Route path="activity/*" element={<AnimalSelection />} />
+                            <Route path="location" element={<Location />} />
+                            <Route path="location/*" element={<Location />} />
+                            {/* Health routes - Farm is also mounted at /health/* */}
+                            <Route path="health" element={<div className="p-8 text-center text-gray-500">Health Component (Coming Soon)</div>} />
+                            <Route path="vaccinations" element={<div className="p-8 text-center text-gray-500">Vaccinations (Coming Soon)</div>} />
+                            <Route path="treatments" element={<div className="p-8 text-center text-gray-500">Treatments (Coming Soon)</div>} />
+                            {/* Pedigree routes */}
+                            <Route path="pedigree" element={<Pedigree />} />
+                            <Route path="pedigree/*" element={<Pedigree />} />
+                            {/* Fallback */}
+                            <Route path="*" element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />} />
+                        </Routes>
                     </section>
                 </div>
             </main>

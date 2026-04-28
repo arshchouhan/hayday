@@ -10,11 +10,14 @@ export default function App() {
         <main>
           <Routes>
             <Route path="/" element={<Navigate to="/farm" replace />} />
+            <Route path="/farm" element={<Farm />} />
             <Route path="/farm/*" element={<Farm />} />
             <Route path="/home" element={<LandingPage />} />
+            <Route path="/health" element={<Farm />} />
             <Route path="/health/*" element={<Farm />} />
+            <Route path="/breeding" element={<Farm />} />
             <Route path="/breeding/*" element={<Farm />} />
-            <Route path="/breeding/*" element={<Farm />} />
+            <Route path="/pedigree" element={<Farm />} />
             <Route path="/pedigree/*" element={<Farm />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

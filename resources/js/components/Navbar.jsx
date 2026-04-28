@@ -1,20 +1,19 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import hayIcon from '../assets/noun-hay-7549821.svg';
 
 const searchTargets = [
-    { label: 'Lifecycle', to: '/farm' },
-    { label: 'Animal Details', to: '/farm/details' },
-    { label: 'Register Animal', to: '/farm/register' },
-    { label: 'Scheduler', to: '/farm/scheduler' },
-    { label: 'Groups', to: '/farm/groups' },
-    { label: 'Health', to: '/health' },
-    { label: 'Health Records', to: '/health' },
-    { label: 'Vaccinations', to: '/health/vaccinations' },
-    { label: 'Treatments', to: '/health/treatments' },
-    { label: 'Inventory', to: '/breeding' },
-    { label: 'Location', to: '/location' },
     { label: 'Farm', to: '/farm' },
+    { label: 'Farm: Animal Details', to: '/farm/details' },
+    { label: 'Farm: Register Animal', to: '/farm/register' },
+    { label: 'Farm: Activity', to: '/farm/activity' },
+    { label: 'Farm: Groups', to: '/farm/groups' },
+    { label: 'Farm: Health', to: '/farm/health' },
+    { label: 'Farm: Health Records', to: '/farm/health' },
+    { label: 'Farm: Vaccinations', to: '/farm/health/vaccinations' },
+    { label: 'Farm: Treatments', to: '/farm/health/treatments' },
+    { label: 'Farm: Inventory', to: '/farm/inventory' },
+    { label: 'Farm: Location', to: '/farm/location' },
 ];
 
 const links = [
@@ -25,8 +24,18 @@ const links = [
 
 export default function Navbar() {
     const navigate = useNavigate();
+    const { pathname } = useLocation();
     const [searchQuery, setSearchQuery] = useState('');
     const [showError, setShowError] = useState(false);
+
+    useEffect(() => {
+        const match = searchTargets.find(t => pathname === t.to);
+        if (match) {
+            setSearchQuery(`${match.label}: `);
+        } else if (pathname === '/farm') {
+            setSearchQuery('Farm: ');
+        }
+    }, [pathname]);
 
     const handleSearch = (e) => {
         if (e.key === 'Enter' && searchQuery.trim() !== '') {
@@ -62,7 +71,7 @@ export default function Navbar() {
                     </div>
 
                     <div className="flex min-w-0 flex-1 items-center justify-between">
-                        <div className="relative w-64 md:w-80 lg:w-96">
+                        <div className="relative w-80 md:w-[400px] lg:w-[500px]">
                             <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                                 <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -74,7 +83,7 @@ export default function Navbar() {
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={handleSearch}
-                                className="block w-full rounded-xl border-none bg-white py-2 pl-10 pr-3 text-sm font-semibold text-gray-700 shadow-md hover:shadow-lg ring-1 ring-black/10 transition-all focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/40 placeholder:text-gray-400"
+                                className="block w-full rounded-xl border-none bg-white py-3 pl-10 pr-3 text-sm font-semibold text-gray-700 shadow-md hover:shadow-lg ring-1 ring-black/10 transition-all focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/40 placeholder:text-gray-400"
                             />
                             {showError && (
                                 <div className="absolute left-0 right-0 top-full mt-2 z-50 overflow-hidden rounded-xl bg-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.12)] ring-1 ring-black/5 transition-all animate-in fade-in slide-in-from-top-2">
@@ -99,6 +108,7 @@ export default function Navbar() {
                                         key={item.label}
                                         to={item.to}
                                         end={item.end}
+                                        onClick={() => setSearchQuery(`Farm: ${item.label}: `)}
                                         className={({ isActive }) =>
                                             [
                                                 'rounded-full px-4 py-2 text-sm shadow-md transition hover:shadow-lg',
