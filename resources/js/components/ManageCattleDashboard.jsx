@@ -384,7 +384,7 @@ const ActivitySidebar = ({ open, onClose, selectedIds, navigate }) => {
     return (
         <>
             {/* Backdrop */}
-            {open && <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />}
+            {open && <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]" />}
 
             {/* Sidebar */}
             <div className={`fixed right-0 top-0 z-50 flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
@@ -455,11 +455,73 @@ const ActivitySidebar = ({ open, onClose, selectedIds, navigate }) => {
 };
 
 /* ══════════════════════════════════════════════════════════════════
+   ASSIGN WORKER SIDEBAR
+══════════════════════════════════════════════════════════════════ */
+const ASSIGN_WORKERS_LIST = [
+    { id: 1, name: 'Arsh Chauhan', initials: 'AC', email: 'arsh@hayday.com', role: 'Farm Manager' },
+    { id: 2, name: 'John Doe', initials: 'JD', email: 'john@hayday.com', role: 'General Worker' },
+    { id: 3, name: 'Jane Smith', initials: 'JS', email: 'jane@hayday.com', role: 'Veterinarian' }
+];
+
+const AssignWorkerSidebar = ({ open, onClose, selectedIds, navigate }) => {
+    return (
+        <>
+            {/* Backdrop */}
+            {open && <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]" />}
+
+            {/* Sidebar */}
+            <div className={`fixed right-0 top-0 z-50 flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
+                open ? 'translate-x-0' : 'translate-x-full'
+            }`}>
+                <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                    <div>
+                        <h2 className="text-[16px] font-black text-[#1a1a2e]">Assign Worker</h2>
+                        <p className="text-[12px] text-gray-400 mt-0.5">
+                            {selectedIds.length} animal{selectedIds.length !== 1 ? 's' : ''} selected
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-gray-400 hover:text-gray-700 transition-all">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+                    {ASSIGN_WORKERS_LIST.map((worker) => (
+                        <div key={worker.id} className="overflow-hidden rounded-xl border border-gray-100 hover:border-[#059669] hover:shadow-sm transition-all cursor-pointer bg-white group"
+                             onClick={() => navigate(`/farm/workers/add?workerId=${worker.id}&name=${encodeURIComponent(worker.name)}&email=${encodeURIComponent(worker.email)}&animals=${selectedIds.join(',')}`)}
+                        >
+                            <div className="flex items-center gap-3 px-4 py-3">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E9EEF6] text-[14px] font-bold text-[#1a1a2e] group-hover:bg-[#059669] group-hover:text-white transition-colors">
+                                    {worker.initials}
+                                </div>
+                                <div>
+                                    <h3 className="text-[14px] font-bold text-[#1a1a2e]">{worker.name}</h3>
+                                    <p className="text-[12px] text-gray-500">{worker.role}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    
+                    <button 
+                        onClick={() => navigate('/farm/workers/add')}
+                        className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-[#80888F] px-4 py-3 text-[13px] font-bold text-[#1a1a2e] hover:bg-gray-50 transition-colors"
+                    >
+                        + Add New Worker
+                    </button>
+                </div>
+            </div>
+        </>
+    );
+};
+
+/* ══════════════════════════════════════════════════════════════════
    FILTER / ACTIONS DROPUP
 ══════════════════════════════════════════════════════════════════ */
-const FilterActionsDropup = ({ hasSelection }) => {
+const FilterActionsDropup = ({ selectedCount, onManage, onAssignWorker }) => {
+    const hasSelection = selectedCount > 0;
     const [open, setOpen] = React.useState(false);
     const ref = React.useRef(null);
+    const navigate = useNavigate();
 
     React.useEffect(() => {
         const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -477,20 +539,14 @@ const FilterActionsDropup = ({ hasSelection }) => {
                         : 'border-[#80888F] bg-[#E9EEF6] text-gray-500 hover:bg-[#DDE7F3]'
                 }`}
             >
-                {hasSelection ? (
-                    /* lightning bolt when active */
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
-                    </svg>
-                ) : (
-                    /* funnel when idle */
-                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
-                    </svg>
-                )}
-                {!hasSelection && (
-                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#1a1a2e] text-[9px] font-bold text-white shadow-md">1</span>
-                )}
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="4" x2="20" y1="21" y2="21" />
+                    <line x1="4" x2="20" y1="14" y2="14" />
+                    <line x1="4" x2="20" y1="7" y2="7" />
+                    <circle cx="10" cy="21" r="2" />
+                    <circle cx="16" cy="14" r="2" />
+                    <circle cx="8" cy="7" r="2" />
+                </svg>
             </button>
 
             {open && hasSelection && (
@@ -499,16 +555,31 @@ const FilterActionsDropup = ({ hasSelection }) => {
                         Actions
                     </div>
                     <button
-                        onClick={() => setOpen(false)}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-[13px] font-semibold text-[#1a1a2e] hover:bg-gray-50 transition-colors"
+                        onClick={(e) => { 
+                            if (selectedCount > 1) {
+                                e.preventDefault();
+                                return;
+                            }
+                            setOpen(false); 
+                            if (onManage) onManage(); 
+                        }}
+                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-[13px] font-semibold transition-colors ${
+                            selectedCount > 1 
+                                ? 'text-gray-400 cursor-not-allowed bg-gray-50/50' 
+                                : 'text-[#1a1a2e] hover:bg-gray-50'
+                        }`}
+                        title={selectedCount > 1 ? "Only one animal can be edited at a time" : ""}
                     >
-                        <svg viewBox="0 0 24 24" className="h-4 w-4 text-[#1a1a2e]" fill="none" stroke="currentColor" strokeWidth="2">
+                        <svg viewBox="0 0 24 24" className={`h-4 w-4 ${selectedCount > 1 ? 'text-gray-400' : 'text-[#1a1a2e]'}`} fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                         </svg>
-                        Manage
+                        <div className="flex flex-col items-start leading-tight">
+                            <span>Edit</span>
+                            {selectedCount > 1 && <span className="text-[9px] font-bold text-red-500 mt-0.5">1 at a time</span>}
+                        </div>
                     </button>
                     <button
-                        onClick={() => setOpen(false)}
+                        onClick={() => { setOpen(false); if (onAssignWorker) onAssignWorker(); }}
                         className="flex w-full items-center gap-3 px-4 py-2.5 text-[13px] font-semibold text-[#1a1a2e] hover:bg-gray-50 transition-colors"
                     >
                         <svg viewBox="0 0 24 24" className="h-4 w-4 text-[#1a1a2e]" fill="none" stroke="currentColor" strokeWidth="2">
@@ -516,6 +587,14 @@ const FilterActionsDropup = ({ hasSelection }) => {
                         </svg>
                         Assign Worker
                     </button>
+                </div>
+            )}
+
+            {open && !hasSelection && (
+                <div className="absolute bottom-[52px] right-0 z-50 w-48 overflow-hidden rounded-xl border border-gray-100 bg-white p-4 shadow-2xl animate-in fade-in zoom-in duration-150">
+                    <p className="text-[13px] font-semibold text-center text-gray-500 leading-relaxed">
+                        Please choose an animal to manage.
+                    </p>
                 </div>
             )}
         </div>
@@ -562,6 +641,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
     const [loading, setLoading] = useState(false);
     const [hasFetched, setHasFetched] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [assignWorkerSidebarOpen, setAssignWorkerSidebarOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
 
@@ -743,7 +823,11 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                         onChange={setSelectedGroup}
                     />
 
-                    <FilterActionsDropup hasSelection={selectedIds.length > 0} />
+                    <FilterActionsDropup 
+                        selectedCount={selectedIds.length} 
+                        onManage={() => navigate(`/farm/details/${selectedIds[0]}/edit`)} 
+                        onAssignWorker={() => setAssignWorkerSidebarOpen(true)}
+                    />
                 </div>
 
                 {viewMode === 'grid' ? (
@@ -839,6 +923,12 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
             <ActivitySidebar
                 open={sidebarOpen}
                 onClose={() => setSidebarOpen(false)}
+                selectedIds={selectedIds}
+                navigate={navigate}
+            />
+            <AssignWorkerSidebar
+                open={assignWorkerSidebarOpen}
+                onClose={() => setAssignWorkerSidebarOpen(false)}
                 selectedIds={selectedIds}
                 navigate={navigate}
             />

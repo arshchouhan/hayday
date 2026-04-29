@@ -8,6 +8,7 @@ const searchTargets = [
     { label: 'Farm: Register Animal', to: '/farm/register' },
     { label: 'Farm: Activity', to: '/farm/activity' },
     { label: 'Farm: Groups', to: '/farm/groups' },
+    { label: 'Farm: Workers', to: '/farm/workers' },
     { label: 'Farm: Health', to: '/farm/health' },
     { label: 'Farm: Health Records', to: '/farm/health' },
     { label: 'Farm: Vaccinations', to: '/farm/health/vaccinations' },
@@ -19,6 +20,7 @@ const searchTargets = [
 const links = [
     { label: 'Location', to: '/farm/location' },
     { label: 'Groups', to: '/farm/groups' },
+    { label: 'Workers', to: '/farm/workers' },
     { label: 'Inventory', to: '/farm/inventory' },
 ];
 

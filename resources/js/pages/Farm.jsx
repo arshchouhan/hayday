@@ -12,6 +12,13 @@ import Livestock from '../components/ManageCattleDashboard';
 import RegisterAnimal from '../components/RegisterAnimal';
 import Pedigree from './Pedigree';
 import Location from './Location';
+import Groups from './Groups';
+import GroupDetail from './GroupDetail';
+import Inventory from './Inventory';
+import RestockInventory from './RestockInventory';
+import Workers from './Workers';
+import AddWorker from './AddWorker';
+import EditCattle from './EditCattle';
 import RecordHeat from './health/RecordHeat';
 import PregnancyCheck from './health/PregnancyCheck';
 import BreedingSoundnessExam from './health/BreedingSoundnessExam';
@@ -121,12 +128,7 @@ export default function Farm() {
         }
     }, [pathname, activeSection]);
 
-    const handleSidebarBackgroundClick = (e) => {
-        if (e.target === e.currentTarget) {
-            navigate(activeSection.rootPath);
-            setSelectedAnimal(null);
-        }
-    };
+    // Removed handleSidebarBackgroundClick to prevent redirecting to root on background click
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-[#D7E3EF]">
@@ -134,10 +136,7 @@ export default function Farm() {
             <main className="w-full flex-1 overflow-hidden px-3 pb-3 sm:px-4 sm:pb-4">
                 <div className="flex h-full min-h-0 flex-col gap-3 md:flex-row md:items-start">
                     <div className="flex flex-col md:h-full md:w-44 md:shrink-0 lg:w-48">
-                        <div
-                            className="flex-1 overflow-auto scrollbar-hide cursor-pointer"
-                            onClick={handleSidebarBackgroundClick}
-                        >
+                        <div className="flex-1 overflow-auto scrollbar-hide">
                             <SuboptionsSidebar
                                 section={activeSection.title}
                                 suboptions={activeSection.suboptions}
@@ -195,6 +194,14 @@ export default function Farm() {
                             <Route path="activity/*" element={<AnimalSelection />} />
                             <Route path="location" element={<Location />} />
                             <Route path="location/*" element={<Location />} />
+                            <Route path="details/:id/edit" element={<EditCattle />} />
+                            <Route path="groups" element={<Groups />} />
+                            <Route path="groups/:id" element={<GroupDetail />} />
+                            <Route path="workers" element={<Workers />} />
+                            <Route path="workers/add" element={<AddWorker />} />
+                            <Route path="inventory" element={<Inventory />} />
+                            <Route path="inventory/restock" element={<RestockInventory />} />
+                            <Route path="inventory/*" element={<Inventory />} />
                             {/* Health routes - Farm is also mounted at /health/* */}
                             <Route path="health" element={<div className="p-8 text-center text-gray-500">Health Component (Coming Soon)</div>} />
                             <Route path="vaccinations" element={<div className="p-8 text-center text-gray-500">Vaccinations (Coming Soon)</div>} />
