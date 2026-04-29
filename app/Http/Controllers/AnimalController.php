@@ -29,17 +29,22 @@ class AnimalController extends Controller
 
     public function show($id)
     {
-        $animal = Animal::with(['breed', 'location', 'group', 'sire', 'dam'])->find($id);
-        if (!$animal) {
-            $animal = Cattle::with(['breed', 'location', 'group', 'sire', 'dam'])->find($id);
-        }
-        if (!$animal) {
-            $animal = Sheep::with(['breed', 'location', 'group', 'sire', 'dam'])->find($id);
+        // Step 1: cheap ID-only lookup to identify the owning collection
+        $modelClass = null;
+        if (Animal::whereId($id)->exists()) {
+            $modelClass = Animal::class;
+        } elseif (Cattle::whereId($id)->exists()) {
+            $modelClass = Cattle::class;
+        } elseif (Sheep::whereId($id)->exists()) {
+            $modelClass = Sheep::class;
         }
 
-        if (!$animal) {
+        if (!$modelClass) {
             return response()->json(['message' => 'Animal not found'], 404);
         }
+
+        // Step 2: single eager-load only on the correct model
+        $animal = $modelClass::with(['breed', 'location', 'group', 'sire', 'dam'])->find($id);
 
         return response()->json($animal);
     }

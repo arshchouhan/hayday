@@ -9,7 +9,6 @@ import cowIcon from '../assets/noun-cow-8349503.svg';
 import sheepIcon from '../assets/noun-sheep-8349507.svg';
 import RegisterAnimal from './RegisterAnimal';
 import AnimalDetail from './AnimalDetail';
-import Loader from './Loader';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronRight, MapPin, Layers, Users, Grid, List } from 'lucide-react';
 
@@ -193,7 +192,7 @@ const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color,
 
 
 
-const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDeselectAll, onViewAnimal }) => {
+const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDeselectAll, onViewAnimal, onChooseActivity }) => {
     const isAllSelected = animals.length > 0 && animals.every(a => selectedIds.includes(a.id || a._id));
     const hasSelection = selectedIds.length > 0;
 
@@ -318,6 +317,7 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                     </button>
                     <button
                         disabled={!hasSelection}
+                        onClick={onChooseActivity}
                         className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${hasSelection ? 'bg-[#1a1a2e] text-white hover:bg-black shadow-md' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
                             }`}
                     >
@@ -329,6 +329,199 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
         </div>
     );
 };
+/* ══════════════════════════════════════════════════════════════════
+   ACTIVITY SIDEBAR
+══════════════════════════════════════════════════════════════════ */
+const ACTIVITIES = [
+    {
+        id: 'health', label: 'Animal Health & Treatment', color: '#059669', bg: '#ECFDF5',
+        icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20" /></svg>,
+        sub: ['Record Heat', 'Pregnancy Check', 'Breeding Soundness Exam', 'Observation'],
+    },
+    {
+        id: 'breeding', label: 'Breeding & Reproduction', color: '#7C3AED', bg: '#F5F3FF',
+        icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>,
+        sub: ['Breeding', 'Calving', 'Pregnancy Check'],
+    },
+    {
+        id: 'movement', label: 'Movement & Localization', color: '#D97706', bg: '#FFFBEB',
+        icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M12 8l4 4-4 4M8 12h7" /></svg>,
+        sub: ['Group Movement', 'Location Movement'],
+    },
+    {
+        id: 'sales', label: 'Sales & Records', color: '#DC2626', bg: '#FEF2F2',
+        icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>,
+        sub: ['Dead Animal Record', 'Feeding Sale', 'Weight Management'],
+    },
+];
+
+const SUB_ROUTE = {
+    'Record Heat': 'record-heat', 'Pregnancy Check': 'pregnancy-check',
+    'Breeding Soundness Exam': 'bse', 'Observation': 'observation',
+    'Breeding': 'breeding', 'Calving': 'calving',
+    'Group Movement': 'group-movement', 'Location Movement': 'location-movement',
+    'Dead Animal Record': 'dead-animal', 'Feeding Sale': 'feeding-sale', 'Weight Management': 'weight-management',
+};
+
+const ActivitySidebar = ({ open, onClose, selectedIds, navigate }) => {
+    const [expanded, setExpanded] = React.useState(null);
+
+    const handleRoute = (activityId, sub) => {
+        const animalId = selectedIds[0];
+        if (!animalId) return;
+        const subKey = SUB_ROUTE[sub];
+        navigate(`/farm/activity/${activityId}/${animalId}/${subKey}`);
+        onClose();
+    };
+
+    const handleCategoryRoute = (activityId) => {
+        const animalId = selectedIds[0];
+        if (!animalId) return;
+        navigate(`/farm/activity/${activityId}/${animalId}`);
+        onClose();
+    };
+
+    return (
+        <>
+            {/* Backdrop */}
+            {open && <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />}
+
+            {/* Sidebar */}
+            <div className={`fixed right-0 top-0 z-50 flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
+                open ? 'translate-x-0' : 'translate-x-full'
+            }`}>
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+                    <div>
+                        <h2 className="text-[16px] font-black text-[#1a1a2e]">Choose Activity</h2>
+                        <p className="text-[12px] text-gray-400 mt-0.5">
+                            {selectedIds.length} animal{selectedIds.length !== 1 ? 's' : ''} selected
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 text-gray-400 hover:border-gray-400 hover:text-gray-700 transition-all">
+                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 6 6 18M6 6l12 12" /></svg>
+                    </button>
+                </div>
+
+                {/* Activity list */}
+                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
+                    {ACTIVITIES.map((act) => (
+                        <div key={act.id} className="overflow-hidden rounded-xl border border-gray-100">
+                            {/* Category header */}
+                            <button
+                                onClick={() => setExpanded(expanded === act.id ? null : act.id)}
+                                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                            >
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: act.bg, color: act.color }}>
+                                    {act.icon}
+                                </div>
+                                <span className="flex-1 text-[13px] font-bold text-[#1a1a2e]">{act.label}</span>
+                                <svg viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${expanded === act.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m6 9 6 6 6-6" /></svg>
+                            </button>
+
+                            {/* Sub-options */}
+                            {expanded === act.id && (
+                                <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 space-y-0.5">
+                                    <button
+                                        onClick={() => handleCategoryRoute(act.id)}
+                                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[12px] font-bold hover:bg-white transition-colors" style={{ color: act.color }}
+                                    >
+                                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
+                                        Open Selector
+                                    </button>
+                                    {act.sub.map((s) => (
+                                        <button
+                                            key={s}
+                                            onClick={() => handleRoute(act.id, s)}
+                                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-gray-700 hover:bg-white hover:text-[#1a1a2e] transition-colors"
+                                        >
+                                            <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ background: act.color }} />
+                                            {s}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Footer note */}
+                <div className="border-t border-gray-100 px-5 py-3">
+                    <p className="text-[11px] text-gray-400">Activity will be applied to the first selected animal. Bulk support coming soon.</p>
+                </div>
+            </div>
+        </>
+    );
+};
+
+/* ══════════════════════════════════════════════════════════════════
+   FILTER / ACTIONS DROPUP
+══════════════════════════════════════════════════════════════════ */
+const FilterActionsDropup = ({ hasSelection }) => {
+    const [open, setOpen] = React.useState(false);
+    const ref = React.useRef(null);
+
+    React.useEffect(() => {
+        const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', close);
+        return () => document.removeEventListener('mousedown', close);
+    }, []);
+
+    return (
+        <div className="relative" ref={ref}>
+            <button
+                onClick={() => setOpen(o => !o)}
+                className={`relative flex h-[44px] w-[44px] items-center justify-center rounded-lg border shadow-sm transition-all ${
+                    hasSelection
+                        ? 'border-[#1a1a2e] bg-[#1a1a2e] text-white hover:bg-black'
+                        : 'border-[#80888F] bg-[#E9EEF6] text-gray-500 hover:bg-[#DDE7F3]'
+                }`}
+            >
+                {hasSelection ? (
+                    /* lightning bolt when active */
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                ) : (
+                    /* funnel when idle */
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" />
+                    </svg>
+                )}
+                {!hasSelection && (
+                    <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#1a1a2e] text-[9px] font-bold text-white shadow-md">1</span>
+                )}
+            </button>
+
+            {open && hasSelection && (
+                <div className="absolute bottom-[52px] right-0 z-50 w-48 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-2xl animate-in fade-in zoom-in duration-150">
+                    <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 border-b border-gray-100">
+                        Actions
+                    </div>
+                    <button
+                        onClick={() => setOpen(false)}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-[13px] font-semibold text-[#1a1a2e] hover:bg-gray-50 transition-colors"
+                    >
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 text-[#1a1a2e]" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                        </svg>
+                        Manage
+                    </button>
+                    <button
+                        onClick={() => setOpen(false)}
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-[13px] font-semibold text-[#1a1a2e] hover:bg-gray-50 transition-colors"
+                    >
+                        <svg viewBox="0 0 24 24" className="h-4 w-4 text-[#1a1a2e]" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                        </svg>
+                        Assign Worker
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
 export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }) {
     const navigate = useNavigate();
     const { pathname } = useLocation();
@@ -368,6 +561,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
     const [selectedIds, setSelectedIds] = useState([]);
     const [loading, setLoading] = useState(false);
     const [hasFetched, setHasFetched] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
 
@@ -435,10 +629,43 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
 
 
     if (loading && selectedAnimal === 'Animal Details') {
-        return <Loader message="Loading livestock database..." />;
+        return (
+            <section className="flex h-full w-full flex-col bg-[#F8FAFD] px-6 pt-6 pb-2 gap-6 overflow-hidden">
+                {/* Stat card skeletons */}
+                <div className="flex gap-4 shrink-0">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="h-[125px] w-[125px] shrink-0 rounded-xl border border-gray-200 bg-white animate-pulse" />
+                    ))}
+                </div>
+                {/* Search bar skeleton */}
+                <div className="flex gap-3 shrink-0">
+                    <div className="h-[44px] flex-1 rounded-lg bg-gray-200 animate-pulse" />
+                    <div className="h-[44px] w-[88px] rounded-lg bg-gray-200 animate-pulse" />
+                    <div className="h-[44px] w-[160px] rounded-lg bg-gray-200 animate-pulse" />
+                    <div className="h-[44px] w-[160px] rounded-lg bg-gray-200 animate-pulse" />
+                </div>
+                {/* Card skeletons */}
+                <div className="grid grid-cols-4 gap-6 overflow-hidden">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                        <div key={i} className="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-4">
+                            <div className="flex items-center gap-2">
+                                <div className="h-8 w-8 rounded-full bg-gray-200 animate-pulse" />
+                                <div className="h-5 w-24 rounded bg-gray-200 animate-pulse" />
+                            </div>
+                            <div className="flex gap-2">
+                                <div className="h-6 w-16 rounded-full bg-gray-100 animate-pulse" />
+                                <div className="h-6 w-20 rounded-full bg-gray-100 animate-pulse" />
+                            </div>
+                            <div className="h-4 w-28 rounded bg-gray-100 animate-pulse" />
+                        </div>
+                    ))}
+                </div>
+            </section>
+        );
     }
 
     const renderDashboard = () => {
+        /* eslint-disable no-use-before-define */
         const filteredAnimals = animals.filter(animal => {
             const matchesLocation = !selectedLocation || animal.location_id === selectedLocation;
             const matchesGroup = !selectedGroup || animal.group_id === selectedGroup;
@@ -450,6 +677,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
         const paginatedAnimals = filteredAnimals.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
         return (
+            <>
             <section className="flex h-full w-full flex-col bg-[#F8FAFD] px-6 pt-6 pb-2 gap-6 overflow-hidden">
                 <div className="flex flex-wrap items-start gap-4 shrink-0">
                     <StatCard
@@ -515,10 +743,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                         onChange={setSelectedGroup}
                     />
 
-                    <button className="relative flex h-[44px] w-[44px] items-center justify-center rounded-lg border border-[#80888F] bg-[#E9EEF6] text-gray-500 shadow-sm transition-all hover:bg-[#DDE7F3]">
-                        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z" /></svg>
-                        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#1a1a2e] text-[9px] font-bold text-white shadow-md">1</span>
-                    </button>
+                    <FilterActionsDropup hasSelection={selectedIds.length > 0} />
                 </div>
 
                 {viewMode === 'grid' ? (
@@ -588,6 +813,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                                 </button>
                                 <button
                                     disabled={selectedIds.length === 0}
+                                    onClick={() => setSidebarOpen(true)}
                                     className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${selectedIds.length > 0 ? 'bg-[#1a1a2e] text-white hover:bg-black shadow-md' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
                                         }`}
                                 >
@@ -605,9 +831,18 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                         onSelectAll={handleSelectAll}
                         onDeselectAll={handleDeselectAll}
                         onViewAnimal={handleViewAnimal}
+                        onChooseActivity={() => setSidebarOpen(true)}
                     />
                 )}
             </section>
+
+            <ActivitySidebar
+                open={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
+                selectedIds={selectedIds}
+                navigate={navigate}
+            />
+            </>
         );
     };
 

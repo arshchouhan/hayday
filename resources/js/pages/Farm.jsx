@@ -12,6 +12,18 @@ import Livestock from '../components/ManageCattleDashboard';
 import RegisterAnimal from '../components/RegisterAnimal';
 import Pedigree from './Pedigree';
 import Location from './Location';
+import RecordHeat from './health/RecordHeat';
+import PregnancyCheck from './health/PregnancyCheck';
+import BreedingSoundnessExam from './health/BreedingSoundnessExam';
+import Observation from './health/Observation';
+import BreedingForm from './breeding/Breeding';
+import Calving from './breeding/Calving';
+import BreedingPregnancyCheck from './breeding/PregnancyCheck';
+import GroupMovement from './movement/GroupMovement';
+import LocationMovement from './movement/LocationMovement';
+import DeadAnimalRecord from './sales/DeadAnimalRecord';
+import FeedingSale from './sales/FeedingSale';
+import WeightManagement from './sales/WeightManagement';
 
 
 const sectionConfigs = {
@@ -165,9 +177,21 @@ export default function Farm() {
                             <Route path="activity" element={<Activity />} />
                             <Route path="activity/:activityType" element={<AnimalSelection />} />
                             <Route path="activity/health/:animalId" element={<HealthActivity />} />
+                            <Route path="activity/health/:animalId/record-heat" element={<RecordHeat />} />
+                            <Route path="activity/health/:animalId/pregnancy-check" element={<PregnancyCheck />} />
+                            <Route path="activity/health/:animalId/bse" element={<BreedingSoundnessExam />} />
+                            <Route path="activity/health/:animalId/observation" element={<Observation />} />
                             <Route path="activity/breeding/:animalId" element={<BreedingActivity />} />
+                            <Route path="activity/breeding/:animalId/breeding" element={<BreedingForm />} />
+                            <Route path="activity/breeding/:animalId/calving" element={<Calving />} />
+                            <Route path="activity/breeding/:animalId/pregnancy-check" element={<BreedingPregnancyCheck />} />
                             <Route path="activity/movement/:animalId" element={<MovementActivity />} />
+                            <Route path="activity/movement/:animalId/group-movement" element={<GroupMovement />} />
+                            <Route path="activity/movement/:animalId/location-movement" element={<LocationMovement />} />
                             <Route path="activity/sales/:animalId" element={<SalesActivity />} />
+                            <Route path="activity/sales/:animalId/dead-animal" element={<DeadAnimalRecord />} />
+                            <Route path="activity/sales/:animalId/feeding-sale" element={<FeedingSale />} />
+                            <Route path="activity/sales/:animalId/weight-management" element={<WeightManagement />} />
                             <Route path="activity/*" element={<AnimalSelection />} />
                             <Route path="location" element={<Location />} />
                             <Route path="location/*" element={<Location />} />

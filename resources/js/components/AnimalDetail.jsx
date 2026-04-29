@@ -23,7 +23,6 @@ import PedigreeTree from './PedigreeTree';
 import Timeline from '../pages/Timeline';
 import Pedigree from '../pages/Pedigree';
 import AI from '../pages/AI';
-import Loader from './Loader';
 
 const FloatingLabel = ({ label }) => (
     <label className="absolute -top-3 left-3 bg-[#F8FAFD] px-1 text-[13px] font-bold text-[#1a1a2e] z-10">
@@ -116,7 +115,50 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
     }, [animalId]);
 
     if (loading) {
-        return <Loader message="Fetching animal records..." />;
+        return (
+            <section className="h-full min-h-0 w-full overflow-auto bg-[#F8FAFD] p-4 sm:p-8">
+                <div className="w-full max-w-4xl space-y-8">
+                    {/* Header skeleton */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="h-7 w-7 rounded-full bg-gray-200 animate-pulse" />
+                            <div className="h-9 w-9 rounded-xl bg-gray-200 animate-pulse" />
+                            <div className="space-y-1.5">
+                                <div className="h-5 w-32 rounded bg-gray-200 animate-pulse" />
+                                <div className="h-3.5 w-48 rounded bg-gray-100 animate-pulse" />
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <div className="h-8 w-20 rounded-full bg-gray-200 animate-pulse" />
+                            <div className="h-8 w-24 rounded-full bg-gray-200 animate-pulse" />
+                        </div>
+                    </div>
+                    {/* Tab skeleton */}
+                    <div className="flex gap-8 border-b border-gray-200 pb-0">
+                        {[80, 60, 100].map((w, i) => (
+                            <div key={i} className={`h-4 rounded animate-pulse mb-3 bg-gray-200`} style={{ width: w }} />
+                        ))}
+                    </div>
+                    {/* Field grid skeletons */}
+                    <div className="space-y-4">
+                        <div className="h-5 w-40 rounded bg-gray-200 animate-pulse" />
+                        <div className="grid grid-cols-3 gap-4">
+                            {Array.from({ length: 9 }).map((_, i) => (
+                                <div key={i} className="h-12 rounded-lg bg-gray-200 animate-pulse" />
+                            ))}
+                        </div>
+                    </div>
+                    <div className="space-y-4">
+                        <div className="h-5 w-48 rounded bg-gray-200 animate-pulse" />
+                        <div className="grid grid-cols-3 gap-4">
+                            {Array.from({ length: 6 }).map((_, i) => (
+                                <div key={i} className="h-12 rounded-lg bg-gray-100 animate-pulse" />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </section>
+        );
     }
 
     if (error || !animal) {
