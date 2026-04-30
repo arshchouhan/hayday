@@ -19,14 +19,12 @@ const PedigreeCard = ({
                         : "Click to provide pedigree information"
                     }
                 </p>
-                {!isLocked && (
-                    <button 
-                        onClick={onAdd}
-                        className="text-[13px] font-bold text-[#22a06b] hover:underline"
-                    >
-                        Click here
-                    </button>
-                )}
+                <button 
+                    onClick={onAdd}
+                    className="text-[13px] font-bold text-[#22a06b] hover:underline"
+                >
+                    Click here
+                </button>
             </div>
         );
     }

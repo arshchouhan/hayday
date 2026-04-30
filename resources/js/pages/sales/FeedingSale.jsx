@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import TreatmentFormShell, {
     SectionCard, FInput, FSelect, FTextarea, Attachments,
 } from '../../components/TreatmentFormShell';
 
 export default function FeedingSale() {
     const { animalId } = useParams();
+    const navigate     = useNavigate();
     const [sp]         = useSearchParams();
     const date         = sp.get('date') || new Date().toISOString().split('T')[0];
 
@@ -37,10 +38,29 @@ export default function FeedingSale() {
         setIsDirty(true);
     };
 
-    const handleSubmit = () => {
-        console.log('Feeding Sale submit:', { animalId, ...form });
-        setIsDirty(false);
-        alert('Feeding Sale saved!');
+    const handleSubmit = async () => {
+        try {
+            const response = await fetch('/api/farm/activities/sales', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    animal_id: animalId,
+                    type: 'sale',
+                    ...form
+                }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setIsDirty(false);
+                alert('Feeding Sale activity saved!');
+                navigate('/farm/details/' + animalId);
+            } else {
+                alert('Error: ' + (data.message || 'Failed to save record'));
+            }
+        } catch (error) {
+            console.error('Submit error:', error);
+            alert('An error occurred while saving the record.');
+        }
     };
 
     return (

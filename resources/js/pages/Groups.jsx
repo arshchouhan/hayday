@@ -1,16 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Search, ChevronDown, Filter, X } from 'lucide-react';
+import { Plus, Search, ChevronDown, Filter, X, Loader2 } from 'lucide-react';
 
 const GroupsPage = () => {
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [showModal, setShowModal] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [groups, setGroups] = useState([]);
+    const [newGroupName, setNewGroupName] = useState('');
 
-    const groups = [
-        { id: 1, name: "Arsh Chauhan", initials: 'AC', animalsCount: 0 }
-    ];
+    useEffect(() => {
+        fetchGroups();
+    }, []);
 
-    const navigate = useNavigate();
+    const fetchGroups = async () => {
+        try {
+            const res = await fetch('/api/farm/groups');
+            const data = await res.json();
+            setGroups(data);
+        } catch (err) {
+            console.error("Fetch groups error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSaveGroup = async () => {
+        if (!newGroupName.trim()) return;
+        setSaving(true);
+        try {
+            const res = await fetch('/api/farm/groups', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newGroupName })
+            });
+            if (res.ok) {
+                setNewGroupName('');
+                setShowModal(false);
+                fetchGroups();
+            }
+        } catch (err) {
+            console.error("Save group error:", err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const getInitials = (name) => {
+        return name
+            .split(' ')
+            .map(word => word[0])
+            .join('')
+            .toUpperCase()
+            .substring(0, 2);
+    };
+
+    const filteredGroups = groups.filter(g => 
+        g.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <div className="flex h-full flex-col bg-white relative">
@@ -61,28 +110,41 @@ const GroupsPage = () => {
 
             {/* Content Area */}
             <div className="flex-1 min-h-0 p-6 bg-gray-50/30 overflow-auto">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {groups.filter(g => g.name.toLowerCase().includes(searchQuery.toLowerCase())).map(group => (
-                        <div 
-                            key={group.id} 
-                            onClick={() => navigate(`/farm/groups/${group.id}`)}
-                            className="flex flex-col bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md hover:border-[#80888F] transition-all cursor-pointer"
-                        >
-                            <div className="flex items-start gap-4">
-                                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E9EEF6] text-[14px] font-bold text-[#1a1a2e]">
-                                    {group.initials}
-                                </div>
-                                <div className="flex flex-col mt-1">
-                                    <h3 className="text-[16px] font-bold text-[#1a1a2e]">{group.name}</h3>
-                                    <div className="mt-2 flex items-center gap-1.5 rounded-full bg-[#E9EEF6] px-3 py-1 w-fit">
-                                        <div className="h-2 w-2 rounded-full bg-[#10B981]"></div>
-                                        <span className="text-[11px] font-bold text-[#1a1a2e]">{group.animalsCount} Animals</span>
+                {loading ? (
+                    <div className="flex h-40 items-center justify-center">
+                        <Loader2 className="animate-spin text-[#059669]" size={32} />
+                    </div>
+                ) : filteredGroups.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-gray-400 gap-2">
+                        <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center">
+                            <Search size={24} />
+                        </div>
+                        <p className="text-[14px] font-bold">No groups found</p>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {filteredGroups.map(group => (
+                            <div 
+                                key={group._id || group.id} 
+                                onClick={() => navigate(`/farm/groups/${group._id || group.id}`)}
+                                className="flex flex-col bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md hover:border-[#80888F] transition-all cursor-pointer"
+                            >
+                                <div className="flex items-start gap-4">
+                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E9EEF6] text-[14px] font-bold text-[#1a1a2e]">
+                                        {getInitials(group.name)}
+                                    </div>
+                                    <div className="flex flex-col mt-1">
+                                        <h3 className="text-[16px] font-bold text-[#1a1a2e]">{group.name}</h3>
+                                        <div className="mt-2 flex items-center gap-1.5 rounded-full bg-[#E9EEF6] px-3 py-1 w-fit">
+                                            <div className="h-2 w-2 rounded-full bg-[#10B981]"></div>
+                                            <span className="text-[11px] font-bold text-[#1a1a2e]">{group.animals_count || 0} Animals</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Add Group Modal */}
@@ -106,6 +168,8 @@ const GroupsPage = () => {
                                 </label>
                                 <input 
                                     type="text" 
+                                    value={newGroupName}
+                                    onChange={(e) => setNewGroupName(e.target.value)}
                                     placeholder="Enter group name"
                                     className="w-full rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] placeholder:text-gray-300 shadow-sm transition-all"
                                 />
@@ -119,7 +183,12 @@ const GroupsPage = () => {
                             >
                                 Cancel
                             </button>
-                            <button className="rounded-full bg-[#1a1a2e] px-8 py-2 text-[14px] font-black text-white shadow-md hover:bg-black transition-all">
+                            <button 
+                                onClick={handleSaveGroup}
+                                disabled={saving || !newGroupName.trim()}
+                                className="rounded-full bg-[#1a1a2e] px-8 py-2 text-[14px] font-black text-white shadow-md hover:bg-black transition-all disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {saving && <Loader2 className="animate-spin" size={16} />}
                                 Save
                             </button>
                         </div>

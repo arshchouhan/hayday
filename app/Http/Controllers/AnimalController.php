@@ -73,6 +73,13 @@ class AnimalController extends Controller
             'yearling_weight' => 'nullable|numeric',
             'ownership' => 'nullable|in:purchased,raised',
             'notes' => 'nullable|string',
+            'sex' => 'nullable|string|max:255',
+            'breeding_status' => 'nullable|string|max:255',
+            'death_date' => 'nullable|date',
+            'death_cause' => 'nullable|string|max:255',
+            'castration_date' => 'nullable|date',
+            'castration_method' => 'nullable|string|max:255',
+            'donor_cow_id' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -109,13 +116,13 @@ class AnimalController extends Controller
 
     public function getFormData()
     {
-        $sires = Animal::whereIn('type', ['bull', 'ram'])->get(['id', 'ear_tag', 'animal_name'])
-            ->merge(Cattle::whereIn('type', ['bull', 'ram'])->get(['id', 'ear_tag', 'animal_name']))
-            ->merge(Sheep::whereIn('type', ['bull', 'ram'])->get(['id', 'ear_tag', 'animal_name']));
+        $sires = Animal::whereIn('type', ['bull', 'ram', 'steer'])->get(['id', 'ear_tag', 'animal_name'])
+            ->merge(Cattle::whereIn('type', ['bull', 'ram', 'steer'])->get(['id', 'ear_tag', 'animal_name']))
+            ->merge(Sheep::whereIn('type', ['bull', 'ram', 'steer'])->get(['id', 'ear_tag', 'animal_name']));
             
-        $dams = Animal::whereIn('type', ['cow', 'ewe'])->get(['id', 'ear_tag', 'animal_name'])
-            ->merge(Cattle::whereIn('type', ['cow', 'ewe'])->get(['id', 'ear_tag', 'animal_name']))
-            ->merge(Sheep::whereIn('type', ['cow', 'ewe'])->get(['id', 'ear_tag', 'animal_name']));
+        $dams = Animal::whereIn('type', ['cow', 'ewe', 'replacement_heifer'])->get(['id', 'ear_tag', 'animal_name'])
+            ->merge(Cattle::whereIn('type', ['cow', 'ewe', 'replacement_heifer'])->get(['id', 'ear_tag', 'animal_name']))
+            ->merge(Sheep::whereIn('type', ['cow', 'ewe', 'replacement_heifer'])->get(['id', 'ear_tag', 'animal_name']));
 
         return response()->json([
             'breeds' => Breed::all(),
@@ -124,5 +131,33 @@ class AnimalController extends Controller
             'sires' => $sires,
             'dams' => $dams,
         ]);
+    }
+
+    public function search(Request $request)
+    {
+        $type = $request->query('type'); // male or female
+        
+        $query = null;
+        if ($type === 'male') {
+            $types = ['bull', 'ram', 'steer'];
+        } else {
+            $types = ['cow', 'ewe', 'replacement_heifer'];
+        }
+
+        $results = Animal::whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name'])
+            ->merge(Cattle::whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name']))
+            ->merge(Sheep::whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name']));
+
+        return response()->json($results);
+    }
+
+    public function update(Request $request, $id)
+    {
+        // Find the animal across collections
+        $animal = Animal::find($id) ?? Cattle::find($id) ?? Sheep::find($id);
+        if (!$animal) return response()->json(['message' => 'Animal not found'], 404);
+
+        $animal->update($request->all());
+        return response()->json(['success' => true, 'data' => $animal]);
     }
 }

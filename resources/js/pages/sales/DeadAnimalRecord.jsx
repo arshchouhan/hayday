@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import TreatmentFormShell, {
     SectionCard, FInput, FSelect, FTextarea, Pill, Attachments,
 } from '../../components/TreatmentFormShell';
 
 export default function DeadAnimalRecord() {
     const { animalId } = useParams();
+    const navigate     = useNavigate();
     const [sp]         = useSearchParams();
     const date         = sp.get('date') || new Date().toISOString().split('T')[0];
 
@@ -29,10 +30,29 @@ export default function DeadAnimalRecord() {
     const set     = (key) => (e) => { setForm(f => ({ ...f, [key]: e.target.value })); setIsDirty(true); };
     const setPill = (key, val) =>   { setForm(f => ({ ...f, [key]: val }));            setIsDirty(true); };
 
-    const handleSubmit = () => {
-        console.log('Dead Animal Record submit:', { animalId, ...form });
-        setIsDirty(false);
-        alert('Dead Animal Record saved!');
+    const handleSubmit = async () => {
+        try {
+            const response = await fetch('/api/farm/activities/sales', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    animal_id: animalId,
+                    type: 'dead',
+                    ...form
+                }),
+            });
+            const data = await response.json();
+            if (data.success) {
+                setIsDirty(false);
+                alert('Dead Animal record saved!');
+                navigate('/farm/details/' + animalId);
+            } else {
+                alert('Error: ' + (data.message || 'Failed to save record'));
+            }
+        } catch (error) {
+            console.error('Submit error:', error);
+            alert('An error occurred while saving the record.');
+        }
     };
 
     return (

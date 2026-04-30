@@ -1,5 +1,5 @@
-import React from 'react';
-import { Calendar, Activity, Syringe, Move, Baby, ShoppingCart } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Activity, Syringe, Move, Baby, ShoppingCart, Plus } from 'lucide-react';
 
 const TimelineEvent = ({ event, isLast }) => {
     const icons = {
@@ -17,6 +17,7 @@ const TimelineEvent = ({ event, isLast }) => {
             <div className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 bg-white shadow-sm transition-all hover:scale-110 ${
                 event.type === 'vaccination' ? 'border-blue-400 text-blue-500' :
                 event.type === 'birth' ? 'border-green-400 text-green-500' :
+                event.type === 'movement' ? 'border-orange-400 text-orange-500' :
                 'border-gray-200 text-gray-400'
             }`}>
                 {icons[event.type] || icons.default}
@@ -32,8 +33,8 @@ const TimelineEvent = ({ event, isLast }) => {
                 <p className="text-[12px] font-medium text-gray-500 leading-relaxed max-w-lg">
                     {event.description}
                 </p>
-                {event.meta && (
-                    <div className="mt-2 flex gap-2">
+                {event.meta && Object.keys(event.meta).length > 0 && (
+                    <div className="mt-2 flex gap-2 flex-wrap">
                         {Object.entries(event.meta).map(([key, value]) => (
                             <span key={key} className="rounded-md bg-[#F8FAFD] border border-gray-100 px-2 py-0.5 text-[10px] font-bold text-[#1a1a2e]/60">
                                 {key}: {value}
@@ -47,36 +48,26 @@ const TimelineEvent = ({ event, isLast }) => {
 };
 
 export default function Timeline({ animal }) {
-    // Mock events for a premium look
-    const events = [
-        { 
-            type: 'birth', 
-            title: 'Born at Farm', 
-            date: 'Oct 12, 2023', 
-            description: `Successfully registered at the main pasture. Birth weight recorded at ${animal?.birth_weight || '35'} kg.`,
-            meta: { Status: 'Healthy', Method: animal?.conception || 'Natural' }
-        },
-        { 
-            type: 'vaccination', 
-            title: 'Standard Vaccination (FMD)', 
-            date: 'Nov 05, 2023', 
-            description: 'Routine foot and mouth disease vaccination administered by Dr. Arsh.',
-            meta: { Batch: 'B-9022', Next: 'May 2024' }
-        },
-        { 
-            type: 'movement', 
-            title: 'Transferred to West Pasture', 
-            date: 'Jan 15, 2024', 
-            description: 'Moved for better grazing management and social integration.',
-            meta: { From: 'Main', To: animal?.location?.name || 'West' }
-        },
-        { 
-            type: 'activity', 
-            title: 'Weight Measurement', 
-            date: 'Mar 10, 2024', 
-            description: `Current weight recorded at ${animal?.weight || '120kg'}. Showing positive growth trend.`,
-        }
-    ].reverse();
+    const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!animal?.id && !animal?._id) return;
+        const animalId = animal.id || animal._id;
+
+        fetch(`/api/farm/animals/${animalId}/timeline`)
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) {
+                    setEvents(res.data);
+                }
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Timeline fetch error:", err);
+                setLoading(false);
+            });
+    }, [animal]);
 
     return (
         <div className="flex h-full flex-col bg-white">
@@ -89,29 +80,33 @@ export default function Timeline({ animal }) {
             
             <div className="flex-1 overflow-y-auto p-10 scrollbar-hide">
                 <div className="mx-auto max-w-2xl">
-                    {events.map((event, i) => (
-                        <TimelineEvent 
-                            key={i} 
-                            event={event} 
-                            isLast={i === events.length - 1} 
-                        />
-                    ))}
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-20 gap-4">
+                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-100 border-t-blue-500" />
+                            <p className="text-[13px] font-bold text-gray-400">Loading history narrative...</p>
+                        </div>
+                    ) : events.length === 0 ? (
+                        <div className="text-center py-20">
+                            <p className="text-[14px] font-bold text-gray-400">No events recorded yet.</p>
+                        </div>
+                    ) : (
+                        events.map((event, i) => (
+                            <TimelineEvent 
+                                key={i} 
+                                event={event} 
+                                isLast={i === events.length - 1} 
+                            />
+                        ))
+                    )}
                     
-                    <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-100 py-6 text-[13px] font-bold text-gray-400 transition-all hover:border-blue-200 hover:bg-blue-50/30 hover:text-blue-500">
-                        <Plus size={16} />
-                        Add New Lifecycle Event
-                    </button>
+                    {!loading && (
+                        <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-100 py-6 text-[13px] font-bold text-gray-400 transition-all hover:border-blue-200 hover:bg-blue-50/30 hover:text-blue-500">
+                            <Plus size={16} />
+                            Add New Lifecycle Event
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
-    );
-}
-
-function Plus({ size }) {
-    return (
-        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
     );
 }

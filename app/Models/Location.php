@@ -8,7 +8,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Location extends Model
 {
     protected $connection = 'mongodb';
-    protected $fillable = ['name'];
+    protected $fillable = [
+        'name', 
+        'type', 
+        'sub_type', 
+        'area', 
+        'coordinates', 
+        'color', 
+        'status', 
+        'ownership', 
+        'water_source'
+    ];
+
+    protected $casts = [
+        'coordinates' => 'array',
+        'area' => 'float',
+    ];
 
     public function animals(): HasMany
     {

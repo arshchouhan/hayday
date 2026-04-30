@@ -28,7 +28,8 @@ export default function Navbar() {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const [searchQuery, setSearchQuery] = useState('');
-    const [showError, setShowError] = useState(false);
+    const [showQueryError, setShowQueryError] = useState(false);
+    const [showComingSoon, setShowComingSoon] = useState(false);
 
     useEffect(() => {
         const match = searchTargets.find(t => pathname === t.to);
@@ -48,18 +49,37 @@ export default function Navbar() {
 
             const match = searchTargets.find(t => t.label.toLowerCase().includes(query));
             if (match) {
-                setShowError(false);
+                setShowQueryError(false);
                 navigate(match.to);
                 setSearchQuery(`${match.label}: `);
             } else {
-                setShowError(true);
-                setTimeout(() => setShowError(false), 2500);
+                setShowQueryError(true);
+                setTimeout(() => setShowQueryError(false), 2500);
             }
         }
     };
 
+    const handleThemeClick = () => {
+        setShowComingSoon(true);
+        setTimeout(() => setShowComingSoon(false), 3000);
+    };
+
     return (
-        <header className="bg-transparent w-full">
+        <header className="bg-transparent w-full relative">
+            {/* Top Sliding Banner */}
+            <div className={`fixed left-0 right-0 top-0 z-[100] flex justify-center transition-all duration-500 ease-in-out ${showComingSoon ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
+                <div className="rounded-b-2xl bg-[#1a1a2e] px-8 py-2.5 text-[13px] font-black text-white shadow-2xl ring-1 ring-white/10">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#059669] text-white">
+                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <span>Dark Mode coming soon! Stay tuned.</span>
+                    </div>
+                </div>
+            </div>
+
             <div className="px-3 pt-3 pb-1 sm:px-4 w-full">
                 <div className="flex items-center gap-3 flex-row w-full">
                     <div className="flex items-center shrink-0 md:w-44 lg:w-48">
@@ -87,7 +107,7 @@ export default function Navbar() {
                                 onKeyDown={handleSearch}
                                 className="block w-full rounded-xl border-none bg-white py-3 pl-10 pr-3 text-sm font-semibold text-gray-700 shadow-md hover:shadow-lg ring-1 ring-black/10 transition-all focus:outline-none focus:ring-2 focus:ring-[#1a1a2e]/40 placeholder:text-gray-400"
                             />
-                            {showError && (
+                            {showQueryError && (
                                 <div className="absolute left-0 right-0 top-full mt-2 z-50 overflow-hidden rounded-xl bg-white shadow-[0_8px_30px_-4px_rgba(0,0,0,0.12)] ring-1 ring-black/5 transition-all animate-in fade-in slide-in-from-top-2">
                                     <div className="flex items-center gap-3 px-4 py-3">
                                         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#E9EEF6] text-gray-500">
@@ -128,8 +148,9 @@ export default function Navbar() {
                             <div className="flex items-center gap-2">
                                 <button
                                     type="button"
+                                    onClick={handleThemeClick}
                                     aria-label="Settings"
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-gray-700 hover:bg-200"
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-gray-700 hover:bg-black/5 transition-colors"
                                 >
                                     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                                         <path d="M12 3v2" />

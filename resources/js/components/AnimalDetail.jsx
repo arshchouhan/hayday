@@ -90,29 +90,79 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
     const [searchParams] = useSearchParams();
     const urlType = searchParams.get('type');
     const [animal, setAnimal] = useState(null);
+    const [summary, setSummary] = useState(null);
+    const [moveData, setMoveData] = useState({ history: [], total: 0 });
+    const [weightData, setWeightData] = useState([]);
+    const [costData, setCostData] = useState({ total: 0, average: 150 });
+    
+    const [movePeriod, setMovePeriod] = useState('3m');
+    const [weightPeriod, setWeightPeriod] = useState('3m');
+    const [costPeriod, setCostPeriod] = useState('3m');
+
     const [loading, setLoading] = useState(true);
+    const [moveLoading, setMoveLoading] = useState(false);
+    const [weightLoading, setWeightLoading] = useState(false);
+    const [costLoading, setCostLoading] = useState(false);
+    
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('details');
 
+    const fetchAnimalData = () => {
+        if (!animalId) return;
+        setLoading(true);
+        Promise.all([
+            fetch(`/api/farm/animals/${animalId}`).then(r => r.json()),
+            fetch(`/api/farm/animals/${animalId}/activity-summary`).then(r => r.json())
+        ]).then(([animalRes, summaryRes]) => {
+            setAnimal(animalRes);
+            if (summaryRes.success) setSummary(summaryRes.data);
+            setLoading(false);
+        }).catch(err => {
+            setError(err.message);
+            setLoading(false);
+        });
+    };
+
+    // Fetch Animal Details & Basic Summary (Once)
+    useEffect(() => {
+        fetchAnimalData();
+    }, [animalId]);
+
+    // Fetch Movement History
     useEffect(() => {
         if (!animalId) return;
-
-        setLoading(true);
-        fetch(`/api/farm/animals/${animalId}`)
+        setMoveLoading(true);
+        fetch(`/api/farm/animals/${animalId}/movement-history?period=${movePeriod}`)
+            .then(r => r.json())
             .then(res => {
-                if (!res.ok) throw new Error('Animal not found');
-                return res.json();
-            })
-            .then(data => {
-                setAnimal(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error("Error fetching animal details:", err);
-                setError(err.message);
-                setLoading(false);
+                if (res.success) setMoveData({ history: res.data, total: res.total });
+                setMoveLoading(false);
             });
-    }, [animalId]);
+    }, [animalId, movePeriod]);
+
+    // Fetch Weight History
+    useEffect(() => {
+        if (!animalId) return;
+        setWeightLoading(true);
+        fetch(`/api/farm/animals/${animalId}/weight-history?period=${weightPeriod}`)
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) setWeightData(res.data);
+                setWeightLoading(false);
+            });
+    }, [animalId, weightPeriod]);
+
+    // Fetch Cost Stats
+    useEffect(() => {
+        if (!animalId) return;
+        setCostLoading(true);
+        fetch(`/api/farm/animals/${animalId}/cost-stats?period=${costPeriod}`)
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) setCostData({ total: res.total, average: res.average });
+                setCostLoading(false);
+            });
+    }, [animalId, costPeriod]);
 
     if (loading) {
         return (
@@ -306,11 +356,11 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                     <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Value</span>
                                 </div>
                                 {[
-                                    { label: isSheep ? 'Total Lambing' : 'Total Calving', value: 'N/A' },
-                                    { label: isSheep ? 'Last Lambing Date' : 'Last Calving Date', value: 'N/A' },
-                                    { label: isSheep ? 'Lamb Survival Rate' : 'Calf Survival Rate', value: 'N/A' },
-                                    { label: 'Breeding Status', value: 'Exposed' },
-                                    { label: 'Last Treatment', value: 'N/A' },
+                                    { label: isSheep ? 'Total Lambing' : 'Total Calving', value: summary?.total_calving || 'N/A' },
+                                    { label: isSheep ? 'Last Lambing Date' : 'Last Calving Date', value: summary?.last_calving_date || 'N/A' },
+                                    { label: isSheep ? 'Lamb Survival Rate' : 'Calf Survival Rate', value: summary?.survival_rate || 'N/A' },
+                                    { label: 'Breeding Status', value: summary?.breeding_status || animal.breeding_status || 'Exposed' },
+                                    { label: 'Last Treatment', value: summary?.last_treatment || 'N/A' },
                                 ].map((row, i) => (
                                     <div key={i} className="flex items-center justify-between px-4 py-2.5 border-b border-[#6B7280]/20 last:border-b-0 hover:bg-[#F8FAFD] transition-colors">
                                         <div className="flex items-center gap-2.5">
@@ -344,19 +394,26 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                 {/* Tabs + Updated */}
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center rounded-lg border border-[#80888F]/20 bg-[#F8FAFD] p-1 gap-0">
-                                        {['3 Months', '6 Months', '12 Months'].map((period, i) => (
+                                        {[
+                                            { label: '3 Months', value: '3m' },
+                                            { label: '6 Months', value: '6m' },
+                                            { label: '12 Months', value: '12m' }
+                                        ].map((p) => (
                                             <button
-                                                key={period}
-                                                className={`rounded-md px-4 py-1.5 text-[12px] font-bold transition-all ${i === 0
+                                                key={p.value}
+                                                onClick={() => setMovePeriod(p.value)}
+                                                className={`rounded-md px-4 py-1.5 text-[12px] font-bold transition-all ${movePeriod === p.value
                                                         ? 'bg-[#1a1a2e] text-white shadow-sm'
                                                         : 'text-gray-500 hover:text-[#1a1a2e]'
                                                     }`}
                                             >
-                                                {period}
+                                                {p.label}
                                             </button>
                                         ))}
                                     </div>
-                                    <span className="text-[11px] font-medium text-gray-400">Updated just now</span>
+                                    <span className="text-[11px] font-medium text-gray-400">
+                                        {moveLoading ? 'Updating...' : 'Updated just now'}
+                                    </span>
                                 </div>
 
                                 {/* Bar Chart */}
@@ -384,27 +441,19 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
 
                                         {/* Bars */}
                                         <div className="absolute inset-0 flex items-end justify-around px-2 pb-0">
-                                            {[
-                                                { h: '60%', label: 'W1' },
-                                                { h: '80%', label: 'W2' },
-                                                { h: '75%', label: 'W3' },
-                                                { h: '40%', label: 'W4' },
-                                                { h: '20%', label: 'W5' },
-                                                { h: '50%', label: 'W6' },
-                                                { h: '90%', label: 'W7' },
-                                                { h: '65%', label: 'W8' },
-                                                { h: '30%', label: 'W9' },
-                                                { h: '15%', label: 'W10' },
-                                                { h: '10%', label: 'W11' },
-                                                { h: '5%', label: 'W12' },
-                                            ].map((bar, i) => (
-                                                <div key={i} className="flex flex-col items-center gap-0 flex-1">
-                                                    <div
-                                                        className="w-full max-w-[24px] rounded-t-md bg-[#f5a623] hover:bg-[#e69500] transition-colors cursor-pointer"
-                                                        style={{ height: bar.h }}
-                                                    />
-                                                </div>
-                                            ))}
+                                            {(moveData.history || []).map((bar, i) => {
+                                                const maxCount = Math.max(...(moveData.history.map(m => m.count) || [5]));
+                                                const heightPercent = maxCount > 0 ? (bar.count / maxCount) * 100 : 0;
+                                                return (
+                                                    <div key={i} className="flex flex-col items-center gap-0 flex-1">
+                                                        <div
+                                                            className="w-full max-w-[24px] rounded-t-md bg-[#f5a623] hover:bg-[#e69500] transition-colors cursor-pointer"
+                                                            style={{ height: `${heightPercent}%` }}
+                                                            title={`${bar.count} movements`}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>
@@ -412,8 +461,8 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                 {/* X-Axis Labels */}
                                 <div className="flex gap-0 pl-[50px]">
                                     <div className="flex-1 flex items-center justify-around">
-                                        {['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8', 'W9', 'W10', 'W11', 'W12'].map((w) => (
-                                            <span key={w} className="text-[10px] font-bold text-gray-400 flex-1 text-center">{w}</span>
+                                        {(moveData.history || []).map((bar, i) => (
+                                            <span key={i} className="text-[10px] font-bold text-gray-400 flex-1 text-center">{bar.label}</span>
                                         ))}
                                     </div>
                                 </div>
@@ -423,7 +472,7 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                     <div className="flex items-center gap-2">
                                         <div className="h-2.5 w-2.5 rounded-full bg-[#f5a623]" />
                                         <span className="text-[12px] font-bold text-[#1a1a2e]/70">Location Changes</span>
-                                        <span className="text-[12px] font-bold text-[#1a1a2e] ml-auto">0</span>
+                                        <span className="text-[12px] font-bold text-[#1a1a2e] ml-auto">{moveData.total || 0}</span>
                                     </div>
                                     <div className="flex items-center gap-2">
                                         <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
@@ -443,15 +492,20 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                     <span className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 text-[11px] text-gray-400 cursor-help">?</span>
                                 </span>
                                 <div className="flex items-center rounded-lg border border-[#80888F]/20 bg-[#F8FAFD] p-1 gap-0">
-                                    {['3 Months', '6 Months', '12 Months'].map((period, i) => (
+                                    {[
+                                        { label: '3 Months', value: '3m' },
+                                        { label: '6 Months', value: '6m' },
+                                        { label: '12 Months', value: '12m' }
+                                    ].map((p) => (
                                         <button
-                                            key={period}
-                                            className={`rounded-md px-4 py-1.5 text-[12px] font-bold transition-all ${i === 0
+                                            key={p.value}
+                                            onClick={() => setWeightPeriod(p.value)}
+                                            className={`rounded-md px-4 py-1.5 text-[12px] font-bold transition-all ${weightPeriod === p.value
                                                     ? 'bg-[#1a1a2e] text-white shadow-sm'
                                                     : 'text-gray-500 hover:text-[#1a1a2e]'
                                                 }`}
                                         >
-                                            {period}
+                                            {p.label}
                                         </button>
                                     ))}
                                 </div>
@@ -459,27 +513,53 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
 
                             {/* Summary */}
                             <div className="text-[13px]">
-                                <span className="font-bold text-[#1a1a2e] uppercase tracking-wider">Last 3 Months</span>
-                                <span className="ml-2 font-bold text-emerald-600">{animal.weight || '0.0'} kg</span>
-                                <span className="ml-1 text-gray-400">(0.0%)</span>
+                                <span className="font-bold text-[#1a1a2e] uppercase tracking-wider">
+                                    Last {weightPeriod === '3m' ? '3' : weightPeriod === '6m' ? '6' : '12'} Months
+                                </span>
+                                <span className="ml-2 font-bold text-emerald-600">
+                                    {weightData.length > 0 
+                                        ? weightData[weightData.length - 1].weight 
+                                        : animal.weight || '0.0'} kg
+                                </span>
                             </div>
 
-                            {/* Empty State */}
-                            <div className="flex flex-col items-center justify-center rounded-lg border border-[#80888F]/30 bg-[#F8FAFD] py-12 text-center space-y-4">
-                                <div className="text-[#1a1a2e]/40">
-                                    <svg viewBox="0 0 24 24" className="h-10 w-10 mx-auto" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                        <path d="M12 3v1m0 16v1m-8-9H3m18 0h-1M5.6 5.6l.7.7m12.1-.7-.7.7M5.6 18.4l.7-.7m12.1.7-.7-.7" />
-                                        <circle cx="12" cy="12" r="4" />
-                                        <path d="M12 8v4l2 2" />
-                                    </svg>
+                            {/* State */}
+                            {weightData.length > 0 ? (
+                                <div className="h-[150px] flex items-end justify-around border-b border-gray-100 pb-2">
+                                    {weightData.map((w, i) => {
+                                        const maxW = Math.max(...weightData.map(x => x.weight));
+                                        const h = (w.weight / maxW) * 100;
+                                        return (
+                                            <div key={i} className="flex flex-col items-center gap-1 group relative">
+                                                <div className="w-8 bg-emerald-500 rounded-t-sm hover:bg-emerald-600 transition-colors" 
+                                                     style={{ height: `${h}%` }} 
+                                                     title={`${w.label}: ${w.weight}kg on ${w.date}`} />
+                                                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">{w.label}</span>
+                                                <span className="text-[8px] text-gray-400">{w.date.split('-').slice(1).join('/')}</span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                <p className="text-[14px] font-bold text-gray-400">No Weight Records Available</p>
-                                <p className="text-[13px] text-gray-400 max-w-md">Start tracking your animals weight trends by recording a weight measurement activity</p>
-                                <button className="flex items-center gap-2 rounded-full border border-[#80888F] px-6 py-2 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#E9EEF6] transition-all">
-                                    <span className="text-lg leading-none">+</span>
-                                    Record Weight Measurement
-                                </button>
-                            </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center rounded-lg border border-[#80888F]/30 bg-[#F8FAFD] py-12 text-center space-y-4">
+                                    <div className="text-[#1a1a2e]/40">
+                                        <svg viewBox="0 0 24 24" className="h-10 w-10 mx-auto" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                            <path d="M12 3v1m0 16v1m-8-9H3m18 0h-1M5.6 5.6l.7.7m12.1-.7-.7.7M5.6 18.4l.7-.7m12.1.7-.7-.7" />
+                                            <circle cx="12" cy="12" r="4" />
+                                            <path d="M12 8v4l2 2" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-[14px] font-bold text-gray-400">{weightLoading ? 'Loading...' : 'No Weight Records Available'}</p>
+                                    <p className="text-[13px] text-gray-400 max-w-md">Start tracking your animals weight trends by recording a weight measurement activity</p>
+                                    <button 
+                                        onClick={() => navigate(`/farm/activity/sales/weight/${animalId}`)}
+                                        className="flex items-center gap-2 rounded-full border border-[#80888F] px-6 py-2 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#E9EEF6] transition-all"
+                                    >
+                                        <span className="text-lg leading-none">+</span>
+                                        Record Weight Measurement
+                                    </button>
+                                </div>
+                            )}
                         </div>
 
 
@@ -492,15 +572,20 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                     <span className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 text-[11px] text-gray-400 cursor-help">?</span>
                                 </span>
                                 <div className="flex items-center rounded-lg border border-[#80888F]/20 bg-[#F8FAFD] p-1 gap-0">
-                                    {['3 Months', '6 Months', '12 Months'].map((period, i) => (
+                                    {[
+                                        { label: '3 Months', value: '3m' },
+                                        { label: '6 Months', value: '6m' },
+                                        { label: '12 Months', value: '12m' }
+                                    ].map((p) => (
                                         <button
-                                            key={period}
-                                            className={`rounded-md px-4 py-1.5 text-[12px] font-bold transition-all ${i === 0
+                                            key={p.value}
+                                            onClick={() => setCostPeriod(p.value)}
+                                            className={`rounded-md px-4 py-1.5 text-[12px] font-bold transition-all ${costPeriod === p.value
                                                     ? 'bg-[#1a1a2e] text-white shadow-sm'
                                                     : 'text-gray-500 hover:text-[#1a1a2e]'
                                                 }`}
                                         >
-                                            {period}
+                                            {p.label}
                                         </button>
                                     ))}
                                 </div>
@@ -509,8 +594,10 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                             {/* Summary & Legend */}
                             <div className="space-y-5">
                                 <div className="flex items-baseline gap-3">
-                                    <span className="text-[28px] font-bold text-[#059669]">$324</span>
-                                    <span className="text-[14px] text-gray-500 font-medium">(Spending is 100.0% above farm average)</span>
+                                    <span className="text-[28px] font-bold text-[#059669]">${costData.total || 0}</span>
+                                    <span className="text-[14px] text-gray-500 font-medium">
+                                        (Spending is {costData.total > costData.average ? 'above' : 'below'} farm average)
+                                    </span>
                                 </div>
 
                                 <div className="flex items-center gap-6">
@@ -529,10 +616,7 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                             <div className="flex gap-0 pt-2">
                                 {/* Y-Axis Labels */}
                                 <div className="flex flex-col justify-between pr-3 py-1 text-right shrink-0 w-[50px]" style={{ height: '220px' }}>
-                                    <span className="text-[10px] font-bold text-gray-400">$400</span>
-                                    <span className="text-[10px] font-bold text-gray-400">$300</span>
-                                    <span className="text-[10px] font-bold text-gray-400">$200</span>
-                                    <span className="text-[10px] font-bold text-gray-400">$100</span>
+                                    <span className="text-[10px] font-bold text-gray-400">${Math.max(costData.total, costData.average, 100)}</span>
                                     <span className="text-[10px] font-bold text-gray-400">$0</span>
                                 </div>
 
@@ -552,13 +636,13 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                         <div className="flex flex-col items-center gap-0 w-12">
                                             <div
                                                 className="w-full rounded-t-lg bg-[#e76f51] transition-colors cursor-pointer hover:opacity-90"
-                                                style={{ height: '81%' }}
+                                                style={{ height: `${(costData.total / Math.max(costData.total, costData.average, 100)) * 100}%` }}
                                             />
                                         </div>
                                         <div className="flex flex-col items-center gap-0 w-12">
                                             <div
                                                 className="w-full rounded-t-lg bg-[#f4a261] transition-colors cursor-pointer hover:opacity-90"
-                                                style={{ height: '40.5%' }}
+                                                style={{ height: `${(costData.average / Math.max(costData.total, costData.average, 100)) * 100}%` }}
                                             />
                                         </div>
                                     </div>
@@ -569,7 +653,7 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                 )}
 
                 {activeTab === 'timeline' && <Timeline animal={animal} />}
-                {activeTab === 'pedigree' && <div className="h-[600px] rounded-xl overflow-hidden border border-[#80888F]/20"><PedigreeTree rootAnimal={animal} /></div>}
+                {activeTab === 'pedigree' && <div className="h-[600px] rounded-xl overflow-hidden border border-[#80888F]/20"><PedigreeTree rootAnimal={animal} onRefresh={fetchAnimalData} /></div>}
                 {activeTab === 'ai' && <AI animal={animal} />}
 
             </div>

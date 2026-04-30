@@ -32,12 +32,21 @@ class Animal extends Model
         'yearling_weight',
         'notes',
         'ownership',
+        'sex',
+        'breeding_status',
+        'death_date',
+        'death_cause',
+        'castration_date',
+        'castration_method',
+        'donor_cow_id',
     ];
 
     protected $casts = [
         'birth_date' => 'date',
         'weaning_date' => 'date',
         'yearling_date' => 'date',
+        'death_date' => 'date',
+        'castration_date' => 'date',
     ];
 
     public function breed(): BelongsTo

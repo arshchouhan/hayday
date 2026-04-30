@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import TreatmentFormShell, {
     SectionCard, FInput, FSelect, FTextarea, Pill, Attachments,
 } from '../../components/TreatmentFormShell';
 
 export default function Observation() {
     const { animalId } = useParams();
+    const navigate     = useNavigate();
     const [sp]         = useSearchParams();
     const date         = sp.get('date') || new Date().toISOString().split('T')[0];
 
@@ -18,6 +19,9 @@ export default function Observation() {
         followup_date:  '',
         vet_required:   'No',
         notes:          '',
+        cost:           '',
+        payment_date:   '',
+        vendor:         '',
     });
     const [isDirty, setIsDirty] = useState(false);
     const [attachments, setAttachments] = useState([]);
@@ -25,10 +29,31 @@ export default function Observation() {
     const set     = (key) => (e) => { setForm(f => ({ ...f, [key]: e.target.value })); setIsDirty(true); };
     const setPill = (key, val) =>   { setForm(f => ({ ...f, [key]: val }));            setIsDirty(true); };
 
-    const handleSubmit = () => {
-        console.log('Observation submit:', { animalId, ...form });
-        setIsDirty(false);
-        alert('Observation activity saved!');
+    const handleSubmit = async () => {
+        try {
+            const response = await fetch('/api/farm/health', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    animal_id: animalId,
+                    type: 'observation',
+                    ...form
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setIsDirty(false);
+                alert('Observation activity saved!');
+                navigate('/farm/details/' + animalId);
+            } else {
+                alert('Error: ' + (data.message || 'Failed to save record'));
+            }
+        } catch (error) {
+            console.error('Submit error:', error);
+            alert('An error occurred while saving the record.');
+        }
     };
 
     return (
@@ -56,6 +81,18 @@ export default function Observation() {
                 <div className="mt-5">
                     <Pill label="Vet Consultation Required" options={['Yes', 'No']}
                         value={form.vet_required} onChange={v => setPill('vet_required', v)} />
+                </div>
+            </SectionCard>
+
+            <SectionCard title="Cost & Payment">
+                <div className="grid grid-cols-3 gap-4">
+                    <FInput label="Cost" type="number" placeholder="0.00" suffix="$" info
+                        value={form.cost} onChange={set('cost')} />
+                    <FInput label="Payment Date" type="date"
+                        value={form.payment_date} onChange={set('payment_date')} />
+                    <FSelect label="Vendor" placeholder="Select vendor…"
+                        options={['Default Vendor', 'Vet Clinic', 'Pharma Supply', 'Agro-Vet']}
+                        value={form.vendor} onChange={set('vendor')} />
                 </div>
             </SectionCard>
 

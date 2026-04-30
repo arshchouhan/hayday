@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import TreatmentFormShell, {
     SectionCard, FInput, FSelect, FTextarea, Attachments,
 } from '../../components/TreatmentFormShell';
 
 export default function BreedingSoundnessExam() {
     const { animalId } = useParams();
+    const navigate     = useNavigate();
     const [sp]         = useSearchParams();
     const date         = sp.get('date') || new Date().toISOString().split('T')[0];
 
@@ -26,10 +27,31 @@ export default function BreedingSoundnessExam() {
 
     const set = (key) => (e) => { setForm(f => ({ ...f, [key]: e.target.value })); setIsDirty(true); };
 
-    const handleSubmit = () => {
-        console.log('BSE submit:', { animalId, ...form });
-        setIsDirty(false);
-        alert('Breeding Soundness Exam activity saved!');
+    const handleSubmit = async () => {
+        try {
+            const response = await fetch('/api/farm/health', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    animal_id: animalId,
+                    type: 'bse',
+                    ...form
+                }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                setIsDirty(false);
+                alert('BSE activity saved!');
+                navigate('/farm/details/' + animalId);
+            } else {
+                alert('Error: ' + (data.message || 'Failed to save record'));
+            }
+        } catch (error) {
+            console.error('Submit error:', error);
+            alert('An error occurred while saving the record.');
+        }
     };
 
     return (

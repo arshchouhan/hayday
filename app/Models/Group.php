@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Group extends Model
 {
     protected $connection = 'mongodb';
-    protected $fillable = ['name'];
+    protected $fillable = ['name', 'description'];
 
     public function animals(): HasMany
     {

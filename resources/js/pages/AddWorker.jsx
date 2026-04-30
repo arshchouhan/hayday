@@ -1,14 +1,99 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, Info, ChevronDown, DollarSign, User, Mail, ClipboardList } from 'lucide-react';
+import { ChevronLeft, Info, ChevronDown, DollarSign, User, Mail, ClipboardList, Loader2 } from 'lucide-react';
 
 const AddWorker = () => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+    const workerId = searchParams.get('workerId');
+    const isEditMode = !!workerId;
 
-    const [name, setName] = useState(searchParams.get('name') || '');
-    const [email, setEmail] = useState(searchParams.get('email') || '');
-    const isEditMode = searchParams.has('workerId');
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        animal_id: '',
+        group_id: '',
+        task: '',
+        cost: ''
+    });
+
+    const [animals, setAnimals] = useState([]);
+    const [groups, setGroups] = useState([]);
+    const [loading, setLoading] = useState(isEditMode);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        fetchResources();
+        if (isEditMode) {
+            fetchWorkerDetails();
+        }
+    }, [workerId]);
+
+    const fetchResources = async () => {
+        try {
+            const [animalsRes, groupsRes] = await Promise.all([
+                fetch('/api/farm/animals'),
+                fetch('/api/farm/groups')
+            ]);
+            setAnimals(await animalsRes.json());
+            setGroups(await groupsRes.json());
+        } catch (err) {
+            console.error("Fetch resources error:", err);
+        }
+    };
+
+    const fetchWorkerDetails = async () => {
+        try {
+            const res = await fetch(`/api/farm/workers/${workerId}`);
+            const data = await res.json();
+            setFormData({
+                name: data.name || '',
+                email: data.email || '',
+                animal_id: data.animal_id || '',
+                group_id: data.group_id || '',
+                task: data.task || '',
+                cost: data.cost || ''
+            });
+        } catch (err) {
+            console.error("Fetch worker error:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!formData.name || !formData.email) {
+            alert("Name and Email are required");
+            return;
+        }
+        setSaving(true);
+        try {
+            const url = isEditMode ? `/api/farm/workers/${workerId}` : '/api/farm/workers';
+            const method = isEditMode ? 'PUT' : 'POST';
+            
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+            
+            if (res.ok) {
+                navigate('/farm/workers');
+            }
+        } catch (err) {
+            console.error("Save worker error:", err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex h-full items-center justify-center bg-[#F8FAFD]">
+                <Loader2 className="animate-spin text-[#059669]" size={40} />
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-full flex-col bg-[#F8FAFD] rounded-xl overflow-auto p-4 sm:p-6 lg:p-8">
@@ -34,7 +119,12 @@ const AddWorker = () => {
                     >
                         Cancel
                     </button>
-                    <button className="rounded-full bg-[#1a1a2e] px-8 py-2.5 text-[14px] font-black text-white shadow-md hover:bg-black transition-all">
+                    <button 
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="rounded-full bg-[#1a1a2e] px-8 py-2.5 text-[14px] font-black text-white shadow-md hover:bg-black transition-all disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {saving && <Loader2 className="animate-spin" size={16} />}
                         {isEditMode ? 'Update Worker' : 'Save Worker'}
                     </button>
                 </div>
@@ -53,8 +143,8 @@ const AddWorker = () => {
                             <input 
                                 type="text" 
                                 placeholder="Enter full name"
-                                value={name}
-                                onChange={(e) => setName(e.target.value)}
+                                value={formData.name}
+                                onChange={(e) => setFormData({...formData, name: e.target.value})}
                                 className="w-full rounded-xl border border-gray-200 px-5 py-3.5 pl-12 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] placeholder:text-gray-300 bg-transparent relative z-0"
                             />
                             <User size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" />
@@ -70,8 +160,8 @@ const AddWorker = () => {
                             <input 
                                 type="email" 
                                 placeholder="worker@farm.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                value={formData.email}
+                                onChange={(e) => setFormData({...formData, email: e.target.value})}
                                 className="w-full rounded-xl border border-gray-200 px-5 py-3.5 pl-12 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] placeholder:text-gray-300 bg-transparent relative z-0"
                             />
                             <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" />
@@ -88,13 +178,17 @@ const AddWorker = () => {
                         </label>
                         <div className="relative">
                             <select 
-                                defaultValue=""
-                                className="w-full appearance-none rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] bg-transparent cursor-pointer relative z-0 text-gray-600"
+                                value={formData.animal_id}
+                                onChange={(e) => setFormData({...formData, animal_id: e.target.value})}
+                                className="w-full appearance-none rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] bg-transparent cursor-pointer relative z-0"
                             >
                                 <option value="" disabled>Select animals...</option>
-                                <option value="all" className="text-[#1a1a2e]">All Animals</option>
-                                <option value="12" className="text-[#1a1a2e]">Tag #12 (Bull)</option>
-                                <option value="45" className="text-[#1a1a2e]">Tag #45 (Cow)</option>
+                                <option value="all">All Animals</option>
+                                {animals.map(animal => (
+                                    <option key={animal._id || animal.id} value={animal._id || animal.id}>
+                                        {animal.internal_id || animal.ear_tag} ({animal.type})
+                                    </option>
+                                ))}
                             </select>
                             <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#1a1a2e] pointer-events-none z-0" />
                         </div>
@@ -107,13 +201,16 @@ const AddWorker = () => {
                         </label>
                         <div className="relative">
                             <select 
-                                defaultValue=""
-                                className="w-full appearance-none rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] bg-transparent cursor-pointer relative z-0 text-gray-600"
+                                value={formData.group_id}
+                                onChange={(e) => setFormData({...formData, group_id: e.target.value})}
+                                className="w-full appearance-none rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] bg-transparent cursor-pointer relative z-0"
                             >
                                 <option value="" disabled>Select group...</option>
-                                <option value="dairy" className="text-[#1a1a2e]">Dairy Herd</option>
-                                <option value="beef" className="text-[#1a1a2e]">Beef Cattle</option>
-                                <option value="calves" className="text-[#1a1a2e]">Weaned Calves</option>
+                                {groups.map(group => (
+                                    <option key={group._id || group.id} value={group._id || group.id}>
+                                        {group.name}
+                                    </option>
+                                ))}
                             </select>
                             <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#1a1a2e] pointer-events-none z-0" />
                         </div>
@@ -131,6 +228,8 @@ const AddWorker = () => {
                             <input 
                                 type="text" 
                                 placeholder="e.g. Morning Feeding & Milking"
+                                value={formData.task}
+                                onChange={(e) => setFormData({...formData, task: e.target.value})}
                                 className="w-full rounded-xl border border-gray-200 px-5 py-3.5 pl-12 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] placeholder:text-gray-300 bg-transparent relative z-0"
                             />
                             <ClipboardList size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" />
@@ -146,6 +245,8 @@ const AddWorker = () => {
                             <input 
                                 type="text" 
                                 placeholder="Enter cost"
+                                value={formData.cost}
+                                onChange={(e) => setFormData({...formData, cost: e.target.value})}
                                 className="w-full rounded-xl border border-gray-200 px-5 py-3.5 pl-12 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] placeholder:text-gray-300 bg-transparent relative z-0"
                             />
                             <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" />
