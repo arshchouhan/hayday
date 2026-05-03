@@ -11,7 +11,12 @@ class WorkerController extends Controller
 {
     public function index()
     {
-        return Worker::all();
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+        return Worker::where('user_id', $userId)->get();
     }
 
     public function store(Request $request)
@@ -26,6 +31,13 @@ class WorkerController extends Controller
         ]);
 
         $validated['status'] = 'Signed Up'; // Default status
+        
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+        $validated['user_id'] = $userId;
 
         $worker = Worker::create($validated);
 

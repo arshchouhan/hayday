@@ -10,11 +10,19 @@ class InventoryController extends Controller
 {
     public function index(Request $request)
     {
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+
         $type = $request->query('type', 'Feed');
         if ($type === 'History') {
-            return InventoryHistory::with('inventory')->latest()->get();
+            return InventoryHistory::whereHas('inventory', function($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })->with('inventory')->latest()->get();
         }
-        return Inventory::where('type', $type)->get();
+        return Inventory::where('user_id', $userId)->where('type', $type)->get();
     }
 
     public function store(Request $request)
@@ -27,6 +35,14 @@ class InventoryController extends Controller
         ]);
 
         $validated['quantity'] = 0; // Initialize empty
+        
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+        $validated['user_id'] = $userId;
+
         $item = Inventory::create($validated);
         return response()->json($item, 201);
     }

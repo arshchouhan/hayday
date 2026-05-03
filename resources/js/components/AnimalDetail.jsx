@@ -24,6 +24,8 @@ import Timeline from '../pages/Timeline';
 import Pedigree from '../pages/Pedigree';
 import AI from '../pages/AI';
 
+const ANIMAL_DETAIL_CACHE = new Map();
+
 const FloatingLabel = ({ label }) => (
     <label className="absolute -top-3 left-3 bg-[#F8FAFD] px-1 text-[13px] font-bold text-[#1a1a2e] z-10">
         {label}
@@ -109,13 +111,27 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
 
     const fetchAnimalData = () => {
         if (!animalId) return;
+
+        const cached = ANIMAL_DETAIL_CACHE.get(animalId);
+        if (cached) {
+            setAnimal(cached.animal);
+            setSummary(cached.summary);
+            setLoading(false);
+            return;
+        }
+
         setLoading(true);
         Promise.all([
             fetch(`/api/farm/animals/${animalId}`).then(r => r.json()),
             fetch(`/api/farm/animals/${animalId}/activity-summary`).then(r => r.json())
         ]).then(([animalRes, summaryRes]) => {
             setAnimal(animalRes);
-            if (summaryRes.success) setSummary(summaryRes.data);
+            const nextSummary = summaryRes.success ? summaryRes.data : null;
+            if (nextSummary) setSummary(nextSummary);
+            ANIMAL_DETAIL_CACHE.set(animalId, {
+                animal: animalRes,
+                summary: nextSummary,
+            });
             setLoading(false);
         }).catch(err => {
             setError(err.message);
@@ -186,7 +202,7 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                     {/* Tab skeleton */}
                     <div className="flex gap-8 border-b border-gray-200 pb-0">
                         {[80, 60, 100].map((w, i) => (
-                            <div key={i} className={`h-4 rounded animate-pulse mb-3 bg-gray-200`} style={{ width: w }} />
+                            <div key={i} className="mb-3 h-4 rounded animate-pulse bg-gray-200 w-[var(--tab-width)]" style={{ '--tab-width': `${w}px` }} />
                         ))}
                     </div>
                     {/* Field grid skeletons */}
@@ -419,7 +435,7 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                 {/* Bar Chart */}
                                 <div className="flex gap-0">
                                     {/* Y-Axis Labels */}
-                                    <div className="flex flex-col justify-between pr-3 py-1 text-right shrink-0 w-[50px]" style={{ height: '200px' }}>
+                                    <div className="flex flex-col justify-between pr-3 py-1 text-right shrink-0 w-[50px] h-[var(--chart-height)]" style={{ '--chart-height': '200px' }}>
                                         <span className="text-[10px] font-bold text-gray-400">5</span>
                                         <span className="text-[10px] font-bold text-gray-400">4</span>
                                         <span className="text-[10px] font-bold text-gray-400">3</span>
@@ -429,13 +445,13 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                     </div>
 
                                     {/* Bars Area */}
-                                    <div className="flex-1 relative border-l border-b border-[#80888F]/15" style={{ height: '200px' }}>
+                                    <div className="flex-1 relative border-l border-b border-[#80888F]/15 h-[var(--chart-height)]" style={{ '--chart-height': '200px' }}>
                                         {/* Horizontal grid lines */}
                                         {[0, 1, 2, 3, 4].map((i) => (
                                             <div
                                                 key={i}
-                                                className="absolute left-0 right-0 border-t border-dashed border-gray-100"
-                                                style={{ top: `${i * 20}%` }}
+                                                style={{ '--grid-top': `${i * 20}%` }}
+                                                className="absolute left-0 right-0 border-t border-dashed border-gray-100 top-[var(--grid-top)]"
                                             />
                                         ))}
 
@@ -447,8 +463,8 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                                 return (
                                                     <div key={i} className="flex flex-col items-center gap-0 flex-1">
                                                         <div
-                                                            className="w-full max-w-[24px] rounded-t-md bg-[#f5a623] hover:bg-[#e69500] transition-colors cursor-pointer"
-                                                            style={{ height: `${heightPercent}%` }}
+                                                            className="w-full max-w-[24px] rounded-t-md bg-[#f5a623] hover:bg-[#e69500] transition-colors cursor-pointer h-[var(--bar-height)]"
+                                                            style={{ '--bar-height': `${heightPercent}%` }}
                                                             title={`${bar.count} movements`}
                                                         />
                                                     </div>
@@ -531,8 +547,9 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                         const h = (w.weight / maxW) * 100;
                                         return (
                                             <div key={i} className="flex flex-col items-center gap-1 group relative">
-                                                <div className="w-8 bg-emerald-500 rounded-t-sm hover:bg-emerald-600 transition-colors" 
-                                                     style={{ height: `${h}%` }} 
+                                                <div
+                                                    className="w-8 bg-emerald-500 rounded-t-sm hover:bg-emerald-600 transition-colors h-[var(--bar-height)]"
+                                                    style={{ '--bar-height': `${h}%` }}
                                                      title={`${w.label}: ${w.weight}kg on ${w.date}`} />
                                                 <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter">{w.label}</span>
                                                 <span className="text-[8px] text-gray-400">{w.date.split('-').slice(1).join('/')}</span>
@@ -615,19 +632,19 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                             {/* Bar Chart (Vercel Style Background) */}
                             <div className="flex gap-0 pt-2">
                                 {/* Y-Axis Labels */}
-                                <div className="flex flex-col justify-between pr-3 py-1 text-right shrink-0 w-[50px]" style={{ height: '220px' }}>
+                                <div className="flex flex-col justify-between pr-3 py-1 text-right shrink-0 w-[50px] h-[var(--chart-height)]" style={{ '--chart-height': '220px' }}>
                                     <span className="text-[10px] font-bold text-gray-400">${Math.max(costData.total, costData.average, 100)}</span>
                                     <span className="text-[10px] font-bold text-gray-400">$0</span>
                                 </div>
 
                                 {/* Bars Area */}
-                                <div className="flex-1 relative border-l border-b border-[#80888F]/15" style={{ height: '220px' }}>
+                                <div className="flex-1 relative border-l border-b border-[#80888F]/15 h-[var(--chart-height)]" style={{ '--chart-height': '220px' }}>
                                     {/* Horizontal grid lines */}
                                     {[0, 1, 2, 3, 4].map((i) => (
                                         <div
                                             key={i}
-                                            className="absolute left-0 right-0 border-t border-dashed border-gray-100"
-                                            style={{ top: `${i * 25}%` }}
+                                                style={{ '--grid-top': `${i * 25}%` }}
+                                                className="absolute left-0 right-0 border-t border-dashed border-gray-100 top-[var(--grid-top)]"
                                         />
                                     ))}
 
@@ -635,14 +652,14 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                     <div className="absolute inset-0 flex items-end justify-center gap-24 px-10 pb-0">
                                         <div className="flex flex-col items-center gap-0 w-12">
                                             <div
-                                                className="w-full rounded-t-lg bg-[#e76f51] transition-colors cursor-pointer hover:opacity-90"
-                                                style={{ height: `${(costData.total / Math.max(costData.total, costData.average, 100)) * 100}%` }}
+                                                className="w-full rounded-t-lg bg-[#e76f51] transition-colors cursor-pointer hover:opacity-90 h-[var(--bar-height)]"
+                                                style={{ '--bar-height': `${(costData.total / Math.max(costData.total, costData.average, 100)) * 100}%` }}
                                             />
                                         </div>
                                         <div className="flex flex-col items-center gap-0 w-12">
                                             <div
-                                                className="w-full rounded-t-lg bg-[#f4a261] transition-colors cursor-pointer hover:opacity-90"
-                                                style={{ height: `${(costData.average / Math.max(costData.total, costData.average, 100)) * 100}%` }}
+                                                className="w-full rounded-t-lg bg-[#f4a261] transition-colors cursor-pointer hover:opacity-90 h-[var(--bar-height)]"
+                                                style={{ '--bar-height': `${(costData.average / Math.max(costData.total, costData.average, 100)) * 100}%` }}
                                             />
                                         </div>
                                     </div>

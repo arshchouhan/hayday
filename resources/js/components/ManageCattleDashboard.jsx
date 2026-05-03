@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import illustration from '../assets/no-enterprises.svg';
 import animalIcon from '../assets/noun-animals-13643.svg';
 import locationIcon from '../assets/noun-location-8084981.svg';
@@ -11,6 +11,19 @@ import RegisterAnimal from './RegisterAnimal';
 import AnimalDetail from './AnimalDetail';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronRight, MapPin, Layers, Users, Grid, List } from 'lucide-react';
+
+const DASHBOARD_CACHE = {
+    formData: null,
+    pages: new Map(),
+    uiState: null,
+};
+
+/** Call this on login / logout to prevent cross-user data leakage from the module cache. */
+export function clearDashboardCache() {
+    DASHBOARD_CACHE.formData = null;
+    DASHBOARD_CACHE.pages.clear();
+    DASHBOARD_CACHE.uiState = null;
+}
 
 const FilterDropdown = ({ label, value, options, onChange, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -192,13 +205,13 @@ const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color,
 
 
 
-const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDeselectAll, onViewAnimal, onChooseActivity }) => {
+const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDeselectAll, onViewAnimal, onChooseActivity, containerRef }) => {
     const isAllSelected = animals.length > 0 && animals.every(a => selectedIds.includes(a.id || a._id));
     const hasSelection = selectedIds.length > 0;
 
     return (
         <div className="flex flex-col flex-1 min-h-0 w-full overflow-hidden rounded-2xl border border-[#80888F]/20 bg-white shadow-sm">
-            <div className="flex-1 overflow-auto min-h-0">
+            <div ref={containerRef} className="flex-1 overflow-auto min-h-0">
                 <table className="w-full text-left border-collapse relative">
                     <thead className="sticky top-0 z-40">
                         <tr className="border-b border-gray-100 bg-[#F8FAFD]">
@@ -387,9 +400,8 @@ const ActivitySidebar = ({ open, onClose, selectedIds, navigate }) => {
             {open && <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]" />}
 
             {/* Sidebar */}
-            <div className={`fixed right-0 top-0 z-50 flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
-                open ? 'translate-x-0' : 'translate-x-full'
-            }`}>
+            <div className={`fixed right-0 top-0 z-50 flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'
+                }`}>
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                     <div>
@@ -470,9 +482,8 @@ const AssignWorkerSidebar = ({ open, onClose, selectedIds, navigate }) => {
             {open && <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]" />}
 
             {/* Sidebar */}
-            <div className={`fixed right-0 top-0 z-50 flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${
-                open ? 'translate-x-0' : 'translate-x-full'
-            }`}>
+            <div className={`fixed right-0 top-0 z-50 flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'
+                }`}>
                 <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                     <div>
                         <h2 className="text-[16px] font-black text-[#1a1a2e]">Assign Worker</h2>
@@ -488,7 +499,7 @@ const AssignWorkerSidebar = ({ open, onClose, selectedIds, navigate }) => {
                 <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
                     {ASSIGN_WORKERS_LIST.map((worker) => (
                         <div key={worker.id} className="overflow-hidden rounded-xl border border-gray-100 hover:border-[#059669] hover:shadow-sm transition-all cursor-pointer bg-white group"
-                             onClick={() => navigate(`/farm/workers/add?workerId=${worker.id}&name=${encodeURIComponent(worker.name)}&email=${encodeURIComponent(worker.email)}&animals=${selectedIds.join(',')}`)}
+                            onClick={() => navigate(`/farm/workers/add?workerId=${worker.id}&name=${encodeURIComponent(worker.name)}&email=${encodeURIComponent(worker.email)}&animals=${selectedIds.join(',')}`)}
                         >
                             <div className="flex items-center gap-3 px-4 py-3">
                                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E9EEF6] text-[14px] font-bold text-[#1a1a2e] group-hover:bg-[#059669] group-hover:text-white transition-colors">
@@ -501,8 +512,8 @@ const AssignWorkerSidebar = ({ open, onClose, selectedIds, navigate }) => {
                             </div>
                         </div>
                     ))}
-                    
-                    <button 
+
+                    <button
                         onClick={() => navigate('/farm/workers/add')}
                         className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-[#80888F] px-4 py-3 text-[13px] font-bold text-[#1a1a2e] hover:bg-gray-50 transition-colors"
                     >
@@ -533,11 +544,10 @@ const FilterActionsDropup = ({ selectedCount, onManage, onAssignWorker }) => {
         <div className="relative" ref={ref}>
             <button
                 onClick={() => setOpen(o => !o)}
-                className={`relative flex h-[44px] w-[44px] items-center justify-center rounded-lg border shadow-sm transition-all ${
-                    hasSelection
+                className={`relative flex h-[44px] w-[44px] items-center justify-center rounded-lg border shadow-sm transition-all ${hasSelection
                         ? 'border-[#1a1a2e] bg-[#1a1a2e] text-white hover:bg-black'
                         : 'border-[#80888F] bg-[#E9EEF6] text-gray-500 hover:bg-[#DDE7F3]'
-                }`}
+                    }`}
             >
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="4" x2="20" y1="21" y2="21" />
@@ -555,19 +565,18 @@ const FilterActionsDropup = ({ selectedCount, onManage, onAssignWorker }) => {
                         Actions
                     </div>
                     <button
-                        onClick={(e) => { 
+                        onClick={(e) => {
                             if (selectedCount > 1) {
                                 e.preventDefault();
                                 return;
                             }
-                            setOpen(false); 
-                            if (onManage) onManage(); 
+                            setOpen(false);
+                            if (onManage) onManage();
                         }}
-                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-[13px] font-semibold transition-colors ${
-                            selectedCount > 1 
-                                ? 'text-gray-400 cursor-not-allowed bg-gray-50/50' 
+                        className={`flex w-full items-center gap-3 px-4 py-2.5 text-[13px] font-semibold transition-colors ${selectedCount > 1
+                                ? 'text-gray-400 cursor-not-allowed bg-gray-50/50'
                                 : 'text-[#1a1a2e] hover:bg-gray-50'
-                        }`}
+                            }`}
                         title={selectedCount > 1 ? "Only one animal can be edited at a time" : ""}
                     >
                         <svg viewBox="0 0 24 24" className={`h-4 w-4 ${selectedCount > 1 ? 'text-gray-400' : 'text-[#1a1a2e]'}`} fill="none" stroke="currentColor" strokeWidth="2">
@@ -631,19 +640,61 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
     };
 
     const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
-    const [animals, setAnimals] = useState([]);
+    const [rawAnimals, setRawAnimals] = useState([]);
+    const [listData, setListData] = useState([]);
+    const [breeds, setBreeds] = useState([]);
     const [locations, setLocations] = useState([]);
     const [groups, setGroups] = useState([]);
-    const [selectedLocation, setSelectedLocation] = useState('');
-    const [selectedGroup, setSelectedGroup] = useState('');
-    const [searchQuery, setSearchQuery] = useState('');
+    const [totalAnimals, setTotalAnimals] = useState(0);
+    const [totalLocations, setTotalLocations] = useState(0);
+    const [totalGroups, setTotalGroups] = useState(0);
+    const [selectedLocation, setSelectedLocation] = useState(() => DASHBOARD_CACHE.uiState?.selectedLocation || '');
+    const [selectedGroup, setSelectedGroup] = useState(() => DASHBOARD_CACHE.uiState?.selectedGroup || '');
+    const [searchQuery, setSearchQuery] = useState(() => DASHBOARD_CACHE.uiState?.searchQuery || '');
+    const [searchText, setSearchText] = useState(() => DASHBOARD_CACHE.uiState?.searchQuery || '');
+    const searchDebounceRef = useRef(null);
+    const [backspaceActive, setBackspaceActive] = useState(false);
+    const backspaceReleaseRef = useRef(null);
     const [selectedIds, setSelectedIds] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [hasFetched, setHasFetched] = useState(false);
+    const hasCachedData = Boolean(DASHBOARD_CACHE.pages.size || DASHBOARD_CACHE.formData);
+    const [isLoading, setIsLoading] = useState(false);
+    
+    // We are effectively loading if the state says so OR if we just switched to this tab and have no cache
+    const loading = isLoading || (selectedAnimal === 'Animal Details' && !hasCachedData && !viewingAnimalId);
+
+    const [formDataLoaded, setFormDataLoaded] = useState(() => Boolean(DASHBOARD_CACHE.formData));
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [assignWorkerSidebarOpen, setAssignWorkerSidebarOpen] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
+    const [currentPage, setCurrentPage] = useState(() => DASHBOARD_CACHE.uiState?.currentPage || 1);
     const itemsPerPage = 12;
+    const [listPage, setListPage] = useState(1); // number of pages loaded in list mode
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const listContainerRef = useRef(null);
+
+    const animals = useMemo(() => {
+        const breedLookup = new Map(breeds.map(item => [String(item.id || item._id), item.name]));
+        const locationLookup = new Map(locations.map(item => [String(item.id || item._id), item.name]));
+        const groupLookup = new Map(groups.map(item => [String(item.id || item._id), item.name]));
+
+        const source = viewMode === 'list' ? listData : rawAnimals;
+
+        return source.map(animal => {
+            const animalId = animal.id || animal._id;
+            return {
+                ...animal,
+                id: animalId,
+                _id: animal._id || animal.id,
+                earTag: animal.ear_tag,
+                name: animal.animal_name,
+                brandName: animal.type,
+                weight: animal.birth_weight ? `${animal.birth_weight} kg` : 'N/A',
+                breed: breedLookup.get(String(animal.breed_id || animal.breed?.id || animal.breed?._id)) || animal.breed?.name || null,
+                location: locationLookup.get(String(animal.location_id || animal.location?.id || animal.location?._id)) || animal.location?.name || null,
+                group: groupLookup.get(String(animal.group_id || animal.group?.id || animal.group?._id)) || animal.group?.name || null,
+            };
+        });
+    }, [rawAnimals, listData, viewMode, breeds, locations, groups]);
 
     const handleToggleSelect = (id) => {
         setSelectedIds(prev =>
@@ -652,59 +703,208 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
     };
 
     const handleSelectAll = () => {
+        const pageIndex = viewMode === 'grid' ? currentPage : listPage;
         const paginatedIds = animals
-            .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+            .slice((pageIndex - 1) * itemsPerPage, pageIndex * itemsPerPage)
             .map(a => a.id || a._id);
         setSelectedIds(prev => [...new Set([...prev, ...paginatedIds])]);
     };
 
     const handleDeselectAll = () => {
+        const pageIndex = viewMode === 'grid' ? currentPage : listPage;
         const paginatedIds = animals
-            .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+            .slice((pageIndex - 1) * itemsPerPage, pageIndex * itemsPerPage)
             .map(a => a.id || a._id);
         setSelectedIds(prev => prev.filter(id => !paginatedIds.includes(id)));
     };
 
     useEffect(() => {
-        if (selectedAnimal === 'Animal Details' && !hasFetched) {
-            setLoading(true);
-
-            // Fetch animals
-            const fetchAnimals = fetch('/api/farm/animals').then(res => {
-                if (!res.ok) throw new Error('API failure');
-                return res.json();
-            });
-            // Fetch form data for filters
-            const fetchFormData = fetch('/api/farm/animals/form-data').then(res => {
-                if (!res.ok) throw new Error('API failure');
-                return res.json();
-            });
-
-            Promise.all([fetchAnimals, fetchFormData])
-                .then(([animalData, formData]) => {
-                    const mappedData = animalData.map(animal => ({
-                        ...animal,
-                        earTag: animal.ear_tag,
-                        name: animal.animal_name,
-                        brandName: animal.type,
-                        weight: animal.birth_weight ? `${animal.birth_weight} kg` : "N/A",
-                        breed: animal.breed?.name ?? null,
-                        location: animal.location?.name ?? null,
-                        group: animal.group?.name ?? null,
-                    }));
-                    setAnimals(mappedData);
-                    setLocations(formData.locations || []);
-                    setGroups(formData.groups || []);
-                    setLoading(false);
-                    setHasFetched(true);
-                })
-                .catch(err => {
-                    console.error("Error fetching dashboard data:", err);
-                    setLoading(false);
-                    setHasFetched(true);
-                });
+        if (selectedAnimal !== 'Animal Details' || formDataLoaded) {
+            return;
         }
-    }, [selectedAnimal, hasFetched]);
+
+        if (DASHBOARD_CACHE.formData) {
+            setBreeds(DASHBOARD_CACHE.formData.breeds || []);
+            setLocations(DASHBOARD_CACHE.formData.locations || []);
+            setGroups(DASHBOARD_CACHE.formData.groups || []);
+            setFormDataLoaded(true);
+            return;
+        }
+
+        fetch('/api/farm/animals/form-data')
+            .then(res => {
+                if (!res.ok) throw new Error('API failure');
+                return res.json();
+            })
+            .then(formData => {
+                DASHBOARD_CACHE.formData = formData;
+                setBreeds(formData.breeds || []);
+                setLocations(formData.locations || []);
+                setGroups(formData.groups || []);
+                setFormDataLoaded(true);
+            })
+            .catch(err => {
+                console.error('Error fetching dashboard filters:', err);
+                setFormDataLoaded(true);
+            });
+    }, [selectedAnimal, formDataLoaded]);
+
+    // Debounce search input to avoid re-rendering/fetching on every keystroke
+    useEffect(() => {
+        if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = setTimeout(() => {
+            if (!backspaceActive) {
+                setSearchQuery(searchText);
+                setCurrentPage(1);
+            }
+            // if backspace is active, commit will be done on release
+        }, 350);
+        return () => clearTimeout(searchDebounceRef.current);
+    }, [searchText, backspaceActive]);
+
+    // When backspace is released, commit the latest search after a short delay
+    useEffect(() => {
+        if (!backspaceActive) {
+            if (backspaceReleaseRef.current) clearTimeout(backspaceReleaseRef.current);
+            backspaceReleaseRef.current = setTimeout(() => {
+                setSearchQuery(searchText);
+                setCurrentPage(1);
+            }, 250);
+            return () => clearTimeout(backspaceReleaseRef.current);
+        }
+        return undefined;
+    }, [backspaceActive]);
+
+    // Grid-mode page fetch
+    useEffect(() => {
+        if (selectedAnimal !== 'Animal Details' || viewMode !== 'grid') {
+            return;
+        }
+
+        const params = new URLSearchParams({
+            page: String(currentPage),
+            per_page: String(itemsPerPage),
+        });
+
+        const searchTerm = searchQuery.trim();
+        if (searchTerm && searchTerm.length >= 2) params.set('search', searchTerm);
+        if (selectedLocation) params.set('location_id', selectedLocation);
+        if (selectedGroup) params.set('group_id', selectedGroup);
+
+        const cacheKey = params.toString();
+        const cachedPage = DASHBOARD_CACHE.pages.get(cacheKey);
+
+        if (cachedPage) {
+            setRawAnimals(cachedPage.data || []);
+            setTotalAnimals(cachedPage.meta?.total || 0);
+            setTotalLocations(cachedPage.meta?.location_count || 0);
+            setTotalGroups(cachedPage.meta?.group_count || 0);
+            setIsLoading(false);
+            return;
+        }
+
+        setIsLoading(true);
+
+        fetch(`/api/farm/animals/paginated?${cacheKey}`)
+            .then(res => {
+                if (!res.ok) throw new Error('API failure');
+                return res.json();
+            })
+            .then(response => {
+                DASHBOARD_CACHE.pages.set(cacheKey, response);
+                setRawAnimals(response.data || []);
+                setTotalAnimals(response.meta?.total || 0);
+                setTotalLocations(response.meta?.location_count || 0);
+                setTotalGroups(response.meta?.group_count || 0);
+                setIsLoading(false);
+            })
+            .catch(err => {
+                console.error('Error fetching dashboard data:', err);
+                setIsLoading(false);
+            });
+    }, [selectedAnimal, currentPage, searchQuery, selectedLocation, selectedGroup, viewMode]);
+
+    // List-mode incremental fetch (lazy loading)
+    const fetchListPage = async (page, append = true) => {
+        const params = new URLSearchParams({
+            page: String(page),
+            per_page: String(itemsPerPage),
+        });
+        const searchTerm = searchQuery.trim();
+        if (searchTerm && searchTerm.length >= 2) params.set('search', searchTerm);
+        if (selectedLocation) params.set('location_id', selectedLocation);
+        if (selectedGroup) params.set('group_id', selectedGroup);
+
+        const cacheKey = params.toString();
+        const cached = DASHBOARD_CACHE.pages.get(cacheKey);
+        try {
+            setIsLoadingMore(true);
+            let response;
+            if (cached) {
+                response = cached;
+            } else {
+                const res = await fetch(`/api/farm/animals/paginated?${cacheKey}`);
+                if (!res.ok) throw new Error('API failure');
+                response = await res.json();
+                DASHBOARD_CACHE.pages.set(cacheKey, response);
+            }
+
+            setTotalAnimals(response.meta?.total || 0);
+            setTotalLocations(response.meta?.location_count || 0);
+            setTotalGroups(response.meta?.group_count || 0);
+
+            const pageData = response.data || [];
+            setListData(prev => append ? [...prev, ...pageData] : pageData);
+            setHasMore((prevList) => {
+                const loadedSoFar = (append ? (listData.length + pageData.length) : pageData.length);
+                return loadedSoFar < (response.meta?.total || 0) && pageData.length === itemsPerPage;
+            });
+            setListPage(page);
+        } catch (err) {
+            console.error('Error fetching list page:', err);
+        } finally {
+            setIsLoadingMore(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedAnimal !== 'Animal Details' || viewMode !== 'list') return;
+
+        // Reset list when filters/search change
+        setListData([]);
+        setListPage(1);
+        setHasMore(true);
+        fetchListPage(1, false);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedAnimal, searchQuery, selectedLocation, selectedGroup, viewMode]);
+
+    // Scroll listener to load more when near bottom
+    useEffect(() => {
+        if (viewMode !== 'list') return;
+        const el = listContainerRef.current;
+        if (!el) return;
+
+        const onScroll = () => {
+            if (isLoadingMore || !hasMore) return;
+            const threshold = 240;
+            if (el.scrollTop + el.clientHeight >= el.scrollHeight - threshold) {
+                fetchListPage(listPage + 1, true);
+            }
+        };
+
+        el.addEventListener('scroll', onScroll);
+        return () => el.removeEventListener('scroll', onScroll);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viewMode, listContainerRef.current, isLoadingMore, hasMore, listPage]);
+
+    useEffect(() => {
+        DASHBOARD_CACHE.uiState = {
+            currentPage,
+            searchQuery,
+            selectedLocation,
+            selectedGroup,
+        };
+    }, [currentPage, searchQuery, selectedLocation, selectedGroup]);
 
 
 
@@ -746,192 +946,226 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
 
     const renderDashboard = () => {
         /* eslint-disable no-use-before-define */
-        const filteredAnimals = animals.filter(animal => {
-            const matchesLocation = !selectedLocation || animal.location_id === selectedLocation;
-            const matchesGroup = !selectedGroup || animal.group_id === selectedGroup;
-            const matchesSearch = !searchQuery || animal.earTag?.toLowerCase().includes(searchQuery.toLowerCase());
-            return matchesLocation && matchesGroup && matchesSearch;
-        });
-
-        const totalPages = Math.ceil(filteredAnimals.length / itemsPerPage);
-        const paginatedAnimals = filteredAnimals.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+        const totalPages = Math.max(1, Math.ceil(totalAnimals / itemsPerPage));
 
         return (
             <>
-            <section className="flex h-full w-full flex-col bg-[#F8FAFD] px-6 pt-6 pb-2 gap-6 overflow-hidden">
-                <div className="flex flex-wrap items-start gap-4 shrink-0">
-                    <StatCard
-                        label="Total Animals"
-                        count={animals.length.toString()}
-                        icon={<img src={animalIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
-                    />
-                    <StatCard
-                        label="Total Locations"
-                        count={[...new Set(animals.map(a => a.location_id))].filter(Boolean).length.toString()}
-                        icon={<img src={locationIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
-                    />
-                    <StatCard
-                        label="Total Groups"
-                        count={[...new Set(animals.map(a => a.group_id))].filter(Boolean).length.toString()}
-                        icon={<img src={groupIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
-                    />
-                    <StatCard
-                        label="Total Workers"
-                        count="12"
-                        icon={<img src={farmerIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
-                    />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3 shrink-0">
-                    <div className="relative flex-1 min-w-[250px]">
-                        <svg viewBox="0 0 24 24" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
-                        <input
-                            type="text"
-                            placeholder="Search animals by Ear Tag"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-[44px] w-full rounded-lg border border-[#80888F] bg-[#E9EEF6] pl-10 pr-4 text-[13px] text-[#1a1a2e] shadow-sm outline-none placeholder:text-gray-400 focus:ring-1 focus:ring-[#1a1a2e]"
-                        />
-                    </div>
-
-                    <div className="flex h-[44px] items-center rounded-lg border border-[#80888F] bg-[#E9EEF6] p-1 shadow-sm">
-                        <button
-                            onClick={() => setViewMode('grid')}
-                            className={`flex h-8 w-10 items-center justify-center rounded-md transition-all ${viewMode === 'grid' ? 'bg-[#1a1a2e] text-white shadow-sm' : 'text-gray-500 hover:bg-black/5'}`}
-                        >
-                            <Grid size={18} strokeWidth={2.5} />
-                        </button>
-                        <button
-                            onClick={() => setViewMode('list')}
-                            className={`flex h-8 w-10 items-center justify-center rounded-md transition-all ${viewMode === 'list' ? 'bg-[#1a1a2e] text-white shadow-sm' : 'text-gray-500 hover:bg-black/5'}`}
-                        >
-                            <List size={18} strokeWidth={2.5} />
-                        </button>
-                    </div>
-
-                    <FilterDropdown
-                        placeholder="Select location"
-                        value={selectedLocation}
-                        options={locations}
-                        onChange={setSelectedLocation}
-                    />
-
-                    <FilterDropdown
-                        placeholder="Select group"
-                        value={selectedGroup}
-                        options={groups}
-                        onChange={setSelectedGroup}
-                    />
-
-                    <FilterActionsDropup 
-                        selectedCount={selectedIds.length} 
-                        onManage={() => navigate(`/farm/details/${selectedIds[0]}/edit`)} 
-                        onAssignWorker={() => setAssignWorkerSidebarOpen(true)}
-                    />
-                </div>
-
-                {viewMode === 'grid' ? (
-                    <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
-                        <div className="flex-1 overflow-y-auto min-h-0 pr-2 pb-4">
-                            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                                {paginatedAnimals.map((animal, idx) => (
-                                    <AnimalCard
-                                        key={idx}
-                                        {...animal}
-                                        isSelected={selectedIds.includes(animal.id || animal._id)}
-                                        onToggleSelect={handleToggleSelect}
-                                        onViewAnimal={handleViewAnimal}
-                                    />
-                                ))}
-                            </div>
+                <section className="flex h-full w-full flex-col bg-[#F8FAFD] px-6 pt-6 pb-2 gap-6 overflow-hidden">
+                    <div className="flex items-start justify-between gap-4 shrink-0">
+                        <div className="flex flex-wrap items-start gap-4">
+                            <StatCard
+                                label="Total Animals"
+                                count={totalAnimals.toString()}
+                                icon={<img src={animalIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
+                            />
+                            <StatCard
+                                label="Total Locations"
+                                count={totalLocations.toString()}
+                                icon={<img src={locationIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
+                            />
+                            <StatCard
+                                label="Total Groups"
+                                count={totalGroups.toString()}
+                                icon={<img src={groupIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
+                            />
+                            <StatCard
+                                label="Total Workers"
+                                count="12"
+                                icon={<img src={farmerIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
+                            />
                         </div>
-                        {totalPages > 1 && (
-                            <div className="flex items-center justify-between border-t border-gray-200 pt-3 pb-1 shrink-0">
-                                <span className="text-sm font-medium text-gray-500">
-                                    Showing <span className="font-bold text-[#1a1a2e]">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-[#1a1a2e]">{Math.min(currentPage * itemsPerPage, animals.length)}</span> of <span className="font-bold text-[#1a1a2e]">{animals.length}</span> animals
-                                </span>
-                                <div className="flex gap-2">
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => { if (onSelectAnimal) onSelectAnimal('Register Animal'); }}
+                                className="hidden h-10 items-center justify-center rounded-lg bg-[#1a1a2e] px-4 py-2 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-black sm:flex"
+                            >
+                                + Register Animal
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3 shrink-0">
+                        <div className="relative flex-1 min-w-[250px]">
+                            <svg viewBox="0 0 24 24" className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg>
+                            <input
+                                type="text"
+                                placeholder="Search animals by Ear Tag"
+                                value={searchText}
+                                onChange={(e) => setSearchText(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === 'Backspace') setBackspaceActive(true); }}
+                                onKeyUp={(e) => { if (e.key === 'Backspace') setBackspaceActive(false); }}
+                                className="h-[44px] w-full rounded-lg border border-[#80888F] bg-[#E9EEF6] pl-10 pr-4 text-[13px] text-[#1a1a2e] shadow-sm outline-none placeholder:text-gray-400 focus:ring-1 focus:ring-[#1a1a2e]"
+                            />
+                        </div>
+
+                        <div className="flex h-[44px] items-center rounded-lg border border-[#80888F] bg-[#E9EEF6] p-1 shadow-sm">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`flex h-8 w-10 items-center justify-center rounded-md transition-all ${viewMode === 'grid' ? 'bg-[#1a1a2e] text-white shadow-sm' : 'text-gray-500 hover:bg-black/5'}`}
+                            >
+                                <Grid size={18} strokeWidth={2.5} />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`flex h-8 w-10 items-center justify-center rounded-md transition-all ${viewMode === 'list' ? 'bg-[#1a1a2e] text-white shadow-sm' : 'text-gray-500 hover:bg-black/5'}`}
+                            >
+                                <List size={18} strokeWidth={2.5} />
+                            </button>
+                        </div>
+
+                        {!formDataLoaded ? (
+                            <>
+                                <div className="h-[44px] min-w-[160px] rounded-lg bg-gray-200 animate-pulse" />
+                                <div className="h-[44px] min-w-[160px] rounded-lg bg-gray-200 animate-pulse" />
+                            </>
+                        ) : (
+                            <>
+                                {locations && locations.length > 0 ? (
+                                    <FilterDropdown
+                                        placeholder="Select location"
+                                        value={selectedLocation}
+                                        options={locations}
+                                        onChange={(value) => {
+                                            setSelectedLocation(value);
+                                            setCurrentPage(1);
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="flex h-[44px] min-w-[160px] items-center justify-center rounded-lg border border-[#80888F]/30 bg-white px-4 text-[13px] font-bold text-gray-400">
+                                        Unable to load locations
+                                    </div>
+                                )}
+
+                                {groups && groups.length > 0 ? (
+                                    <FilterDropdown
+                                        placeholder="Select group"
+                                        value={selectedGroup}
+                                        options={groups}
+                                        onChange={(value) => {
+                                            setSelectedGroup(value);
+                                            setCurrentPage(1);
+                                        }}
+                                    />
+                                ) : (
+                                    <div className="flex h-[44px] min-w-[160px] items-center justify-center rounded-lg border border-[#80888F]/30 bg-white px-4 text-[13px] font-bold text-gray-400">
+                                        Unable to load groups
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        <FilterActionsDropup
+                            selectedCount={selectedIds.length}
+                            onManage={() => navigate(`/farm/details/${selectedIds[0]}/edit`)}
+                            onAssignWorker={() => setAssignWorkerSidebarOpen(true)}
+                        />
+
+                    </div>
+
+                    {viewMode === 'grid' ? (
+                        <div className="flex flex-1 flex-col min-h-0 overflow-hidden">
+                            <div className="flex-1 overflow-y-auto min-h-0 pr-2 pb-4">
+                                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                                    {animals.map((animal, idx) => (
+                                        <AnimalCard
+                                            key={idx}
+                                            {...animal}
+                                            isSelected={selectedIds.includes(animal.id || animal._id)}
+                                            onToggleSelect={handleToggleSelect}
+                                            onViewAnimal={handleViewAnimal}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between border-t border-gray-200 pt-3 pb-1 shrink-0">
+                                    <span className="text-sm font-medium text-gray-500">
+                                        Showing <span className="font-bold text-[#1a1a2e]">{totalAnimals === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-[#1a1a2e]">{Math.min(currentPage * itemsPerPage, totalAnimals)}</span> of <span className="font-bold text-[#1a1a2e]">{totalAnimals}</span> animals
+                                    </span>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                            disabled={currentPage === 1}
+                                            className="rounded-lg border border-gray-300 bg-white px-4 py-1.5 text-sm font-bold text-[#1a1a2e] shadow-sm transition-all hover:bg-gray-50 disabled:opacity-50"
+                                        >
+                                            Previous
+                                        </button>
+                                        <button
+                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                            disabled={currentPage === totalPages}
+                                            className="rounded-lg border border-gray-300 bg-white px-4 py-1.5 text-sm font-bold text-[#1a1a2e] shadow-sm transition-all hover:bg-gray-50 disabled:opacity-50"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Control Panel for Grid View */}
+                            <div className="sticky bottom-0 z-40 flex items-center justify-between border-t border-gray-100 py-1.5 px-4 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] rounded-b-xl mt-4 shrink-0">
+                                <div className="text-[14px] font-bold text-[#1a1a2e]">
+                                    {selectedIds.length}/{totalAnimals} Animal Selected
+                                </div>
+                                <div className="flex items-center gap-3">
                                     <button
-                                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                        disabled={currentPage === 1}
-                                        className="rounded-lg border border-gray-300 bg-white px-4 py-1.5 text-sm font-bold text-[#1a1a2e] shadow-sm transition-all hover:bg-gray-50 disabled:opacity-50"
+                                        onClick={handleSelectAll}
+                                        className="rounded-full bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#D7E3EF] transition-all"
                                     >
-                                        Previous
+                                        Select all on this page
                                     </button>
                                     <button
-                                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                        disabled={currentPage === totalPages}
-                                        className="rounded-lg border border-gray-300 bg-white px-4 py-1.5 text-sm font-bold text-[#1a1a2e] shadow-sm transition-all hover:bg-gray-50 disabled:opacity-50"
+                                        onClick={handleDeselectAll}
+                                        className="rounded-full bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#D7E3EF] transition-all"
                                     >
-                                        Next
+                                        Deselect All
+                                    </button>
+                                    <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
+                                    <button
+                                        disabled={selectedIds.length === 0}
+                                        className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${selectedIds.length > 0 ? 'bg-red-50 text-red-600 hover:bg-red-100 shadow-sm' : 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
+                                            }`}
+                                    >
+                                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                                        Delete
+                                    </button>
+                                    <button
+                                        disabled={selectedIds.length === 0}
+                                        onClick={() => setSidebarOpen(true)}
+                                        className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${selectedIds.length > 0 ? 'bg-[#1a1a2e] text-white hover:bg-black shadow-md' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
+                                            }`}
+                                    >
+                                        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" /></svg>
+                                        Choose Activity
                                     </button>
                                 </div>
                             </div>
-                        )}
-                        {/* Control Panel for Grid View */}
-                        <div className="sticky bottom-0 z-40 flex items-center justify-between border-t border-gray-100 py-1.5 px-4 bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] rounded-b-xl mt-4 shrink-0">
-                            <div className="text-[14px] font-bold text-[#1a1a2e]">
-                                {selectedIds.length}/{animals.length} Animal Selected
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <button
-                                    onClick={handleSelectAll}
-                                    className="rounded-full bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#D7E3EF] transition-all"
-                                >
-                                    Select all on this page
-                                </button>
-                                <button
-                                    onClick={handleDeselectAll}
-                                    className="rounded-full bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#D7E3EF] transition-all"
-                                >
-                                    Deselect All
-                                </button>
-                                <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
-                                <button
-                                    disabled={selectedIds.length === 0}
-                                    className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${selectedIds.length > 0 ? 'bg-red-50 text-red-600 hover:bg-red-100 shadow-sm' : 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
-                                        }`}
-                                >
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                                    Delete
-                                </button>
-                                <button
-                                    disabled={selectedIds.length === 0}
-                                    onClick={() => setSidebarOpen(true)}
-                                    className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${selectedIds.length > 0 ? 'bg-[#1a1a2e] text-white hover:bg-black shadow-md' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
-                                        }`}
-                                >
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" /></svg>
-                                    Choose Activity
-                                </button>
-                            </div>
                         </div>
-                    </div>
-                ) : (
-                    <AnimalList
-                        animals={paginatedAnimals}
-                        selectedIds={selectedIds}
-                        onToggleSelect={handleToggleSelect}
-                        onSelectAll={handleSelectAll}
-                        onDeselectAll={handleDeselectAll}
-                        onViewAnimal={handleViewAnimal}
-                        onChooseActivity={() => setSidebarOpen(true)}
-                    />
-                )}
-            </section>
+                    ) : (
+                        <AnimalList
+                            containerRef={listContainerRef}
+                            animals={animals}
+                            selectedIds={selectedIds}
+                            onToggleSelect={handleToggleSelect}
+                            onSelectAll={handleSelectAll}
+                            onDeselectAll={handleDeselectAll}
+                            onViewAnimal={handleViewAnimal}
+                            onChooseActivity={() => setSidebarOpen(true)}
+                        />
+                    )}
+                </section>
 
-            <ActivitySidebar
-                open={sidebarOpen}
-                onClose={() => setSidebarOpen(false)}
-                selectedIds={selectedIds}
-                navigate={navigate}
-            />
-            <AssignWorkerSidebar
-                open={assignWorkerSidebarOpen}
-                onClose={() => setAssignWorkerSidebarOpen(false)}
-                selectedIds={selectedIds}
-                navigate={navigate}
-            />
+                <ActivitySidebar
+                    open={sidebarOpen}
+                    onClose={() => setSidebarOpen(false)}
+                    selectedIds={selectedIds}
+                    navigate={navigate}
+                />
+                <AssignWorkerSidebar
+                    open={assignWorkerSidebarOpen}
+                    onClose={() => setAssignWorkerSidebarOpen(false)}
+                    selectedIds={selectedIds}
+                    navigate={navigate}
+                />
             </>
         );
     };
@@ -968,7 +1202,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
     if (selectedAnimal === 'Register Animal') {
         return (
             <section className="h-full min-h-0 w-full overflow-auto bg-[#F8FAFD] p-4 sm:p-8">
-                <RegisterAnimal />
+                <RegisterAnimal onSelectAnimal={onSelectAnimal} />
             </section>
         );
     }

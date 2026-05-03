@@ -9,12 +9,25 @@ class LocationController extends Controller
 {
     public function index()
     {
-        return response()->json(Location::all());
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+        return response()->json(Location::where('user_id', $userId)->get());
     }
 
     public function store(Request $request)
     {
-        $location = Location::create($request->all());
+        $data = $request->all();
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+        $data['user_id'] = $userId;
+        
+        $location = Location::create($data);
         return response()->json($location, 201);
     }
 

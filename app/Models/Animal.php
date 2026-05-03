@@ -5,12 +5,16 @@ namespace App\Models;
 use MongoDB\Laravel\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\TenantScoped;
 
 class Animal extends Model
 {
+    use TenantScoped;
+
     protected $connection = 'mongodb';
     
     protected $fillable = [
+        'user_id',
         'ear_tag',
         'animal_name',
         'species',

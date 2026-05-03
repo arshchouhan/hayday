@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, Info, ChevronDown, DollarSign, User, Mail, ClipboardList, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 const AddWorker = () => {
     const navigate = useNavigate();
@@ -32,11 +33,11 @@ const AddWorker = () => {
     const fetchResources = async () => {
         try {
             const [animalsRes, groupsRes] = await Promise.all([
-                fetch('/api/farm/animals'),
-                fetch('/api/farm/groups')
+                axios.get('/api/farm/animals'),
+                axios.get('/api/farm/groups')
             ]);
-            setAnimals(await animalsRes.json());
-            setGroups(await groupsRes.json());
+            setAnimals(animalsRes.data);
+            setGroups(groupsRes.data);
         } catch (err) {
             console.error("Fetch resources error:", err);
         }
@@ -44,8 +45,8 @@ const AddWorker = () => {
 
     const fetchWorkerDetails = async () => {
         try {
-            const res = await fetch(`/api/farm/workers/${workerId}`);
-            const data = await res.json();
+            const res = await axios.get(`/api/farm/workers/${workerId}`);
+            const data = res.data;
             setFormData({
                 name: data.name || '',
                 email: data.email || '',
@@ -69,17 +70,12 @@ const AddWorker = () => {
         setSaving(true);
         try {
             const url = isEditMode ? `/api/farm/workers/${workerId}` : '/api/farm/workers';
-            const method = isEditMode ? 'PUT' : 'POST';
-            
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-            
-            if (res.ok) {
-                navigate('/farm/workers');
+            if (isEditMode) {
+                await axios.put(url, formData);
+            } else {
+                await axios.post(url, formData);
             }
+            navigate('/farm/workers');
         } catch (err) {
             console.error("Save worker error:", err);
         } finally {

@@ -4,11 +4,15 @@ namespace App\Models;
 
 use MongoDB\Laravel\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\TenantScoped;
 
 class Location extends Model
 {
+    use TenantScoped;
+
     protected $connection = 'mongodb';
     protected $fillable = [
+        'user_id',
         'name', 
         'type', 
         'sub_type', 

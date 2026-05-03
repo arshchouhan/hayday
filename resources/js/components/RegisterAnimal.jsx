@@ -244,13 +244,14 @@ const DateIcon = () => (
     </svg>
 );
 
-export default function RegisterAnimal() {
+export default function RegisterAnimal({ onSelectAnimal }) {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const [lookupData, setLookupData] = useState({ breeds: [], locations: [], groups: [], sires: [], dams: [] });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSwitchingModel, setIsSwitchingModel] = useState(false);
     const [errors, setErrors] = useState({});
+    const [showConfirmation, setShowConfirmation] = useState(false);
 
     const [formData, setFormData] = useState({
         ear_tag: '',
@@ -282,6 +283,19 @@ export default function RegisterAnimal() {
         castration_method: '',
         donor_cow_id: ''
     });
+
+    const handleBack = () => {
+        setShowConfirmation(true);
+    };
+
+    const confirmBack = () => {
+        if (onSelectAnimal) {
+            onSelectAnimal('Animal Details');
+        } else {
+            const root = pathname.startsWith('/farm') ? '/farm' : '/lifecycle';
+            navigate(`${root}/details`);
+        }
+    };
 
     const getStatusHelperText = (status) => {
         switch (status) {
@@ -398,20 +412,64 @@ export default function RegisterAnimal() {
                 </div>
             )}
 
+            {/* Confirmation Modal */}
+            {showConfirmation && (
+                <>
+                    <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={() => setShowConfirmation(false)} />
+                    <div className="fixed left-1/2 top-1/2 z-50 w-96 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-gray-100 bg-white shadow-2xl animate-in fade-in zoom-in">
+                        <div className="border-b border-gray-100 px-6 py-4">
+                            <h2 className="text-[18px] font-black text-[#1a1a2e]">Discard Changes?</h2>
+                        </div>
+                        <div className="px-6 py-4">
+                            <p className="text-[14px] font-medium text-gray-600">Are you sure you want to leave? Any unsaved changes will be lost.</p>
+                        </div>
+                        <div className="flex gap-3 border-t border-gray-100 px-6 py-4">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setShowConfirmation(false);
+                                }}
+                                className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                Keep Editing
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    confirmBack();
+                                }}
+                                className="flex-1 rounded-lg bg-red-50 px-4 py-2 text-[13px] font-bold text-red-600 hover:bg-red-100 transition-colors"
+                            >
+                                Discard
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+
             {/* Header Section */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-6">
-                <div>
-                    <h1 className="text-2xl font-black text-[#1a1a2e] tracking-tight">Add Animal</h1>
-                    <p className="text-[15px] font-medium text-gray-500">Add the relevant information of the animal.</p>
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={handleBack}
+                        disabled={isSubmitting || isSwitchingModel}
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 text-gray-600 hover:border-gray-400 hover:text-gray-900 transition-all disabled:opacity-50"
+                        title="Go back"
+                    >
+                        <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M15 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <div>
+                        <h1 className="text-2xl font-black text-[#1a1a2e] tracking-tight">Add Animal</h1>
+                        <p className="text-[15px] font-medium text-gray-500">Add the relevant information of the animal.</p>
+                    </div>
                 </div>
                 <div className="flex gap-3">
                     <button
-                        onClick={() => {
-                            const root = pathname.startsWith('/farm') ? '/farm' : '/lifecycle';
-                            navigate(`${root}/details`);
-                        }}
+                        onClick={handleBack}
                         disabled={isSubmitting || isSwitchingModel}
-                        className="rounded-full bg-gray-100 px-8 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200"
+                        className="rounded-full bg-gray-100 px-8 py-2 text-sm font-bold text-gray-600 hover:bg-gray-200 disabled:opacity-50"
                     >
                         Cancel
                     </button>

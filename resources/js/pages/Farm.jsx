@@ -32,15 +32,15 @@ import DeadAnimalRecord from './sales/DeadAnimalRecord';
 import FeedingSale from './sales/FeedingSale';
 import WeightManagement from './sales/WeightManagement';
 
-
 const sectionConfigs = {
     farm: {
         title: 'Lifecycle',
         rootPath: '/farm',
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
-            { key: 'register', label: 'Register Animal', to: '/farm/register' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
+            { key: 'groups', label: 'Groups', to: '/farm/groups' },
+            { key: 'workers', label: 'Workers', to: '/farm/workers' },
         ],
     },
     health: {
@@ -57,8 +57,9 @@ const sectionConfigs = {
         rootPath: '/farm/inventory',
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
-            { key: 'register', label: 'Register Animal', to: '/farm/register' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
+            { key: 'groups', label: 'Groups', to: '/farm/groups' },
+            { key: 'workers', label: 'Workers', to: '/farm/workers' },
             { key: 'inventory', label: 'Inventory', to: '/farm/inventory' },
         ],
     },
@@ -76,8 +77,9 @@ const sectionConfigs = {
         rootPath: '/farm/location',
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
-            { key: 'register', label: 'Register Animal', to: '/farm/register' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
+            { key: 'groups', label: 'Groups', to: '/farm/groups' },
+            { key: 'workers', label: 'Workers', to: '/farm/workers' },
             { key: 'location', label: 'Location', to: '/farm/location' },
         ],
     },
@@ -86,18 +88,37 @@ const sectionConfigs = {
         rootPath: '/farm/groups',
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
-            { key: 'register', label: 'Register Animal', to: '/farm/register' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
             { key: 'groups', label: 'Groups', to: '/farm/groups' },
+            { key: 'workers', label: 'Workers', to: '/farm/workers' },
         ],
     },
 };
 
+import { useAuth } from '../context/AuthContext';
+
 export default function Farm() {
     const { pathname } = useLocation();
     const navigate = useNavigate();
+    const { user, loading, logout } = useAuth();
+    const [loggingOut, setLoggingOut] = useState(false);
 
-    // Determine current active section - more specific matches first
+    // Redirect to login if not authenticated
+    useEffect(() => {
+        if (!loading && !user) {
+            navigate('/login');
+        }
+    }, [user, loading, navigate]);
+
+    const handleLogout = async () => {
+        setLoggingOut(true);
+        // Delay to show the peaceful transition
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await logout();
+        navigate('/login');
+    };
+
+    // Determine current active section
     let activeKey = 'farm';
     if (pathname.startsWith('/farm/location')) {
         activeKey = 'location';
@@ -112,23 +133,63 @@ export default function Farm() {
     }
     const activeSection = sectionConfigs[activeKey];
 
-    const [selectedAnimal, setSelectedAnimal] = useState(null);
+    const getSelectedAnimalFromPath = (currentPathname, currentSection) => {
+        if (currentPathname === currentSection.rootPath) return null;
+        const currentSub = [...currentSection.suboptions]
+            .sort((a, b) => b.to.length - a.to.length)
+            .find(opt => currentPathname.startsWith(opt.to));
+        return currentSub ? currentSub.label : null;
+    };
 
-    useEffect(() => {
-        if (pathname === activeSection.rootPath) {
-            setSelectedAnimal(null);
-        } else {
-            const currentSub = [...activeSection.suboptions]
-                .sort((a, b) => b.to.length - a.to.length)
-                .find(opt => pathname.startsWith(opt.to));
+    // Derive selectedAnimal from URL to prevent state jitter
+    const selectedAnimal = getSelectedAnimalFromPath(pathname, activeSection);
+    
+    // State only for confirmation flow
+    const [showNavConfirmation, setShowNavConfirmation] = useState(false);
+    const [pendingNavigation, setPendingNavigation] = useState(null);
 
-            if (currentSub) {
-                setSelectedAnimal(currentSub.label);
-            }
+    const handleSelectAnimal = (animalLabel) => {
+        if (pathname === '/farm/register') {
+            setPendingNavigation(animalLabel);
+            setShowNavConfirmation(true);
         }
-    }, [pathname, activeSection]);
+    };
 
-    // Removed handleSidebarBackgroundClick to prevent redirecting to root on background click
+    const confirmNavigation = () => {
+        const option = activeSection.suboptions.find(opt => opt.label === pendingNavigation);
+        if (option) navigate(option.to);
+        setShowNavConfirmation(false);
+        setPendingNavigation(null);
+    };
+
+    const cancelNavigation = () => {
+        setShowNavConfirmation(false);
+        setPendingNavigation(null);
+    };
+
+    if (loggingOut) {
+        return (
+            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#1a1a2e] animate-in fade-in duration-1000">
+                <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-white/10 shadow-[0_0_50px_rgba(255,255,255,0.1)]">
+                    <svg viewBox="0 0 24 24" className="h-10 w-10 text-white animate-pulse" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1-8.313-12.454z" />
+                    </svg>
+                </div>
+                <h1 className="text-2xl font-black text-white tracking-tight italic">Goodnight Farm...</h1>
+                <p className="mt-2 text-white/40 text-sm font-medium">Progress saved securely</p>
+            </div>
+        );
+    }
+
+    if (loading) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-[#D7E3EF]">
+                <div className="text-[15px] font-black text-[#1a1a2e] animate-pulse">Loading HayDay...</div>
+            </div>
+        );
+    }
+
+    if (!user) return null;
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-[#D7E3EF]">
@@ -141,15 +202,16 @@ export default function Farm() {
                                 section={activeSection.title}
                                 suboptions={activeSection.suboptions}
                                 selectedAnimal={selectedAnimal}
-                                onSelectAnimal={setSelectedAnimal}
+                                onSelectAnimal={handleSelectAnimal}
                                 rootPath={activeSection.rootPath}
                             />
                         </div>
-                        <div className="mt-auto pt-4">
+
+                        <div className="pt-3">
                             <button
                                 type="button"
                                 className="group flex items-center rounded-xl bg-white p-3 text-sm font-semibold text-gray-700 shadow-[0_8px_20px_-4px_rgba(0,0,0,0.1)] ring-1 ring-black/10 transition-all duration-300 ease-in-out hover:w-full hover:bg-gray-50 hover:shadow-lg"
-                                onClick={() => console.log('Logging out...')}
+                                onClick={handleLogout}
                             >
                                 <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                                     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
@@ -162,15 +224,13 @@ export default function Farm() {
                     </div>
 
                     <section className="h-full min-h-0 w-full min-w-0 overflow-auto rounded-md bg-[#E9EEF6] p-0">
-                        {/* Nested Routes handle all sub-page navigation */}
                         <Routes>
-                            {/* Farm / Lifecycle routes */}
-                            <Route index element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />} />
-                            <Route path="details" element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />} />
-                            <Route path="details/:id" element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />} />
+                            <Route index element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={handleSelectAnimal} />} />
+                            <Route path="details" element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={handleSelectAnimal} />} />
+                            <Route path="details/:id" element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={handleSelectAnimal} />} />
                             <Route path="register" element={
                                 <section className="h-full min-h-0 w-full overflow-auto bg-[#F8FAFD] p-4 sm:p-8">
-                                    <RegisterAnimal />
+                                    <RegisterAnimal onSelectAnimal={handleSelectAnimal} />
                                 </section>
                             } />
                             <Route path="activity" element={<Activity />} />
@@ -191,9 +251,7 @@ export default function Farm() {
                             <Route path="activity/sales/:animalId/dead-animal" element={<DeadAnimalRecord />} />
                             <Route path="activity/sales/:animalId/feeding-sale" element={<FeedingSale />} />
                             <Route path="activity/sales/:animalId/weight-management" element={<WeightManagement />} />
-                            <Route path="activity/*" element={<AnimalSelection />} />
                             <Route path="location" element={<Location />} />
-                            <Route path="location/*" element={<Location />} />
                             <Route path="details/:id/edit" element={<EditCattle />} />
                             <Route path="groups" element={<Groups />} />
                             <Route path="groups/:id" element={<GroupDetail />} />
@@ -201,17 +259,26 @@ export default function Farm() {
                             <Route path="workers/add" element={<AddWorker />} />
                             <Route path="inventory" element={<Inventory />} />
                             <Route path="inventory/restock" element={<RestockInventory />} />
-                            <Route path="inventory/*" element={<Inventory />} />
-                            {/* Health routes - Farm is also mounted at /health/* */}
-                            <Route path="health" element={<div className="p-8 text-center text-gray-500">Health Component (Coming Soon)</div>} />
-                            <Route path="vaccinations" element={<div className="p-8 text-center text-gray-500">Vaccinations (Coming Soon)</div>} />
-                            <Route path="treatments" element={<div className="p-8 text-center text-gray-500">Treatments (Coming Soon)</div>} />
-                            {/* Pedigree routes */}
-                            <Route path="pedigree" element={<Pedigree />} />
-                            <Route path="pedigree/*" element={<Pedigree />} />
-                            {/* Fallback */}
-                            <Route path="*" element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={setSelectedAnimal} />} />
+                            <Route path="*" element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={handleSelectAnimal} />} />
                         </Routes>
+
+                        {showNavConfirmation && (
+                            <>
+                                <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={cancelNavigation} />
+                                <div className="fixed left-1/2 top-1/2 z-50 w-96 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-gray-100 bg-white shadow-2xl animate-in fade-in zoom-in">
+                                    <div className="border-b border-gray-100 px-6 py-4">
+                                        <h2 className="text-[18px] font-black text-[#1a1a2e]">Discard Changes?</h2>
+                                    </div>
+                                    <div className="px-6 py-4">
+                                        <p className="text-[14px] font-medium text-gray-600">Are you sure you want to leave? Any unsaved changes will be lost.</p>
+                                    </div>
+                                    <div className="flex gap-3 border-t border-gray-100 px-6 py-4">
+                                        <button onClick={cancelNavigation} className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50 transition-colors">Keep Editing</button>
+                                        <button onClick={confirmNavigation} className="flex-1 rounded-lg bg-red-50 px-4 py-2 text-[13px] font-bold text-red-600 hover:bg-red-100 transition-colors">Discard</button>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </section>
                 </div>
             </main>

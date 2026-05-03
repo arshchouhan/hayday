@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, LayoutGrid, List, Plus, X, Check, ChevronDown, Loader2 } from 'lucide-react';
+import axios from 'axios';
 import illustration from '../assets/no-enterprises.svg';
 
 const InventoryPage = () => {
@@ -25,12 +26,11 @@ const InventoryPage = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/farm/inventory?type=${activeTab === 'Inventory History' ? 'History' : activeTab}`);
-            const data = await res.json();
+            const res = await axios.get(`/api/farm/inventory?type=${activeTab === 'Inventory History' ? 'History' : activeTab}`);
             if (activeTab === 'Inventory History') {
-                setHistory(data);
+                setHistory(res.data);
             } else {
-                setItems(data);
+                setItems(res.data);
             }
         } catch (err) {
             console.error("Fetch inventory error:", err);
@@ -43,16 +43,10 @@ const InventoryPage = () => {
         if (!newItem.name) return;
         setSubmitting(true);
         try {
-            const res = await fetch('/api/farm/inventory', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...newItem, type: inventoryType })
-            });
-            if (res.ok) {
-                setIsAddModalOpen(false);
-                setNewItem({ name: '', subtype: '', unit: 'kg' });
-                fetchData();
-            }
+            const res = await axios.post('/api/farm/inventory', { ...newItem, type: inventoryType });
+            setIsAddModalOpen(false);
+            setNewItem({ name: '', subtype: '', unit: 'kg' });
+            fetchData();
         } catch (err) {
             console.error("Add item error:", err);
         } finally {

@@ -7,13 +7,17 @@ namespace App\Models;
 
 use MongoDB\Laravel\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\TenantScoped;
 
 class HealthRecord extends Model
 {
+    use TenantScoped;
+
     protected $connection = 'mongodb';
     protected $collection = 'health_records';
 
     protected $fillable = [
+        'user_id',
         'animal_id',
         'type',
         'treatment_date',
@@ -43,12 +47,12 @@ class HealthRecord extends Model
 
     protected $casts = [
         'treatment_date' => 'date',
-        'followup_date' => 'date',
-        'expected_return' => 'date',
-        'next_check_date' => 'date',
-        'breeding_date' => 'date',
-        'attachments' => 'array',
-        'cost' => 'float',
+        'followup_date'  => 'date',
+        'expected_return'=> 'date',
+        'next_check_date'=> 'date',
+        'breeding_date'  => 'date',
+        'attachments'    => 'array',
+        'cost'           => 'float',
     ];
 
     public function animal(): BelongsTo

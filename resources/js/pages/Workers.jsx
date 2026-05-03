@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Search, Trash2, ArrowDownUp, Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 const WorkersPage = () => {
     const navigate = useNavigate();
@@ -14,9 +15,8 @@ const WorkersPage = () => {
 
     const fetchWorkers = async () => {
         try {
-            const res = await fetch('/api/farm/workers');
-            const data = await res.json();
-            setWorkers(data);
+            const res = await axios.get('/api/farm/workers');
+            setWorkers(res.data);
         } catch (err) {
             console.error("Fetch workers error:", err);
         } finally {
@@ -28,12 +28,8 @@ const WorkersPage = () => {
         e.stopPropagation();
         if (!window.confirm("Are you sure you want to delete this worker?")) return;
         try {
-            const res = await fetch(`/api/farm/workers/${id}`, {
-                method: 'DELETE'
-            });
-            if (res.ok) {
-                fetchWorkers();
-            }
+            const res = await axios.delete(`/api/farm/workers/${id}`);
+            fetchWorkers();
         } catch (err) {
             console.error("Delete worker error:", err);
         }

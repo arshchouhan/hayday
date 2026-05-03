@@ -9,7 +9,13 @@ class GroupController extends Controller
 {
     public function index()
     {
-        $groups = Group::all();
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+
+        $groups = Group::where('user_id', $userId)->get();
         return $groups->map(function ($group) {
             $group->animals_count = $group->animals()->count();
             return $group;
@@ -22,6 +28,13 @@ class GroupController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
+
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+        $validated['user_id'] = $userId;
 
         $group = Group::create($validated);
         return response()->json($group, 201);

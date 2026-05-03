@@ -1,5 +1,6 @@
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
 import hayIcon from '../assets/noun-hay-7549821.svg';
 
 const searchTargets = [
@@ -7,8 +8,6 @@ const searchTargets = [
     { label: 'Farm: Animal Details', to: '/farm/details' },
     { label: 'Farm: Register Animal', to: '/farm/register' },
     { label: 'Farm: Activity', to: '/farm/activity' },
-    { label: 'Farm: Groups', to: '/farm/groups' },
-    { label: 'Farm: Workers', to: '/farm/workers' },
     { label: 'Farm: Health', to: '/farm/health' },
     { label: 'Farm: Health Records', to: '/farm/health' },
     { label: 'Farm: Vaccinations', to: '/farm/health/vaccinations' },
@@ -19,17 +18,17 @@ const searchTargets = [
 
 const links = [
     { label: 'Location', to: '/farm/location' },
-    { label: 'Groups', to: '/farm/groups' },
-    { label: 'Workers', to: '/farm/workers' },
     { label: 'Inventory', to: '/farm/inventory' },
 ];
 
 export default function Navbar() {
     const navigate = useNavigate();
     const { pathname } = useLocation();
+    const { user, logout } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
     const [showQueryError, setShowQueryError] = useState(false);
-    const [showComingSoon, setShowComingSoon] = useState(false);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
 
     useEffect(() => {
         const match = searchTargets.find(t => pathname === t.to);
@@ -39,6 +38,16 @@ export default function Navbar() {
             setSearchQuery('Farm: ');
         }
     }, [pathname]);
+
+    const handleLogout = async () => {
+        await logout();
+        navigate('/login');
+    };
+
+    const getInitials = (name) => {
+        if (!name) return 'U';
+        return name.charAt(0).toUpperCase();
+    };
 
     const handleSearch = (e) => {
         if (e.key === 'Enter' && searchQuery.trim() !== '') {
@@ -59,27 +68,12 @@ export default function Navbar() {
         }
     };
 
-    const handleThemeClick = () => {
-        setShowComingSoon(true);
-        setTimeout(() => setShowComingSoon(false), 3000);
+    const handleNotificationsClick = () => {
+        setShowNotifications(!showNotifications);
     };
 
     return (
-        <header className="bg-transparent w-full relative">
-            {/* Top Sliding Banner */}
-            <div className={`fixed left-0 right-0 top-0 z-[100] flex justify-center transition-all duration-500 ease-in-out ${showComingSoon ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'}`}>
-                <div className="rounded-b-2xl bg-[#1a1a2e] px-8 py-2.5 text-[13px] font-black text-white shadow-2xl ring-1 ring-white/10">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#059669] text-white">
-                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="4">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <span>Dark Mode coming soon! Stay tuned.</span>
-                    </div>
-                </div>
-            </div>
-
+        <header className="bg-transparent w-full relative z-[60]">
             <div className="px-3 pt-3 pb-1 sm:px-4 w-full">
                 <div className="flex items-center gap-3 flex-row w-full">
                     <div className="flex items-center shrink-0 md:w-44 lg:w-48">
@@ -123,13 +117,13 @@ export default function Navbar() {
                                 </div>
                             )}
                         </div>
+
                         <div className="flex items-center justify-end gap-4">
                             <nav aria-label="Dashboard navigation" className="flex flex-wrap items-center justify-end gap-2">
                                 {links.map((item) => (
                                     <NavLink
                                         key={item.label}
                                         to={item.to}
-                                        end={item.end}
                                         onClick={() => setSearchQuery(`Farm: ${item.label}: `)}
                                         className={({ isActive }) =>
                                             [
@@ -145,36 +139,57 @@ export default function Navbar() {
                                 ))}
                             </nav>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 relative">
                                 <button
                                     type="button"
-                                    onClick={handleThemeClick}
-                                    aria-label="Settings"
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-gray-700 hover:bg-black/5 transition-colors"
+                                    onClick={handleNotificationsClick}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-gray-700 hover:bg-black/5 transition-colors relative"
                                 >
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                                        <path d="M12 3v2" />
-                                        <path d="M12 19v2" />
-                                        <path d="M3 12h2" />
-                                        <path d="M19 12h2" />
-                                        <path d="m5.64 5.64 1.41 1.41" />
-                                        <path d="m16.95 16.95 1.41 1.41" />
-                                        <path d="m5.64 18.36 1.41-1.41" />
-                                        <path d="m16.95 7.05 1.41-1.41" />
-                                        <circle cx="12" cy="12" r="3" />
+                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                                     </svg>
+                                    <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full"></span>
                                 </button>
 
                                 <button
                                     type="button"
-                                    aria-label="Profile"
-                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-gray-700 hover:bg-200"
+                                    onClick={() => setShowProfileMenu(!showProfileMenu)}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#1a1a2e] text-white shadow-md hover:scale-105 transition-all overflow-hidden"
                                 >
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                                        <circle cx="12" cy="8" r="4" />
-                                        <path d="M4 21c1.8-3.2 4.3-5 8-5s6.2 1.8 8 5" />
-                                    </svg>
+                                    {user?.profile_image ? (
+                                        <img src={user.profile_image} alt={user.name} className="h-full w-full object-cover" />
+                                    ) : (
+                                        <span className="text-[12px] font-black">{getInitials(user?.name)}</span>
+                                    )}
                                 </button>
+
+                                {showProfileMenu && (
+                                    <div className="absolute right-0 top-11 z-[70] w-56 rounded-xl border border-gray-100 bg-white p-2 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+                                        <div className="px-3 py-2 border-b border-gray-100 mb-1">
+                                            <p className="text-[13px] font-black text-[#1a1a2e] truncate">{user?.name}</p>
+                                            <p className="text-[11px] font-bold text-gray-500 truncate">{user?.ranch_name || 'My Farm'}</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => { setShowProfileMenu(false); navigate('/farm/profile'); }}
+                                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[12px] font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                                        >
+                                            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+                                            </svg>
+                                            Profile Settings
+                                        </button>
+                                        <button 
+                                            onClick={handleLogout}
+                                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-[12px] font-bold text-red-600 hover:bg-red-50 transition-colors"
+                                        >
+                                            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+                                            </svg>
+                                            Logout
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

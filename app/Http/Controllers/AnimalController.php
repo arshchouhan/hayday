@@ -10,21 +10,184 @@ use App\Models\Location;
 use App\Models\Group;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use MongoDB\BSON\ObjectId;
+use MongoDB\BSON\UTCDateTime;
 
 class AnimalController extends Controller
 {
     public function index()
     {
-        // Fetch animals from the default 'animals' collection
+        // Fetch from all collections - Global Scope handles user isolation
         $animals = Animal::with(['breed', 'location', 'group'])->get();
-        // Also fetch cattle from the dedicated 'cattle' collection (Cattle model)
         $cattle = Cattle::with(['breed', 'location', 'group'])->get();
-        // Also fetch sheep from the dedicated 'sheeps' collection (Sheep model)
         $sheep = Sheep::with(['breed', 'location', 'group'])->get();
-        // Merge all collections into a single list and sort by latest created_at
+        
         $combined = $animals->merge($cattle)->merge($sheep)->sortByDesc('created_at')->values();
         
         return response()->json($combined);
+    }
+
+    public function paginatedIndex(Request $request)
+    {
+        $page = max((int) $request->query('page', 1), 1);
+        $perPage = min(max((int) $request->query('per_page', 12), 1), 50);
+        $skip = ($page - 1) * $perPage;
+
+        $search = trim((string) $request->query('search', ''));
+        $locationId = $request->query('location_id');
+        $groupId = $request->query('group_id');
+
+        $matchStage = [];
+
+        // Authentication filter - no demo fallback for protected route
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if ($userId) {
+            $matchStage['user_id'] = (string) $userId;
+        }
+
+        if ($search !== '') {
+            $matchStage['ear_tag'] = [
+                '$regex' => preg_quote($search, '/'),
+                '$options' => 'i',
+            ];
+        }
+
+        if (!blank($locationId)) {
+            $matchStage['location_id'] = $locationId;
+        }
+
+        if (!blank($groupId)) {
+            $matchStage['group_id'] = $groupId;
+        }
+
+        $filterPipeline = $matchStage ? [['$match' => $matchStage]] : [];
+
+        $resultSet = Animal::query()->getQuery()->raw(function ($collection) use ($filterPipeline, $skip, $perPage) {
+            $pipeline = $filterPipeline;
+
+            $pipeline[] = ['$unionWith' => [
+                'coll' => (new Cattle())->getTable(),
+                'pipeline' => $filterPipeline,
+            ]];
+
+            $pipeline[] = ['$unionWith' => [
+                'coll' => (new Sheep())->getTable(),
+                'pipeline' => $filterPipeline,
+            ]];
+
+            $pipeline[] = ['$sort' => ['created_at' => -1, '_id' => -1]];
+            $pipeline[] = ['$facet' => [
+                'data' => [
+                    ['$skip' => $skip],
+                    ['$limit' => $perPage],
+                ],
+                'meta' => [
+                    ['$count' => 'total'],
+                ],
+                'summary' => [
+                    ['$group' => [
+                        '_id' => null,
+                        'locationIds' => ['$addToSet' => '$location_id'],
+                        'groupIds' => ['$addToSet' => '$group_id'],
+                    ]],
+                    ['$project' => [
+                        '_id' => 0,
+                        'location_count' => ['$size' => ['$setDifference' => ['$locationIds', [null, '']]]],
+                        'group_count' => ['$size' => ['$setDifference' => ['$groupIds', [null, '']]]],
+                    ]],
+                ],
+            ]];
+
+            return $collection->aggregate($pipeline);
+        });
+
+        $result = iterator_to_array($resultSet, false)[0] ?? [];
+        $rows = array_map(
+            [$this, 'normalizeMongoDocument'],
+            $this->toPhpArray($result['data'] ?? [])
+        );
+        $meta = $this->toPhpArray($result['meta'] ?? []);
+        $summaryRows = $this->toPhpArray($result['summary'] ?? []);
+
+        $total = $meta[0]['total'] ?? 0;
+        $summary = $summaryRows[0] ?? [];
+
+        return response()->json([
+            'data' => $rows,
+            'meta' => [
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $perPage,
+                'last_page' => (int) max(1, ceil($total / $perPage)),
+                'location_count' => $summary['location_count'] ?? 0,
+                'group_count' => $summary['group_count'] ?? 0,
+            ],
+        ]);
+    }
+
+    private function normalizeMongoDocument(mixed $document): array
+    {
+        if ($document instanceof \MongoDB\Model\BSONDocument) {
+            $document = $document->getArrayCopy();
+        }
+
+        if ($document instanceof \MongoDB\Model\BSONArray) {
+            $document = $document->getArrayCopy();
+        }
+
+        $normalized = [];
+
+        foreach ($document as $key => $value) {
+            if ($key === '_id') {
+                $normalized['id'] = $this->normalizeMongoValue($value);
+                $normalized['_id'] = $normalized['id'];
+                continue;
+            }
+
+            $normalized[$key] = $this->normalizeMongoValue($value);
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeMongoValue(mixed $value): mixed
+    {
+        if ($value instanceof ObjectId) {
+            return (string) $value;
+        }
+
+        if ($value instanceof UTCDateTime) {
+            return $value->toDateTime()->format(DATE_ATOM);
+        }
+
+        if (is_array($value)) {
+            $normalized = [];
+
+            foreach ($value as $key => $item) {
+                $normalized[$key] = $this->normalizeMongoValue($item);
+            }
+
+            return $normalized;
+        }
+
+        if (is_object($value)) {
+            return $this->normalizeMongoValue((array) $value);
+        }
+
+        return $value;
+    }
+
+    private function toPhpArray(mixed $value): array
+    {
+        if ($value instanceof \MongoDB\Model\BSONArray) {
+            $value = $value->getArrayCopy();
+        }
+
+        if ($value instanceof \Traversable) {
+            $value = iterator_to_array($value, false);
+        }
+
+        return is_array($value) ? $value : [];
     }
 
     public function show($id)
@@ -102,6 +265,15 @@ class AnimalController extends Controller
         }
         // Fill and save the model
         $animal->fill($request->all());
+        
+        // Assign user_id
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+        $animal->user_id = $userId;
+
         $saved = $animal->save();
         if (! $saved) {
             throw new \Exception('Model save() returned false');
@@ -116,18 +288,24 @@ class AnimalController extends Controller
 
     public function getFormData()
     {
-        $sires = Animal::whereIn('type', ['bull', 'ram', 'steer'])->get(['id', 'ear_tag', 'animal_name'])
-            ->merge(Cattle::whereIn('type', ['bull', 'ram', 'steer'])->get(['id', 'ear_tag', 'animal_name']))
-            ->merge(Sheep::whereIn('type', ['bull', 'ram', 'steer'])->get(['id', 'ear_tag', 'animal_name']));
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+
+        $sires = Animal::where('user_id', $userId)->whereIn('type', ['bull', 'ram', 'steer'])->get(['id', 'ear_tag', 'animal_name'])
+            ->merge(Cattle::where('user_id', $userId)->whereIn('type', ['bull', 'ram', 'steer'])->get(['id', 'ear_tag', 'animal_name']))
+            ->merge(Sheep::where('user_id', $userId)->whereIn('type', ['bull', 'ram', 'steer'])->get(['id', 'ear_tag', 'animal_name']));
             
-        $dams = Animal::whereIn('type', ['cow', 'ewe', 'replacement_heifer'])->get(['id', 'ear_tag', 'animal_name'])
-            ->merge(Cattle::whereIn('type', ['cow', 'ewe', 'replacement_heifer'])->get(['id', 'ear_tag', 'animal_name']))
-            ->merge(Sheep::whereIn('type', ['cow', 'ewe', 'replacement_heifer'])->get(['id', 'ear_tag', 'animal_name']));
+        $dams = Animal::where('user_id', $userId)->whereIn('type', ['cow', 'ewe', 'replacement_heifer'])->get(['id', 'ear_tag', 'animal_name'])
+            ->merge(Cattle::where('user_id', $userId)->whereIn('type', ['cow', 'ewe', 'replacement_heifer'])->get(['id', 'ear_tag', 'animal_name']))
+            ->merge(Sheep::where('user_id', $userId)->whereIn('type', ['cow', 'ewe', 'replacement_heifer'])->get(['id', 'ear_tag', 'animal_name']));
 
         return response()->json([
-            'breeds' => Breed::all(),
-            'locations' => Location::all(),
-            'groups' => Group::all(),
+            'breeds' => Breed::where('user_id', $userId)->get(),
+            'locations' => Location::where('user_id', $userId)->get(),
+            'groups' => Group::where('user_id', $userId)->get(),
             'sires' => $sires,
             'dams' => $dams,
         ]);
@@ -135,18 +313,23 @@ class AnimalController extends Controller
 
     public function search(Request $request)
     {
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        if (!$userId) {
+            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
+            $userId = $demoUser ? $demoUser->id : null;
+        }
+
         $type = $request->query('type'); // male or female
         
-        $query = null;
         if ($type === 'male') {
             $types = ['bull', 'ram', 'steer'];
         } else {
             $types = ['cow', 'ewe', 'replacement_heifer'];
         }
 
-        $results = Animal::whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name'])
-            ->merge(Cattle::whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name']))
-            ->merge(Sheep::whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name']));
+        $results = Animal::where('user_id', $userId)->whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name'])
+            ->merge(Cattle::where('user_id', $userId)->whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name']))
+            ->merge(Sheep::where('user_id', $userId)->whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name']));
 
         return response()->json($results);
     }

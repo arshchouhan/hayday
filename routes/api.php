@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AnimalController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\ActivityController;
@@ -9,8 +10,20 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\WorkerController;
 use App\Http\Controllers\InventoryController;
 
-Route::prefix('farm')->group(function () {
+// Public auth routes (no middleware)
+Route::post('/auth/register', [AuthController::class, 'register']);
+Route::post('/auth/login', [AuthController::class, 'login']);
+
+// Protected auth routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/auth/user', [AuthController::class, 'user']);
+    Route::post('/auth/logout', [AuthController::class, 'logout']);
+});
+
+// Protected farm routes
+Route::prefix('farm')->middleware('auth:sanctum')->group(function () {
     Route::get('/animals', [AnimalController::class, 'index']);
+    Route::get('/animals/paginated', [AnimalController::class, 'paginatedIndex']);
     Route::get('/animals/search', [AnimalController::class, 'search']);
     Route::get('/animals/form-data', [AnimalController::class, 'getFormData']);
     Route::get('/animals/{id}', [AnimalController::class, 'show']);

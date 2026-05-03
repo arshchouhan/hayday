@@ -4,11 +4,14 @@ namespace App\Models;
 
 use MongoDB\Laravel\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Traits\TenantScoped;
 
 class AnimalAttachment extends Model
 {
+    use TenantScoped;
+
     protected $connection = 'mongodb';
-    protected $fillable = ['animal_id', 'file_path', 'file_name', 'file_type'];
+    protected $fillable = ['user_id', 'animal_id', 'file_path', 'file_name', 'file_type'];
 
     public function animal(): BelongsTo
     {
