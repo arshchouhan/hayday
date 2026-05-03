@@ -977,7 +977,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
 
                         <div className="flex items-center gap-2">
                             <button
-                                onClick={() => { if (onSelectAnimal) onSelectAnimal('Register Animal'); }}
+                                onClick={() => navigate('/farm/register')}
                                 className="hidden h-10 items-center justify-center rounded-lg bg-[#1a1a2e] px-4 py-2 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-black sm:flex"
                             >
                                 + Register Animal
@@ -1021,37 +1021,25 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                             </>
                         ) : (
                             <>
-                                {locations && locations.length > 0 ? (
-                                    <FilterDropdown
-                                        placeholder="Select location"
-                                        value={selectedLocation}
-                                        options={locations}
-                                        onChange={(value) => {
-                                            setSelectedLocation(value);
-                                            setCurrentPage(1);
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="flex h-[44px] min-w-[160px] items-center justify-center rounded-lg border border-[#80888F]/30 bg-white px-4 text-[13px] font-bold text-gray-400">
-                                        Unable to load locations
-                                    </div>
-                                )}
+                                <FilterDropdown
+                                    placeholder="All Locations"
+                                    value={selectedLocation}
+                                    options={locations || []}
+                                    onChange={(value) => {
+                                        setSelectedLocation(value);
+                                        setCurrentPage(1);
+                                    }}
+                                />
 
-                                {groups && groups.length > 0 ? (
-                                    <FilterDropdown
-                                        placeholder="Select group"
-                                        value={selectedGroup}
-                                        options={groups}
-                                        onChange={(value) => {
-                                            setSelectedGroup(value);
-                                            setCurrentPage(1);
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="flex h-[44px] min-w-[160px] items-center justify-center rounded-lg border border-[#80888F]/30 bg-white px-4 text-[13px] font-bold text-gray-400">
-                                        Unable to load groups
-                                    </div>
-                                )}
+                                <FilterDropdown
+                                    placeholder="All Groups"
+                                    value={selectedGroup}
+                                    options={groups || []}
+                                    onChange={(value) => {
+                                        setSelectedGroup(value);
+                                        setCurrentPage(1);
+                                    }}
+                                />
                             </>
                         )}
 

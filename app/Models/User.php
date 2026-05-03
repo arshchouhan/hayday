@@ -11,8 +11,8 @@ use MongoDB\Laravel\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password', 'phone', 'ranch_name', 'gmail_email', 'gmail_password'])]
-#[Hidden(['password', 'remember_token', 'gmail_password'])]
+#[Fillable(['name', 'email', 'password', 'phone', 'ranch_name', 'gmail_email', 'gmail_password', 'google_id'])]
+#[Hidden(['password', 'remember_token', 'gmail_password', 'google_id'])]
 class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;

@@ -33,6 +33,9 @@ Route::middleware('auth')->group(function () {
         return view('welcome');
     })->where('any', '.*');
 });
+// Google Auth Routes
+Route::get('/auth/google', [App\Http\Controllers\GoogleAuthController::class, 'redirectToGoogle']);
+Route::get('/auth/google/callback', [App\Http\Controllers\GoogleAuthController::class, 'handleGoogleCallback']);
 
 // Catch all other routes for SPA
 Route::get('/{any}', function() {

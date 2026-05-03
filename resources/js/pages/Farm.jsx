@@ -143,7 +143,7 @@ export default function Farm() {
 
     // Derive selectedAnimal from URL to prevent state jitter
     const selectedAnimal = getSelectedAnimalFromPath(pathname, activeSection);
-    
+
     // State only for confirmation flow
     const [showNavConfirmation, setShowNavConfirmation] = useState(false);
     const [pendingNavigation, setPendingNavigation] = useState(null);
@@ -193,6 +193,41 @@ export default function Farm() {
 
     return (
         <div className="flex h-screen flex-col overflow-hidden bg-[#D7E3EF]">
+            {/* Navigation Confirmation Modal - Moved to root for full screen coverage */}
+            {showNavConfirmation && (
+                <>
+                    <div className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-md" onClick={cancelNavigation} />
+                    <div className="fixed left-1/2 top-1/2 z-[101] w-96 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-gray-100 bg-white shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <div className="border-b border-gray-100 px-6 py-4">
+                            <h2 className="text-[18px] font-black text-[#1a1a2e]">Discard Changes?</h2>
+                        </div>
+                        <div className="px-6 py-4">
+                            <p className="text-[14px] font-medium text-gray-600">Are you sure you want to leave? Any unsaved changes will be lost.</p>
+                        </div>
+                        <div className="flex gap-3 border-t border-gray-100 px-6 py-4">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    cancelNavigation();
+                                }}
+                                className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                                Keep Editing
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    confirmNavigation();
+                                }}
+                                className="flex-1 rounded-lg bg-red-50 px-4 py-2 text-[13px] font-bold text-red-600 hover:bg-red-100 transition-colors"
+                            >
+                                Discard
+                            </button>
+                        </div>
+                    </div>
+                </>
+            )}
+
             <Navbar />
             <main className="w-full flex-1 overflow-hidden px-3 pb-3 sm:px-4 sm:pb-4">
                 <div className="flex h-full min-h-0 flex-col gap-3 md:flex-row md:items-start">
@@ -262,23 +297,7 @@ export default function Farm() {
                             <Route path="*" element={<Livestock selectedAnimal={selectedAnimal} onSelectAnimal={handleSelectAnimal} />} />
                         </Routes>
 
-                        {showNavConfirmation && (
-                            <>
-                                <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={cancelNavigation} />
-                                <div className="fixed left-1/2 top-1/2 z-50 w-96 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-gray-100 bg-white shadow-2xl animate-in fade-in zoom-in">
-                                    <div className="border-b border-gray-100 px-6 py-4">
-                                        <h2 className="text-[18px] font-black text-[#1a1a2e]">Discard Changes?</h2>
-                                    </div>
-                                    <div className="px-6 py-4">
-                                        <p className="text-[14px] font-medium text-gray-600">Are you sure you want to leave? Any unsaved changes will be lost.</p>
-                                    </div>
-                                    <div className="flex gap-3 border-t border-gray-100 px-6 py-4">
-                                        <button onClick={cancelNavigation} className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50 transition-colors">Keep Editing</button>
-                                        <button onClick={confirmNavigation} className="flex-1 rounded-lg bg-red-50 px-4 py-2 text-[13px] font-bold text-red-600 hover:bg-red-100 transition-colors">Discard</button>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+
                     </section>
                 </div>
             </main>

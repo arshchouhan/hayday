@@ -251,7 +251,6 @@ export default function RegisterAnimal({ onSelectAnimal }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSwitchingModel, setIsSwitchingModel] = useState(false);
     const [errors, setErrors] = useState({});
-    const [showConfirmation, setShowConfirmation] = useState(false);
 
     const [formData, setFormData] = useState({
         ear_tag: '',
@@ -285,10 +284,6 @@ export default function RegisterAnimal({ onSelectAnimal }) {
     });
 
     const handleBack = () => {
-        setShowConfirmation(true);
-    };
-
-    const confirmBack = () => {
         if (onSelectAnimal) {
             onSelectAnimal('Animal Details');
         } else {
@@ -412,40 +407,7 @@ export default function RegisterAnimal({ onSelectAnimal }) {
                 </div>
             )}
 
-            {/* Confirmation Modal */}
-            {showConfirmation && (
-                <>
-                    <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm" onClick={() => setShowConfirmation(false)} />
-                    <div className="fixed left-1/2 top-1/2 z-50 w-96 -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-gray-100 bg-white shadow-2xl animate-in fade-in zoom-in">
-                        <div className="border-b border-gray-100 px-6 py-4">
-                            <h2 className="text-[18px] font-black text-[#1a1a2e]">Discard Changes?</h2>
-                        </div>
-                        <div className="px-6 py-4">
-                            <p className="text-[14px] font-medium text-gray-600">Are you sure you want to leave? Any unsaved changes will be lost.</p>
-                        </div>
-                        <div className="flex gap-3 border-t border-gray-100 px-6 py-4">
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowConfirmation(false);
-                                }}
-                                className="flex-1 rounded-lg border border-gray-200 px-4 py-2 text-[13px] font-bold text-gray-700 hover:bg-gray-50 transition-colors"
-                            >
-                                Keep Editing
-                            </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    confirmBack();
-                                }}
-                                className="flex-1 rounded-lg bg-red-50 px-4 py-2 text-[13px] font-bold text-red-600 hover:bg-red-100 transition-colors"
-                            >
-                                Discard
-                            </button>
-                        </div>
-                    </div>
-                </>
-            )}
+
 
             {/* Header Section */}
             <div className="flex items-center justify-between border-b border-gray-100 pb-6">
