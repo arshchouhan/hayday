@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import illustration from '../assets/no-enterprises.svg';
+import illustration from '../assets/farmillustration.svg';
 import animalIcon from '../assets/noun-animals-13643.svg';
 import locationIcon from '../assets/noun-location-8084981.svg';
 import groupIcon from '../assets/noun-group-500439.svg';
@@ -187,10 +187,10 @@ const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color,
             </div>
 
             <div className="flex flex-wrap gap-2">
-                <span className="rounded-full bg-[#E9EEF6] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
+                <span className="rounded-full bg-[#DCE9E3] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
                     {type}
                 </span>
-                <span className="rounded-full bg-[#E9EEF6] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
+                <span className="rounded-full bg-[#DCE9E3] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
                     {name}
                 </span>
             </div>
@@ -309,20 +309,20 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                 <div className="flex items-center gap-3">
                     <button
                         onClick={onSelectAll}
-                        className="rounded-full bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#D7E3EF] transition-all"
+                        className="rounded-full border border-[#80888F] bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] shadow-md hover:bg-[#D7E3EF] transition-all"
                     >
                         Select all on this page
                     </button>
                     <button
                         onClick={onDeselectAll}
-                        className="rounded-full bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#D7E3EF] transition-all"
+                        className="rounded-full border border-[#80888F] bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] shadow-md hover:bg-[#D7E3EF] transition-all"
                     >
                         Deselect All
                     </button>
                     <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
                     <button
                         disabled={!hasSelection}
-                        className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${hasSelection ? 'bg-red-50 text-red-600 hover:bg-red-100 shadow-sm' : 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
+                        className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${hasSelection ? 'bg-red-500 text-white border border-[#80888F] shadow-md hover:bg-red-600' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
                             }`}
                     >
                         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
@@ -331,7 +331,7 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                     <button
                         disabled={!hasSelection}
                         onClick={onChooseActivity}
-                        className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${hasSelection ? 'bg-[#1a1a2e] text-white hover:bg-black shadow-md' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
+                        className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${hasSelection ? 'bg-[#E9EEF6] text-[#1a1a2e] border border-[#80888F] shadow-md hover:bg-[#D7E3EF]' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
                             }`}
                     >
                         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" /></svg>
@@ -397,10 +397,10 @@ const ActivitySidebar = ({ open, onClose, selectedIds, navigate }) => {
     return (
         <>
             {/* Backdrop */}
-            {open && <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]" />}
+            {open && <div className="fixed inset-0 z-[70] bg-black/30 backdrop-blur-[2px]" />}
 
             {/* Sidebar */}
-            <div className={`fixed right-0 top-0 z-50 flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'
+            <div className={`fixed right-0 top-0 z-[80] flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'
                 }`}>
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
@@ -416,45 +416,30 @@ const ActivitySidebar = ({ open, onClose, selectedIds, navigate }) => {
                 </div>
 
                 {/* Activity list */}
-                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2">
-                    {ACTIVITIES.map((act) => (
-                        <div key={act.id} className="overflow-hidden rounded-xl border border-gray-100">
-                            {/* Category header */}
+                <div className="flex-1 overflow-y-auto px-5 py-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        {ACTIVITIES.map((act) => (
                             <button
-                                onClick={() => setExpanded(expanded === act.id ? null : act.id)}
-                                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                                key={act.id}
+                                onClick={() => handleCategoryRoute(act.id)}
+                                className="group relative flex aspect-square flex-col justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-[#DCE9E3] hover:shadow-md active:scale-95"
                             >
-                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg" style={{ background: act.bg, color: act.color }}>
+                                {/* Icon at top left */}
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 text-gray-400 group-hover:bg-[#DCE9E3] group-hover:text-[#1a1a2e] transition-colors">
                                     {act.icon}
                                 </div>
-                                <span className="flex-1 text-[13px] font-bold text-[#1a1a2e]">{act.label}</span>
-                                <svg viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${expanded === act.id ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m6 9 6 6 6-6" /></svg>
-                            </button>
 
-                            {/* Sub-options */}
-                            {expanded === act.id && (
-                                <div className="border-t border-gray-100 bg-gray-50 px-3 py-2 space-y-0.5">
-                                    <button
-                                        onClick={() => handleCategoryRoute(act.id)}
-                                        className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[12px] font-bold hover:bg-white transition-colors" style={{ color: act.color }}
-                                    >
-                                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7" /></svg>
-                                        Open Selector
-                                    </button>
-                                    {act.sub.map((s) => (
-                                        <button
-                                            key={s}
-                                            onClick={() => handleRoute(act.id, s)}
-                                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-gray-700 hover:bg-white hover:text-[#1a1a2e] transition-colors"
-                                        >
-                                            <div className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ background: act.color }} />
-                                            {s}
-                                        </button>
-                                    ))}
+                                {/* Label in a pill at bottom left */}
+                                <div className="mt-4">
+                                    <span className="inline-block rounded-full bg-[#DCE9E3] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
+                                        {act.label}
+                                    </span>
                                 </div>
-                            )}
-                        </div>
-                    ))}
+
+                                {/* Subtle arrow or indicator could go here, but keeping it clean per screenshot */}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Footer note */}
@@ -479,10 +464,10 @@ const AssignWorkerSidebar = ({ open, onClose, selectedIds, navigate }) => {
     return (
         <>
             {/* Backdrop */}
-            {open && <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-[2px]" />}
+            {open && <div className="fixed inset-0 z-[70] bg-black/30 backdrop-blur-[2px]" />}
 
             {/* Sidebar */}
-            <div className={`fixed right-0 top-0 z-50 flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'
+            <div className={`fixed right-0 top-0 z-[80] flex h-full w-[360px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out ${open ? 'translate-x-0' : 'translate-x-full'
                 }`}>
                 <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
                     <div>
@@ -496,26 +481,32 @@ const AssignWorkerSidebar = ({ open, onClose, selectedIds, navigate }) => {
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
-                    {ASSIGN_WORKERS_LIST.map((worker) => (
-                        <div key={worker.id} className="overflow-hidden rounded-xl border border-gray-100 hover:border-[#059669] hover:shadow-sm transition-all cursor-pointer bg-white group"
-                            onClick={() => navigate(`/farm/workers/add?workerId=${worker.id}&name=${encodeURIComponent(worker.name)}&email=${encodeURIComponent(worker.email)}&animals=${selectedIds.join(',')}`)}
-                        >
-                            <div className="flex items-center gap-3 px-4 py-3">
-                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E9EEF6] text-[14px] font-bold text-[#1a1a2e] group-hover:bg-[#059669] group-hover:text-white transition-colors">
+                <div className="flex-1 overflow-y-auto px-5 py-6">
+                    <div className="grid grid-cols-2 gap-4">
+                        {ASSIGN_WORKERS_LIST.map((worker) => (
+                            <button
+                                key={worker.id}
+                                onClick={() => navigate(`/farm/workers/add?workerId=${worker.id}&name=${encodeURIComponent(worker.name)}&email=${encodeURIComponent(worker.email)}&animals=${selectedIds.join(',')}`)}
+                                className="group relative flex aspect-square flex-col justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all hover:border-[#DCE9E3] hover:shadow-md active:scale-95"
+                            >
+                                {/* Initials at top left */}
+                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-50 text-[14px] font-black text-gray-400 group-hover:bg-[#DCE9E3] group-hover:text-[#1a1a2e] transition-colors">
                                     {worker.initials}
                                 </div>
-                                <div>
-                                    <h3 className="text-[14px] font-bold text-[#1a1a2e]">{worker.name}</h3>
-                                    <p className="text-[12px] text-gray-500">{worker.role}</p>
+
+                                {/* Name in a pill at bottom left */}
+                                <div className="mt-4">
+                                    <span className="inline-block rounded-full bg-[#DCE9E3] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
+                                        {worker.name}
+                                    </span>
                                 </div>
-                            </div>
-                        </div>
-                    ))}
+                            </button>
+                        ))}
+                    </div>
 
                     <button
                         onClick={() => navigate('/farm/workers/add')}
-                        className="w-full mt-2 flex items-center justify-center gap-2 rounded-xl border border-dashed border-[#80888F] px-4 py-3 text-[13px] font-bold text-[#1a1a2e] hover:bg-gray-50 transition-colors"
+                        className="w-full mt-6 flex items-center justify-center gap-2 rounded-xl border border-dashed border-[#80888F] bg-gray-50/50 px-4 py-4 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#DCE9E3] hover:border-[#DCE9E3] transition-all"
                     >
                         + Add New Worker
                     </button>
@@ -545,8 +536,8 @@ const FilterActionsDropup = ({ selectedCount, onManage, onAssignWorker }) => {
             <button
                 onClick={() => setOpen(o => !o)}
                 className={`relative flex h-[44px] w-[44px] items-center justify-center rounded-lg border shadow-sm transition-all ${hasSelection
-                        ? 'border-[#1a1a2e] bg-[#1a1a2e] text-white hover:bg-black'
-                        : 'border-[#80888F] bg-[#E9EEF6] text-gray-500 hover:bg-[#DDE7F3]'
+                    ? 'border-[#80888F] bg-[#D7E3EF] text-[#1a1a2e] hover:bg-[#C9D9E9]'
+                    : 'border-[#80888F] bg-[#E9EEF6] text-gray-500 hover:bg-[#DDE7F3]'
                     }`}
             >
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -574,8 +565,8 @@ const FilterActionsDropup = ({ selectedCount, onManage, onAssignWorker }) => {
                             if (onManage) onManage();
                         }}
                         className={`flex w-full items-center gap-3 px-4 py-2.5 text-[13px] font-semibold transition-colors ${selectedCount > 1
-                                ? 'text-gray-400 cursor-not-allowed bg-gray-50/50'
-                                : 'text-[#1a1a2e] hover:bg-gray-50'
+                            ? 'text-gray-400 cursor-not-allowed bg-gray-50/50'
+                            : 'text-[#1a1a2e] hover:bg-gray-50'
                             }`}
                         title={selectedCount > 1 ? "Only one animal can be edited at a time" : ""}
                     >
@@ -613,6 +604,7 @@ const FilterActionsDropup = ({ selectedCount, onManage, onAssignWorker }) => {
 export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }) {
     const navigate = useNavigate();
     const { pathname } = useLocation();
+    const user = JSON.parse(localStorage.getItem('hayday_user'));
 
     // Check if we are viewing a specific animal
     const animalMatch = pathname.match(/\/(?:lifecycle|farm)\/details\/([^\/]+)/);
@@ -658,7 +650,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
     const [selectedIds, setSelectedIds] = useState([]);
     const hasCachedData = Boolean(DASHBOARD_CACHE.pages.size || DASHBOARD_CACHE.formData);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     // We are effectively loading if the state says so OR if we just switched to this tab and have no cache
     const loading = isLoading || (selectedAnimal === 'Animal Details' && !hasCachedData && !viewingAnimalId);
 
@@ -956,29 +948,29 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                             <StatCard
                                 label="Total Animals"
                                 count={totalAnimals.toString()}
-                                icon={<img src={animalIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
+                                icon={<img src={animalIcon} className="h-24 w-24" style={{ filter: 'brightness(0) saturate(100%) invert(89%) sepia(14%) saturate(280%) hue-rotate(116deg) brightness(98%) contrast(88%)' }} alt="icon" />}
                             />
                             <StatCard
                                 label="Total Locations"
                                 count={totalLocations.toString()}
-                                icon={<img src={locationIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
+                                icon={<img src={locationIcon} className="h-24 w-24" style={{ filter: 'brightness(0) saturate(100%) invert(89%) sepia(14%) saturate(280%) hue-rotate(116deg) brightness(98%) contrast(88%)' }} alt="icon" />}
                             />
                             <StatCard
                                 label="Total Groups"
                                 count={totalGroups.toString()}
-                                icon={<img src={groupIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
+                                icon={<img src={groupIcon} className="h-24 w-24" style={{ filter: 'brightness(0) saturate(100%) invert(89%) sepia(14%) saturate(280%) hue-rotate(116deg) brightness(98%) contrast(88%)' }} alt="icon" />}
                             />
                             <StatCard
                                 label="Total Workers"
                                 count="12"
-                                icon={<img src={farmerIcon} className="h-24 w-24 opacity-[0.07] grayscale brightness-0" alt="icon" />}
+                                icon={<img src={farmerIcon} className="h-24 w-24" style={{ filter: 'brightness(0) saturate(100%) invert(89%) sepia(14%) saturate(280%) hue-rotate(116deg) brightness(98%) contrast(88%)' }} alt="icon" />}
                             />
                         </div>
 
                         <div className="flex items-center gap-2">
                             <button
                                 onClick={() => navigate('/farm/register')}
-                                className="hidden h-10 items-center justify-center rounded-lg bg-[#1a1a2e] px-4 py-2 text-[13px] font-bold text-white shadow-sm transition-all hover:bg-black sm:flex"
+                                className="hidden h-10 items-center justify-center rounded-lg border border-[#80888F] bg-[#E9EEF6] px-4 py-2 text-[13px] font-bold text-[#1a1a2e] shadow-md transition-all hover:bg-[#D7E3EF] sm:flex"
                             >
                                 + Register Animal
                             </button>
@@ -999,16 +991,16 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                             />
                         </div>
 
-                        <div className="flex h-[44px] items-center rounded-lg border border-[#80888F] bg-[#E9EEF6] p-1 shadow-sm">
+                        <div className="flex h-[44px] items-center rounded-lg border border-[#80888F] bg-[#E9EEF6] overflow-hidden shadow-sm">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`flex h-8 w-10 items-center justify-center rounded-md transition-all ${viewMode === 'grid' ? 'bg-[#1a1a2e] text-white shadow-sm' : 'text-gray-500 hover:bg-black/5'}`}
+                                className={`flex h-full w-10 items-center justify-center transition-all ${viewMode === 'grid' ? 'bg-[#D7E3EF] text-[#1a1a2e]' : 'text-gray-500 hover:bg-black/5'}`}
                             >
                                 <Grid size={18} strokeWidth={2.5} />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`flex h-8 w-10 items-center justify-center rounded-md transition-all ${viewMode === 'list' ? 'bg-[#1a1a2e] text-white shadow-sm' : 'text-gray-500 hover:bg-black/5'}`}
+                                className={`flex h-full w-10 items-center justify-center transition-all ${viewMode === 'list' ? 'bg-[#D7E3EF] text-[#1a1a2e]' : 'text-gray-500 hover:bg-black/5'}`}
                             >
                                 <List size={18} strokeWidth={2.5} />
                             </button>
@@ -1097,20 +1089,20 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                                 <div className="flex items-center gap-3">
                                     <button
                                         onClick={handleSelectAll}
-                                        className="rounded-full bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#D7E3EF] transition-all"
+                                        className="rounded-full border border-[#80888F] bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] shadow-md hover:bg-[#D7E3EF] transition-all"
                                     >
                                         Select all on this page
                                     </button>
                                     <button
                                         onClick={handleDeselectAll}
-                                        className="rounded-full bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] hover:bg-[#D7E3EF] transition-all"
+                                        className="rounded-full border border-[#80888F] bg-[#E9EEF6] px-5 py-2 text-[13px] font-bold text-[#1a1a2e] shadow-md hover:bg-[#D7E3EF] transition-all"
                                     >
                                         Deselect All
                                     </button>
                                     <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
                                     <button
                                         disabled={selectedIds.length === 0}
-                                        className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${selectedIds.length > 0 ? 'bg-red-50 text-red-600 hover:bg-red-100 shadow-sm' : 'bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
+                                        className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${selectedIds.length > 0 ? 'bg-red-500 text-white border border-[#80888F] shadow-md hover:bg-red-600' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
                                             }`}
                                     >
                                         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
@@ -1119,7 +1111,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                                     <button
                                         disabled={selectedIds.length === 0}
                                         onClick={() => setSidebarOpen(true)}
-                                        className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${selectedIds.length > 0 ? 'bg-[#1a1a2e] text-white hover:bg-black shadow-md' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
+                                        className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${selectedIds.length > 0 ? 'bg-[#E9EEF6] text-[#1a1a2e] border border-[#80888F] shadow-md hover:bg-[#D7E3EF]' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
                                             }`}
                                     >
                                         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z" /></svg>
@@ -1160,25 +1152,13 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
 
     const renderIllustration = () => (
         <section className="relative h-full min-h-0 w-full overflow-hidden bg-[#F8FAFD] p-6">
-            <style>{`
-                @keyframes tailWag { 0% { transform: rotate(0deg); } 25% { transform: rotate(1deg); } 75% { transform: rotate(-1deg); } 100% { transform: rotate(0deg); } }
-                @keyframes breathe { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
-                .animate-alive { animation: tailWag 3s ease-in-out infinite, breathe 5s ease-in-out infinite; transform-origin: center bottom; }
-            `}</style>
             <div className="flex h-full flex-col items-center justify-center pb-28">
-                <div className="w-full max-w-lg md:max-w-xl animate-alive">
-                    <img src={illustration} alt="HayDay" className="mx-auto w-full brightness-0 opacity-100" />
+                <div className="w-full max-w-lg md:max-w-xl">
+                    <img src={illustration} alt="HayDay" className="mx-auto w-full opacity-100" />
                 </div>
                 <div className="mt-8 text-center space-y-2">
-                    <h1 className="text-4xl font-black text-[#1a1a2e] tracking-tight italic">HayDay !</h1>
-                    <p className="text-lg text-gray-500 font-medium italic opacity-80">Setup your farm to get started</p>
-                </div>
-            </div>
-            <div className="absolute bottom-12 left-0 right-0 flex justify-center px-10">
-                <div className="grid w-full max-w-5xl grid-cols-1 gap-3 md:grid-cols-3">
-                    <SetupCard step="1" title="Ranch Details" buttonText="Completed" status="Completed" icon={<MapPin />} />
-                    <SetupCard step="2" status="Pending" title="Location Details" buttonText="Add" icon={<MapPin />} />
-                    <SetupCard step="3" status="Pending" title="Livestock" buttonText="Add" onClick={() => onSelectAnimal('Register Animal')} icon={<Users />} />
+                    <h1 className="text-4xl font-black text-[#1a1a2e] tracking-tight italic">HayDay {user?.name || ''}</h1>
+                    <p className="text-lg text-gray-500 font-medium italic opacity-80">don't let the day turn to hay</p>
                 </div>
             </div>
         </section>
