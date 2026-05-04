@@ -109,6 +109,40 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('details');
 
+    const fetchSecondaryData = (id) => {
+        // Fetch all secondary data in parallel
+        setMoveLoading(true);
+        setWeightLoading(true);
+        setCostLoading(true);
+
+        // Movement history
+        fetch(`/api/farm/animals/${id}/movement-history?period=${movePeriod}`)
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) setMoveData({ history: res.data, total: res.total });
+                setMoveLoading(false);
+            })
+            .catch(() => setMoveLoading(false));
+
+        // Weight history
+        fetch(`/api/farm/animals/${id}/weight-history?period=${weightPeriod}`)
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) setWeightData(res.data);
+                setWeightLoading(false);
+            })
+            .catch(() => setWeightLoading(false));
+
+        // Cost stats
+        fetch(`/api/farm/animals/${id}/cost-stats?period=${costPeriod}`)
+            .then(r => r.json())
+            .then(res => {
+                if (res.success) setCostData({ total: res.total, average: res.average });
+                setCostLoading(false);
+            })
+            .catch(() => setCostLoading(false));
+    };
+
     const fetchAnimalData = () => {
         if (!animalId) return;
 
@@ -117,6 +151,7 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
             setAnimal(cached.animal);
             setSummary(cached.summary);
             setLoading(false);
+            fetchSecondaryData(animalId);
             return;
         }
 
@@ -133,6 +168,8 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                 summary: nextSummary,
             });
             setLoading(false);
+            // Start secondary data fetch immediately after main data loads
+            fetchSecondaryData(animalId);
         }).catch(err => {
             setError(err.message);
             setLoading(false);
@@ -144,81 +181,96 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
         fetchAnimalData();
     }, [animalId]);
 
-    // Fetch Movement History
+    // Re-fetch only when periods change (not animalId)
     useEffect(() => {
-        if (!animalId) return;
-        setMoveLoading(true);
-        fetch(`/api/farm/animals/${animalId}/movement-history?period=${movePeriod}`)
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) setMoveData({ history: res.data, total: res.total });
-                setMoveLoading(false);
-            });
-    }, [animalId, movePeriod]);
+        if (!animalId || loading) return;
+        fetchSecondaryData(animalId);
+    }, [movePeriod, weightPeriod, costPeriod]);
 
-    // Fetch Weight History
-    useEffect(() => {
-        if (!animalId) return;
-        setWeightLoading(true);
-        fetch(`/api/farm/animals/${animalId}/weight-history?period=${weightPeriod}`)
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) setWeightData(res.data);
-                setWeightLoading(false);
-            });
-    }, [animalId, weightPeriod]);
-
-    // Fetch Cost Stats
-    useEffect(() => {
-        if (!animalId) return;
-        setCostLoading(true);
-        fetch(`/api/farm/animals/${animalId}/cost-stats?period=${costPeriod}`)
-            .then(r => r.json())
-            .then(res => {
-                if (res.success) setCostData({ total: res.total, average: res.average });
-                setCostLoading(false);
-            });
-    }, [animalId, costPeriod]);
 
     if (loading) {
         return (
             <section className="h-full min-h-0 w-full overflow-auto bg-[#F8FAFD] p-4 sm:p-8">
-                <div className="w-full max-w-4xl space-y-8">
+                <div className="w-full max-w-6xl mx-auto space-y-8">
                     {/* Header skeleton */}
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <div className="h-7 w-7 rounded-full bg-gray-200 animate-pulse" />
-                            <div className="h-9 w-9 rounded-xl bg-gray-200 animate-pulse" />
-                            <div className="space-y-1.5">
-                                <div className="h-5 w-32 rounded bg-gray-200 animate-pulse" />
-                                <div className="h-3.5 w-48 rounded bg-gray-100 animate-pulse" />
+                            <div className="h-12 w-12 rounded-full bg-gray-200 animate-pulse" />
+                            <div className="h-12 w-12 rounded-xl bg-gray-200 animate-pulse" />
+                            <div className="space-y-2">
+                                <div className="h-6 w-40 rounded bg-gray-200 animate-pulse" />
+                                <div className="h-4 w-56 rounded bg-gray-100 animate-pulse" />
                             </div>
                         </div>
                         <div className="flex gap-3">
-                            <div className="h-8 w-20 rounded-full bg-gray-200 animate-pulse" />
-                            <div className="h-8 w-24 rounded-full bg-gray-200 animate-pulse" />
+                            <div className="h-10 w-24 rounded-full bg-gray-200 animate-pulse" />
+                            <div className="h-10 w-28 rounded-full bg-gray-200 animate-pulse" />
                         </div>
                     </div>
+
                     {/* Tab skeleton */}
-                    <div className="flex gap-8 border-b border-gray-200 pb-0">
-                        {[80, 60, 100].map((w, i) => (
-                            <div key={i} className="mb-3 h-4 rounded animate-pulse bg-gray-200 w-[var(--tab-width)]" style={{ '--tab-width': `${w}px` }} />
-                        ))}
+                    <div className="flex gap-8 border-b border-gray-200 pb-3">
+                        <div className="h-5 w-24 rounded animate-pulse bg-gray-200" />
+                        <div className="h-5 w-20 rounded animate-pulse bg-gray-200" />
+                        <div className="h-5 w-28 rounded animate-pulse bg-gray-200" />
+                        <div className="h-5 w-24 rounded animate-pulse bg-gray-200" />
                     </div>
-                    {/* Field grid skeletons */}
-                    <div className="space-y-4">
-                        <div className="h-5 w-40 rounded bg-gray-200 animate-pulse" />
-                        <div className="grid grid-cols-3 gap-4">
-                            {Array.from({ length: 9 }).map((_, i) => (
-                                <div key={i} className="h-12 rounded-lg bg-gray-200 animate-pulse" />
-                            ))}
+
+                    {/* Content grid skeleton */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {/* Left column */}
+                        <div className="space-y-6">
+                            {/* Section 1 */}
+                            <div className="space-y-4">
+                                <div className="h-6 w-48 rounded bg-gray-200 animate-pulse" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    {Array.from({ length: 4 }).map((_, i) => (
+                                        <div key={i} className="h-16 rounded-lg bg-gray-100 animate-pulse" />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Section 2 */}
+                            <div className="space-y-4">
+                                <div className="h-6 w-56 rounded bg-gray-200 animate-pulse" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <div key={i} className="h-16 rounded-lg bg-gray-100 animate-pulse" />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Right column */}
+                        <div className="space-y-6">
+                            {/* Section 3 */}
+                            <div className="space-y-4">
+                                <div className="h-6 w-52 rounded bg-gray-200 animate-pulse" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    {Array.from({ length: 4 }).map((_, i) => (
+                                        <div key={i} className="h-16 rounded-lg bg-gray-100 animate-pulse" />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Section 4 */}
+                            <div className="space-y-4">
+                                <div className="h-6 w-44 rounded bg-gray-200 animate-pulse" />
+                                <div className="grid grid-cols-2 gap-4">
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                        <div key={i} className="h-16 rounded-lg bg-gray-100 animate-pulse" />
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div className="space-y-4">
-                        <div className="h-5 w-48 rounded bg-gray-200 animate-pulse" />
-                        <div className="grid grid-cols-3 gap-4">
-                            {Array.from({ length: 6 }).map((_, i) => (
-                                <div key={i} className="h-12 rounded-lg bg-gray-100 animate-pulse" />
+
+                    {/* Bottom section skeleton */}
+                    <div className="space-y-4 pt-8 border-t border-gray-200">
+                        <div className="h-6 w-40 rounded bg-gray-200 animate-pulse" />
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                                <div key={i} className="h-24 rounded-lg bg-gray-100 animate-pulse" />
                             ))}
                         </div>
                     </div>

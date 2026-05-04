@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
-import { clearDashboardCache } from '../components/ManageCattleDashboard';
+import { clearDashboardCache } from '../utils/dashboardCache';
 
 const AuthContext = createContext();
 

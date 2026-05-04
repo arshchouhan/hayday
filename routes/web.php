@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CheckAuth;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -16,7 +17,7 @@ Route::get('/contact', function() {
 });
 
 // Protected routes - require authentication
-Route::middleware('auth')->group(function () {
+Route::middleware([CheckAuth::class])->group(function () {
     Route::get('/farm/{any?}', function() {
         return view('welcome');
     })->where('any', '.*');

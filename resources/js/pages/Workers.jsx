@@ -44,7 +44,7 @@ const WorkersPage = () => {
             .substring(0, 2);
     };
 
-    const filteredWorkers = workers.filter(w => 
+    const filteredWorkers = workers.filter(w =>
         w.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -60,8 +60,8 @@ const WorkersPage = () => {
                         View and Edit the details of all your Workers by clicking on them. Click on the "Add Worker" button to add new Worker to your Ranch.
                     </p>
                 </div>
-                
-                <button 
+
+                <button
                     onClick={() => navigate('/farm/workers/add')}
                     className="flex items-center justify-center gap-2 rounded-full bg-[#1a1a2e] px-8 py-3 text-[14px] font-bold text-white shadow-md hover:bg-black transition-all md:ml-auto whitespace-nowrap"
                 >
@@ -75,7 +75,7 @@ const WorkersPage = () => {
                 <p className="text-[13px] font-medium text-gray-500 hidden md:block">
                     View and Edit details of all your Workers by clicking on them.
                 </p>
-                
+
                 <div className="flex items-center gap-4 md:ml-auto w-full md:w-auto justify-between md:justify-end">
                     <div className="flex items-center gap-3">
                         <span className="text-[13px] font-black text-[#1a1a2e] whitespace-nowrap">Sort By</span>
@@ -84,11 +84,11 @@ const WorkersPage = () => {
                             <ArrowDownUp size={14} className="text-gray-400" />
                         </div>
                     </div>
-                    
+
                     <div className="relative w-full sm:w-64 flex-shrink-0">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             placeholder="Search Worker by name..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -111,8 +111,8 @@ const WorkersPage = () => {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {filteredWorkers.map(worker => (
-                            <div 
-                                key={worker._id || worker.id} 
+                            <div
+                                key={worker._id || worker.id}
                                 onClick={() => navigate(`/farm/workers/add?workerId=${worker._id || worker.id}`)}
                                 className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-between group"
                             >
@@ -128,7 +128,7 @@ const WorkersPage = () => {
                                         </div>
                                     </div>
                                 </div>
-                                <button 
+                                <button
                                     onClick={(e) => handleDelete(worker._id || worker.id, e)}
                                     className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-red-50 text-gray-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                                 >

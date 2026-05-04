@@ -343,4 +343,26 @@ class AnimalController extends Controller
         $animal->update($request->all());
         return response()->json(['success' => true, 'data' => $animal]);
     }
+
+    public function destroy($id)
+    {
+        $animal = Animal::find($id) ?? Cattle::find($id) ?? Sheep::find($id);
+        if (!$animal) return response()->json(['message' => 'Animal not found'], 404);
+
+        $animal->delete();
+        return response()->json(['success' => true, 'message' => 'Animal deleted successfully']);
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids', []);
+        if (empty($ids)) return response()->json(['message' => 'No IDs provided'], 400);
+
+        // Delete from all possible collections
+        Animal::whereIn('_id', $ids)->delete();
+        Cattle::whereIn('_id', $ids)->delete();
+        Sheep::whereIn('_id', $ids)->delete();
+
+        return response()->json(['success' => true, 'message' => 'Animals deleted successfully']);
+    }
 }

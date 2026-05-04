@@ -286,6 +286,8 @@ export default function Farm() {
                             <Route path="activity/sales/:animalId/dead-animal" element={<DeadAnimalRecord />} />
                             <Route path="activity/sales/:animalId/feeding-sale" element={<FeedingSale />} />
                             <Route path="activity/sales/:animalId/weight-management" element={<WeightManagement />} />
+                            <Route path="location/add" element={<Location />} />
+                            <Route path="location/listing" element={<Location />} />
                             <Route path="location" element={<Location />} />
                             <Route path="details/:id/edit" element={<EditCattle />} />
                             <Route path="groups" element={<Groups />} />

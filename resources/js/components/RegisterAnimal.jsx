@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Loader from './Loader';
+import { clearDashboardCache } from '../utils/dashboardCache';
 
 const FloatingLabel = ({ label, required }) => (
     <label className="absolute -top-3 left-3 bg-[#F8FAFD] px-1 text-[13px] font-bold text-[#1a1a2e] z-10">
@@ -376,6 +377,9 @@ export default function RegisterAnimal({ onSelectAnimal }) {
         try {
             const response = await axios.post('/api/farm/animals', payload);
             if (response.data.success) {
+                // Clear cache so dashboard refetches fresh data including the new animal
+                clearDashboardCache();
+                
                 alert('Animal registered successfully!');
                 const root = pathname.startsWith('/farm') ? '/farm' : '/lifecycle';
                 navigate(`${root}/details`);

@@ -11,19 +11,9 @@ import RegisterAnimal from './RegisterAnimal';
 import AnimalDetail from './AnimalDetail';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronRight, MapPin, Layers, Users, Grid, List } from 'lucide-react';
+import { DASHBOARD_CACHE, clearDashboardCache } from '../utils/dashboardCache';
 
-const DASHBOARD_CACHE = {
-    formData: null,
-    pages: new Map(),
-    uiState: null,
-};
 
-/** Call this on login / logout to prevent cross-user data leakage from the module cache. */
-export function clearDashboardCache() {
-    DASHBOARD_CACHE.formData = null;
-    DASHBOARD_CACHE.pages.clear();
-    DASHBOARD_CACHE.uiState = null;
-}
 
 const FilterDropdown = ({ label, value, options, onChange, placeholder }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -128,7 +118,79 @@ const StatCard = ({ icon, count, label }) => (
     </div>
 );
 
-const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color, id, _id, isSelected, onToggleSelect, onViewAnimal }) => {
+const MessageModal = ({ isOpen, onClose, title, message, type = 'error' }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-[4px]" onClick={onClose} />
+            <div className="relative w-full max-w-sm scale-in-center overflow-hidden rounded-3xl bg-white shadow-2xl">
+                <div className="p-8 text-center">
+                    <div className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full ${type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                        {type === 'success' ? (
+                            <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6L9 17l-5-5" /></svg>
+                        ) : (
+                            <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="3"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                        )}
+                    </div>
+                    <h3 className="mb-2 text-[18px] font-black text-[#1a1a2e]">{title}</h3>
+                    <p className="mb-6 text-[13px] font-medium text-gray-500">{message}</p>
+                    <button
+                        onClick={onClose}
+                        className="w-full rounded-2xl bg-[#1a1a2e] py-3.5 text-[14px] font-bold text-white transition-all hover:bg-black active:scale-[0.98]"
+                    >
+                        Got it
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, count }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-[4px]" onClick={onClose} />
+
+            {/* Modal */}
+            <div className="relative w-full max-w-md scale-in-center overflow-hidden rounded-3xl bg-white shadow-2xl">
+                <div className="p-8 text-center">
+                    {/* Warning Icon */}
+                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-red-50">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-red-100 text-red-600">
+                            <svg viewBox="0 0 24 24" className="h-8 w-8" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M10 11v6M14 11v6" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <h3 className="mb-2 text-[20px] font-black text-[#1a1a2e]">Delete {count} Animal{count !== 1 ? 's' : ''}?</h3>
+                    <p className="mb-8 text-[14px] leading-relaxed text-gray-500">
+                        This action is permanent and cannot be undone. All records associated with {count === 1 ? 'this animal' : 'these animals'} will be removed from your farm database.
+                    </p>
+
+                    <div className="flex flex-col gap-3">
+                        <button
+                            onClick={onConfirm}
+                            className="w-full rounded-2xl bg-red-500 py-4 text-[15px] font-black text-white shadow-lg shadow-red-200 transition-all hover:bg-red-600 active:scale-[0.98]"
+                        >
+                            Yes, Delete Permanently
+                        </button>
+                        <button
+                            onClick={onClose}
+                            className="w-full rounded-2xl border border-gray-200 bg-white py-4 text-[15px] font-bold text-gray-500 transition-all hover:bg-gray-50 active:scale-[0.98]"
+                        >
+                            No, Keep it
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color, id, _id, isSelected, onToggleSelect, onViewAnimal, breeding_status }) => {
     const animalId = id || _id;
     const breedStr = typeof breed === 'string' ? breed : breed?.name || '';
     const isCow = (
@@ -186,18 +248,31 @@ const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color,
                 </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-                <span className="rounded-full bg-[#DCE9E3] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
-                    {type}
-                </span>
-                <span className="rounded-full bg-[#DCE9E3] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
-                    {name}
-                </span>
-            </div>
+            <div className="mt-3 space-y-2">
+                <div className="flex flex-wrap gap-2">
+                    {/* Pill 1: Icon + Type */}
+                    <span className="flex items-center gap-1.5 rounded-full bg-[#DCE9E3] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
+                        <img
+                            src={animalType === 'sheep' ? sheepIcon : cowIcon}
+                            className="h-3.5 w-3.5 opacity-90"
+                            alt=""
+                        />
+                        {type || 'Cow'}
+                    </span>
 
-            <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-[#1a1a2e]"></div>
-                <span className="text-[11px] font-bold text-[#1a1a2e]">{status}</span>
+                    {/* Pill 2: Cattle Name | {name} */}
+                    <span className="rounded-full bg-[#DCE9E3] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
+                        Cattle Name | <span className="font-black">{name || 'N/A'}</span>
+                    </span>
+                </div>
+
+                {/* Pill 3: Status | Breeding Status */}
+                <div className="flex flex-wrap gap-2">
+                    <span className="flex items-center gap-2 rounded-full bg-[#DCE9E3] px-3 py-1 text-[11px] font-bold text-[#1a1a2e]">
+                        <div className="h-2 w-2 rounded-full bg-[#059669]"></div>
+                        {status || 'Active'} | <span className="font-black">{breeding_status || 'Exposed'}</span>
+                    </span>
+                </div>
             </div>
         </div>
     );
@@ -205,7 +280,7 @@ const AnimalCard = ({ earTag, type, name, breed, status, species, ear_tag_color,
 
 
 
-const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDeselectAll, onViewAnimal, onChooseActivity, containerRef }) => {
+const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDeselectAll, onViewAnimal, onChooseActivity, containerRef, onDelete }) => {
     const isAllSelected = animals.length > 0 && animals.every(a => selectedIds.includes(a.id || a._id));
     const hasSelection = selectedIds.length > 0;
 
@@ -322,6 +397,7 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                     <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
                     <button
                         disabled={!hasSelection}
+                        onClick={onDelete}
                         className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${hasSelection ? 'bg-red-500 text-white border border-[#80888F] shadow-md hover:bg-red-600' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
                             }`}
                     >
@@ -657,6 +733,8 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
     const [formDataLoaded, setFormDataLoaded] = useState(() => Boolean(DASHBOARD_CACHE.formData));
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [assignWorkerSidebarOpen, setAssignWorkerSidebarOpen] = useState(false);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [messageModal, setMessageModal] = useState({ open: false, title: '', message: '', type: 'error' });
     const [currentPage, setCurrentPage] = useState(() => DASHBOARD_CACHE.uiState?.currentPage || 1);
     const itemsPerPage = 12;
     const [listPage, setListPage] = useState(1); // number of pages loaded in list mode
@@ -889,14 +967,45 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [viewMode, listContainerRef.current, isLoadingMore, hasMore, listPage]);
 
-    useEffect(() => {
-        DASHBOARD_CACHE.uiState = {
-            currentPage,
-            searchQuery,
-            selectedLocation,
-            selectedGroup,
-        };
-    }, [currentPage, searchQuery, selectedLocation, selectedGroup]);
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
+
+        try {
+            const response = await fetch('/api/farm/animals/bulk-delete', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content'),
+                },
+                body: JSON.stringify({ ids: selectedIds }),
+            });
+
+            if (!response.ok) throw new Error('Delete failed');
+
+            const result = await response.json();
+            if (result.success) {
+                // Clear selection
+                setSelectedIds([]);
+                setDeleteModalOpen(false);
+                // Clear cache so it fetches fresh data
+                DASHBOARD_CACHE.pages.clear();
+                // Refresh current page
+                if (viewMode === 'list') {
+                    fetchListPage(1, false);
+                } else {
+                    window.location.reload();
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting animals:', error);
+            setMessageModal({
+                open: true,
+                title: 'Operation Failed',
+                message: 'Failed to delete animals. Please check your connection and try again.',
+                type: 'error'
+            });
+        }
+    };
 
 
 
@@ -1102,6 +1211,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                                     <div className="h-8 w-[1px] bg-gray-200 mx-2"></div>
                                     <button
                                         disabled={selectedIds.length === 0}
+                                        onClick={() => setDeleteModalOpen(true)}
                                         className={`flex items-center gap-2 rounded-full px-5 py-2 text-[13px] font-bold transition-all ${selectedIds.length > 0 ? 'bg-red-500 text-white border border-[#80888F] shadow-md hover:bg-red-600' : 'bg-gray-50 text-gray-400 cursor-not-allowed border border-gray-100 opacity-60'
                                             }`}
                                     >
@@ -1130,6 +1240,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                             onDeselectAll={handleDeselectAll}
                             onViewAnimal={handleViewAnimal}
                             onChooseActivity={() => setSidebarOpen(true)}
+                            onDelete={() => setDeleteModalOpen(true)}
                         />
                     )}
                 </section>
@@ -1145,6 +1256,19 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                     onClose={() => setAssignWorkerSidebarOpen(false)}
                     selectedIds={selectedIds}
                     navigate={navigate}
+                />
+                <DeleteConfirmationModal
+                    isOpen={deleteModalOpen}
+                    onClose={() => setDeleteModalOpen(false)}
+                    onConfirm={handleBulkDelete}
+                    count={selectedIds.length}
+                />
+                <MessageModal
+                    isOpen={messageModal.open}
+                    onClose={() => setMessageModal({ ...messageModal, open: false })}
+                    title={messageModal.title}
+                    message={messageModal.message}
+                    type={messageModal.type}
                 />
             </>
         );
