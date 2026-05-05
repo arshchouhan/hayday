@@ -7,15 +7,85 @@ use App\Models\FarmNotification;
 use App\Models\HealthRecord;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
 class NotificationService
 {
+    private string $driver;
+    private string $javaUrl;
+
+    public function __construct()
+    {
+        $this->driver = (string) config('services.notifications.driver', 'laravel');
+        $this->javaUrl = rtrim((string) config('services.notifications.java_url', 'http://localhost:8080'), '/');
+
+        Log::info('NotificationService initialized', [
+            'driver' => $this->driver,
+            'java_url' => $this->javaUrl,
+        ]);
+    }
+
+    public function list($userId)
+    {
+        return $this->driver === 'java'
+            ? $this->listFromJava($userId)
+            : $this->listFromLaravel($userId);
+    }
+
+    public function create(array $data)
+    {
+        return $this->driver === 'java'
+            ? $this->createViaJava($data)
+            : $this->createViaLaravel($data);
+    }
+
+    public function markRead($notificationId)
+    {
+        return $this->driver === 'java'
+            ? $this->markReadJava($notificationId)
+            : $this->markReadLaravel($notificationId);
+    }
+
+    public function markAllRead($userId)
+    {
+        return $this->driver === 'java'
+            ? $this->markAllReadJava($userId)
+            : $this->markAllReadLaravel($userId);
+    }
+
+    public function delete($notificationId)
+    {
+        return $this->driver === 'java'
+            ? $this->deleteJava($notificationId)
+            : $this->deleteLaravel($notificationId);
+    }
+
     public function createActivityNotification(?User $user, Animal $animal, array $data): ?FarmNotification
     {
         $userId = $this->resolveUserId($user);
 
         if (! $userId) {
+            return null;
+        }
+
+        if ($this->driver === 'java') {
+            $payload = [
+                'user_id' => $userId,
+                'animal_id' => (string) $animal->getKey(),
+                'category' => $data['category'] ?? 'activity',
+                'level' => $data['level'] ?? 'info',
+                'title' => $data['title'],
+                'message' => $data['message'],
+                'action_url' => $data['action_url'] ?? null,
+                'metadata' => $data['metadata'] ?? [],
+                'dedup_key' => $data['dedup_key'] ?? null,
+            ];
+
+            $this->createViaJava($payload);
+
             return null;
         }
 
@@ -46,6 +116,24 @@ class NotificationService
 
         if (! $userId) {
             return [];
+        }
+
+        if ($this->driver === 'java') {
+            $issues = $this->buildAttentionIssues($animal);
+
+            return array_map(function (array $issue) use ($userId, $animal) {
+                return $this->createViaJava([
+                    'user_id' => $userId,
+                    'animal_id' => (string) $animal->getKey(),
+                    'category' => 'attention',
+                    'level' => $issue['level'],
+                    'title' => $issue['title'],
+                    'message' => $issue['message'],
+                    'action_url' => $issue['action_url'] ?? null,
+                    'metadata' => $issue['metadata'] ?? [],
+                    'dedup_key' => $issue['dedup_key'] ?? null,
+                ]);
+            }, $issues);
         }
 
         $issues = $this->buildAttentionIssues($animal);
@@ -218,5 +306,194 @@ class NotificationService
         $authUser = Auth::user();
 
         return $authUser ? (string) $authUser->getKey() : null;
+    }
+
+    private function listFromJava($userId)
+    {
+        try {
+            $response = Http::acceptJson()->timeout(10)->get("{$this->javaUrl}/api/notifications/{$userId}");
+            $response->throw();
+
+            Log::info('NotificationService:listFromJava succeeded', ['user_id' => $userId]);
+
+            return $response->json();
+        } catch (ConnectionException $exception) {
+            Log::error('NotificationService:listFromJava connection error', ['error' => $exception->getMessage()]);
+            throw new \RuntimeException('Notification service unavailable: ' . $exception->getMessage(), previous: $exception);
+        } catch (\Throwable $exception) {
+            Log::error('NotificationService:listFromJava failed', ['error' => $exception->getMessage()]);
+            throw new \RuntimeException('Failed to list notifications: ' . $exception->getMessage(), previous: $exception);
+        }
+    }
+
+    private function createViaJava(array $data)
+    {
+        try {
+            $payload = [
+                'user_id' => $data['user_id'] ?? auth()->id(),
+                'category' => $data['category'] ?? 'activity',
+                'level' => $data['level'] ?? 'info',
+                'title' => $data['title'] ?? '',
+                'message' => $data['message'] ?? '',
+                'action_url' => $data['action_url'] ?? null,
+                'animal_id' => $data['animal_id'] ?? null,
+                'dedup_key' => $data['dedup_key'] ?? null,
+                'metadata' => $data['metadata'] ?? null,
+            ];
+
+            $response = Http::acceptJson()->timeout(10)->post("{$this->javaUrl}/api/notifications", $payload);
+            $response->throw();
+
+            Log::info('NotificationService:createViaJava succeeded', ['user_id' => $payload['user_id']]);
+
+            return $response->json();
+        } catch (ConnectionException $exception) {
+            Log::error('NotificationService:createViaJava connection error', ['error' => $exception->getMessage()]);
+            throw new \RuntimeException('Notification service unavailable: ' . $exception->getMessage(), previous: $exception);
+        } catch (\Throwable $exception) {
+            Log::error('NotificationService:createViaJava failed', ['error' => $exception->getMessage()]);
+            throw new \RuntimeException('Failed to create notification: ' . $exception->getMessage(), previous: $exception);
+        }
+    }
+
+    private function markReadJava($notificationId)
+    {
+        try {
+            $response = Http::acceptJson()->timeout(10)->patch("{$this->javaUrl}/api/notifications/{$notificationId}/read");
+            $response->throw();
+
+            Log::info('NotificationService:markReadJava succeeded', ['notification_id' => $notificationId]);
+
+            return $response->json();
+        } catch (\Throwable $exception) {
+            Log::error('NotificationService:markReadJava failed', ['error' => $exception->getMessage()]);
+            throw new \RuntimeException('Failed to mark as read: ' . $exception->getMessage(), previous: $exception);
+        }
+    }
+
+    private function markAllReadJava($userId)
+    {
+        try {
+            $response = Http::acceptJson()->timeout(10)->patch("{$this->javaUrl}/api/notifications/{$userId}/read-all");
+            $response->throw();
+
+            Log::info('NotificationService:markAllReadJava succeeded', ['user_id' => $userId]);
+
+            return true;
+        } catch (\Throwable $exception) {
+            Log::error('NotificationService:markAllReadJava failed', ['error' => $exception->getMessage()]);
+            throw new \RuntimeException('Failed to mark all as read: ' . $exception->getMessage(), previous: $exception);
+        }
+    }
+
+    private function deleteJava($notificationId)
+    {
+        try {
+            $response = Http::acceptJson()->timeout(10)->delete("{$this->javaUrl}/api/notifications/{$notificationId}");
+            $response->throw();
+
+            Log::info('NotificationService:deleteJava succeeded', ['notification_id' => $notificationId]);
+
+            return true;
+        } catch (\Throwable $exception) {
+            Log::error('NotificationService:deleteJava failed', ['error' => $exception->getMessage()]);
+            throw new \RuntimeException('Failed to delete notification: ' . $exception->getMessage(), previous: $exception);
+        }
+    }
+
+    private function listFromLaravel($userId)
+    {
+        $query = FarmNotification::where('user_id', (string) $userId);
+
+        return [
+            'success' => true,
+            'data' => $query->orderBy('created_at', 'desc')->limit(100)->get()->map(function (FarmNotification $notification) {
+                return $this->formatNotification($notification);
+            })->values(),
+            'meta' => [
+                'total_count' => FarmNotification::where('user_id', (string) $userId)->count(),
+                'unread_count' => FarmNotification::where('user_id', (string) $userId)->where('status', 'unread')->count(),
+            ],
+        ];
+    }
+
+    private function createViaLaravel(array $data)
+    {
+        $userId = (string) ($data['user_id'] ?? auth()->id());
+
+        return FarmNotification::create([
+            'user_id' => $userId,
+            'animal_id' => isset($data['animal_id']) ? (string) $data['animal_id'] : null,
+            'category' => $data['category'] ?? 'activity',
+            'level' => $data['level'] ?? 'info',
+            'title' => $data['title'] ?? '',
+            'message' => $data['message'] ?? '',
+            'action_url' => $data['action_url'] ?? null,
+            'metadata' => $data['metadata'] ?? [],
+            'status' => 'unread',
+            'read_at' => null,
+            'resolved_at' => null,
+            'dedup_key' => $data['dedup_key'] ?? null,
+        ]);
+    }
+
+    private function markReadLaravel($notificationId)
+    {
+        $notification = FarmNotification::where('_id', $notificationId)->first();
+
+        if (! $notification) {
+            throw new \RuntimeException('Notification not found');
+        }
+
+        $notification->update([
+            'status' => 'read',
+            'read_at' => now(),
+        ]);
+
+        return $this->formatNotification($notification->fresh());
+    }
+
+    private function markAllReadLaravel($userId)
+    {
+        FarmNotification::where('user_id', (string) $userId)
+            ->where('status', 'unread')
+            ->update([
+                'status' => 'read',
+                'read_at' => now(),
+            ]);
+
+        return true;
+    }
+
+    private function deleteLaravel($notificationId)
+    {
+        $notification = FarmNotification::where('_id', $notificationId)->first();
+
+        if (! $notification) {
+            throw new \RuntimeException('Notification not found');
+        }
+
+        $notification->delete();
+
+        return true;
+    }
+
+    private function formatNotification(FarmNotification $notification): array
+    {
+        return [
+            'id' => (string) $notification->getKey(),
+            'user_id' => (string) $notification->user_id,
+            'animal_id' => $notification->animal_id ? (string) $notification->animal_id : null,
+            'category' => $notification->category,
+            'level' => $notification->level,
+            'title' => $notification->title,
+            'message' => $notification->message,
+            'action_url' => $notification->action_url,
+            'metadata' => $notification->metadata ?? [],
+            'status' => $notification->status,
+            'created_at' => optional($notification->created_at)->toDateTimeString(),
+            'read_at' => optional($notification->read_at)->toDateTimeString(),
+            'resolved_at' => optional($notification->resolved_at)->toDateTimeString(),
+        ];
     }
 }

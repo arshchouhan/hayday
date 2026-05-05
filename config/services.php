@@ -41,4 +41,9 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'notifications' => [
+        'driver' => env('NOTIFICATIONS_SERVICE', 'laravel'),
+        'java_url' => env('NOTIFICATION_API_URL', 'http://localhost:8080'),
+    ],
+
 ];

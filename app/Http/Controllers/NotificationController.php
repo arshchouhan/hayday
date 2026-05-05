@@ -2,115 +2,82 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FarmNotification;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class NotificationController extends Controller
 {
+    public function __construct(private readonly NotificationService $notificationService)
+    {
+    }
+
     public function index(Request $request)
     {
         $userId = (string) $request->user()->getKey();
-        $limit = min(max((int) $request->query('limit', 25), 1), 100);
-        $status = $request->query('status');
-        $category = $request->query('category');
+        $payload = $this->notificationService->list($userId);
 
-        $query = FarmNotification::where('user_id', $userId);
+        return response()->json($payload);
+    }
 
-        if ($status && in_array($status, ['unread', 'read', 'resolved'], true)) {
-            $query->where('status', $status);
-        }
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'category' => ['required', 'string'],
+            'level' => ['required', 'string'],
+            'title' => ['required', 'string'],
+            'message' => ['required', 'string'],
+            'action_url' => ['nullable', 'string'],
+            'animal_id' => ['nullable', 'string'],
+            'dedup_key' => ['nullable', 'string'],
+            'metadata' => ['nullable', 'array'],
+        ]);
 
-        if ($category && in_array($category, ['activity', 'attention'], true)) {
-            $query->where('category', $category);
-        }
-
-        $notifications = $query
-            ->orderBy('created_at', 'desc')
-            ->limit($limit)
-            ->get();
-
-        $totalCount = FarmNotification::where('user_id', $userId)->count();
-        $unreadCount = FarmNotification::where('user_id', $userId)->where('status', 'unread')->count();
-        $attentionCount = FarmNotification::where('user_id', $userId)->where('category', 'attention')->whereIn('status', ['unread', 'read'])->count();
+        $data['user_id'] = (string) $request->user()->getKey();
+        $notification = $this->notificationService->create($data);
 
         return response()->json([
             'success' => true,
-            'data' => $notifications->map(fn (FarmNotification $notification) => $this->formatNotification($notification))->values(),
-            'meta' => [
-                'total_count' => $totalCount,
-                'unread_count' => $unreadCount,
-                'attention_count' => $attentionCount,
-                'limit' => $limit,
-            ],
-        ]);
+            'data' => $notification,
+        ], 201);
     }
 
     public function markRead(Request $request, $id)
     {
-        $notification = FarmNotification::where('_id', $id)
-            ->where('user_id', (string) $request->user()->getKey())
-            ->first();
+        try {
+            $notification = $this->notificationService->markRead($id);
 
-        if (! $notification) {
-            return response()->json(['success' => false, 'message' => 'Notification not found'], 404);
+            return response()->json([
+                'success' => true,
+                'data' => $notification,
+            ]);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 404);
         }
-
-        $notification->update([
-            'status' => 'read',
-            'read_at' => now(),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'data' => $this->formatNotification($notification->fresh()),
-        ]);
     }
 
     public function markAllRead(Request $request)
     {
         $userId = (string) $request->user()->getKey();
 
-        FarmNotification::where('user_id', $userId)
-            ->where('status', 'unread')
-            ->update([
-                'status' => 'read',
-                'read_at' => now(),
-            ]);
+        $this->notificationService->markAllRead($userId);
 
         return response()->json(['success' => true, 'message' => 'Notifications marked as read']);
     }
 
     public function destroy(Request $request, $id)
     {
-        $notification = FarmNotification::where('_id', $id)
-            ->where('user_id', (string) $request->user()->getKey())
-            ->first();
+        try {
+            $this->notificationService->delete($id);
 
-        if (! $notification) {
-            return response()->json(['success' => false, 'message' => 'Notification not found'], 404);
+            return response()->json(['success' => true, 'message' => 'Notification deleted']);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 404);
         }
-
-        $notification->delete();
-
-        return response()->json(['success' => true, 'message' => 'Notification deleted']);
-    }
-
-    private function formatNotification(FarmNotification $notification): array
-    {
-        return [
-            'id' => (string) $notification->getKey(),
-            'user_id' => (string) $notification->user_id,
-            'animal_id' => $notification->animal_id ? (string) $notification->animal_id : null,
-            'category' => $notification->category,
-            'level' => $notification->level,
-            'title' => $notification->title,
-            'message' => $notification->message,
-            'action_url' => $notification->action_url,
-            'metadata' => $notification->metadata ?? [],
-            'status' => $notification->status,
-            'created_at' => optional($notification->created_at)->toDateTimeString(),
-            'read_at' => optional($notification->read_at)->toDateTimeString(),
-            'resolved_at' => optional($notification->resolved_at)->toDateTimeString(),
-        ];
     }
 }
