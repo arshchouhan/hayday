@@ -9,6 +9,7 @@ use App\Models\HealthRecord;
 use App\Models\Animal;
 use App\Models\Cattle;
 use App\Models\Sheep;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -48,6 +49,22 @@ class HealthController extends Controller
 
             Log::info("Health record ({$request->type}) saved for animal: {$request->animal_id}");
 
+            $notifications = app(NotificationService::class);
+            $notifications->createActivityNotification($request->user(), $animal, [
+                'category' => 'health',
+                'level' => in_array($request->type, ['treatment', 'observation'], true) ? 'warning' : 'info',
+                'title' => ucfirst($request->type) . ' record saved',
+                'message' => $this->buildHealthMessage($animal, $request->type),
+                'action_url' => '/farm/activity/health/' . $animal->id,
+                'metadata' => [
+                    'event' => 'health_record',
+                    'type' => $request->type,
+                    'animal_id' => (string) $animal->id,
+                ],
+            ]);
+
+            $notifications->syncAnimalAttentionNotifications($request->user(), $animal);
+
             return response()->json([
                 'success' => true,
                 'message' => ucfirst($request->type) . ' record saved successfully',
@@ -81,5 +98,12 @@ class HealthController extends Controller
     private function findAnimal($id)
     {
         return Animal::find($id) ?? Cattle::find($id) ?? Sheep::find($id);
+    }
+
+    private function buildHealthMessage($animal, string $type): string
+    {
+        $animalLabel = $animal->ear_tag ?: $animal->animal_name ?: 'Animal ' . $animal->id;
+
+        return "{$animalLabel} has a new {$type} record.";
     }
 }

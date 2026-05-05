@@ -11,6 +11,7 @@ use App\Models\SalesRecord;
 use App\Models\Animal;
 use App\Models\Cattle;
 use App\Models\Sheep;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -83,6 +84,22 @@ class ActivityController extends Controller
                 }
             }
 
+            $notifications = app(NotificationService::class);
+            $notifications->createActivityNotification($request->user(), $animal, [
+                'category' => $hub,
+                'level' => $hub === 'sales' && $request->type === 'dead' ? 'danger' : 'info',
+                'title' => ucfirst($hub) . ' activity recorded',
+                'message' => $this->buildActivityMessage($hub, $request->type, $animal),
+                'action_url' => '/farm/details/' . $animal->id,
+                'metadata' => [
+                    'hub' => $hub,
+                    'type' => $request->type,
+                    'animal_id' => (string) $animal->id,
+                ],
+            ]);
+
+            $notifications->syncAnimalAttentionNotifications($request->user(), $animal);
+
             return response()->json([
                 'success' => true,
                 'message' => 'Activity recorded successfully',
@@ -98,6 +115,18 @@ class ActivityController extends Controller
     private function findAnimal($id)
     {
         return Animal::find($id) ?? Cattle::find($id) ?? Sheep::find($id);
+    }
+
+    private function buildActivityMessage($hub, $type, $animal): string
+    {
+        $animalLabel = $animal->ear_tag ?: $animal->animal_name ?: 'Animal ' . $animal->id;
+
+        return match ($hub) {
+            'breeding' => "{$animalLabel} breeding activity ({$type}) was saved.",
+            'movement' => "{$animalLabel} movement activity ({$type}) was saved.",
+            'sales' => "{$animalLabel} sales activity ({$type}) was saved.",
+            default => "{$animalLabel} activity was saved.",
+        };
     }
 
     /**

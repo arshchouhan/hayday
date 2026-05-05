@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import SuboptionsSidebar from '../components/SuboptionsSidebar';
 import Activity from './Activity';
 import AnimalSelection from './AnimalSelection';
+import Notifications from './Notifications';
 import HealthActivity from './HealthActivity';
 import BreedingActivity from './BreedingActivity';
 import MovementActivity from './MovementActivity';
@@ -39,6 +40,7 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
+            { key: 'notifications', label: 'Notifications', to: '/farm/notifications' },
             { key: 'groups', label: 'Groups', to: '/farm/groups' },
             { key: 'workers', label: 'Workers', to: '/farm/workers' },
         ],
@@ -50,6 +52,7 @@ const sectionConfigs = {
             { key: 'records', label: 'Health Records', to: '/health' },
             { key: 'vaccinations', label: 'Vaccinations', to: '/health/vaccinations' },
             { key: 'treatments', label: 'Treatments', to: '/health/treatments' },
+            { key: 'notifications', label: 'Notifications', to: '/farm/notifications' },
         ],
     },
     inventory: {
@@ -58,6 +61,7 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
+            { key: 'notifications', label: 'Notifications', to: '/farm/notifications' },
             { key: 'groups', label: 'Groups', to: '/farm/groups' },
             { key: 'workers', label: 'Workers', to: '/farm/workers' },
             { key: 'inventory', label: 'Inventory', to: '/farm/inventory' },
@@ -78,6 +82,7 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
+            { key: 'notifications', label: 'Notifications', to: '/farm/notifications' },
             { key: 'groups', label: 'Groups', to: '/farm/groups' },
             { key: 'workers', label: 'Workers', to: '/farm/workers' },
             { key: 'location', label: 'Location', to: '/farm/location' },
@@ -89,6 +94,7 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
+            { key: 'notifications', label: 'Notifications', to: '/farm/notifications' },
             { key: 'groups', label: 'Groups', to: '/farm/groups' },
             { key: 'workers', label: 'Workers', to: '/farm/workers' },
         ],
@@ -286,6 +292,7 @@ export default function Farm() {
                             <Route path="activity/sales/:animalId/dead-animal" element={<DeadAnimalRecord />} />
                             <Route path="activity/sales/:animalId/feeding-sale" element={<FeedingSale />} />
                             <Route path="activity/sales/:animalId/weight-management" element={<WeightManagement />} />
+                            <Route path="notifications" element={<Notifications />} />
                             <Route path="location/add" element={<Location />} />
                             <Route path="location/listing" element={<Location />} />
                             <Route path="location" element={<Location />} />

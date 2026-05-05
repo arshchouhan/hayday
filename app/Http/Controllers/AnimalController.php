@@ -8,6 +8,7 @@ use App\Models\Sheep;
 use App\Models\Breed;
 use App\Models\Location;
 use App\Models\Group;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use MongoDB\BSON\ObjectId;
@@ -279,6 +280,22 @@ class AnimalController extends Controller
             throw new \Exception('Model save() returned false');
         }
         \Illuminate\Support\Facades\Log::info('Animal saved successfully ID: ' . $animal->id);
+
+        $notifications = app(NotificationService::class);
+        $notifications->createActivityNotification($request->user(), $animal, [
+            'category' => 'animal',
+            'level' => 'info',
+            'title' => 'Animal registered',
+            'message' => $this->animalNotificationMessage($animal, 'was registered on the farm.'),
+            'action_url' => '/farm/details/' . $animal->id,
+            'metadata' => [
+                'event' => 'animal_registered',
+                'animal_id' => (string) $animal->id,
+            ],
+        ]);
+
+        $notifications->syncAnimalAttentionNotifications($request->user(), $animal);
+
         return response()->json([
             'success' => true,
             'message' => ucfirst($species) . ' registered successfully',
@@ -341,6 +358,22 @@ class AnimalController extends Controller
         if (!$animal) return response()->json(['message' => 'Animal not found'], 404);
 
         $animal->update($request->all());
+
+        $notifications = app(NotificationService::class);
+        $notifications->createActivityNotification($request->user(), $animal, [
+            'category' => 'animal',
+            'level' => 'info',
+            'title' => 'Animal details updated',
+            'message' => $this->animalNotificationMessage($animal, 'details were updated.'),
+            'action_url' => '/farm/details/' . $animal->id,
+            'metadata' => [
+                'event' => 'animal_updated',
+                'animal_id' => (string) $animal->id,
+            ],
+        ]);
+
+        $notifications->syncAnimalAttentionNotifications($request->user(), $animal);
+
         return response()->json(['success' => true, 'data' => $animal]);
     }
 
@@ -364,5 +397,12 @@ class AnimalController extends Controller
         Sheep::whereIn('_id', $ids)->delete();
 
         return response()->json(['success' => true, 'message' => 'Animals deleted successfully']);
+    }
+
+    private function animalNotificationMessage($animal, string $suffix): string
+    {
+        $animalLabel = $animal->ear_tag ?: $animal->animal_name ?: 'Animal ' . $animal->id;
+
+        return "{$animalLabel} {$suffix}";
     }
 }
