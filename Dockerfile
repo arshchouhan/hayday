@@ -28,7 +28,8 @@ RUN composer install \
     --no-interaction \
     --no-progress \
     --prefer-dist \
-    --optimize-autoloader
+    --optimize-autoloader \
+    --no-scripts
 
 FROM node:22-bookworm-slim AS frontend
 
@@ -47,6 +48,8 @@ WORKDIR /var/www/html
 COPY . .
 COPY --from=vendor /var/www/html/vendor ./vendor
 COPY --from=frontend /app/public/build ./public/build
+
+RUN php artisan package:discover --ansi || true
 
 RUN php artisan storage:link || true && \
     chown -R www-data:www-data storage bootstrap/cache
