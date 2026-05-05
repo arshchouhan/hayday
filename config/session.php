@@ -18,9 +18,7 @@ return [
     |
     */
 
-    'driver' => env('DB_CONNECTION', 'mysql') === 'mongodb'
-        ? 'cookie'
-        : env('SESSION_DRIVER', 'database'),
+    'driver' => env('SESSION_DRIVER', 'cookie'),
 
     /*
     |--------------------------------------------------------------------------
