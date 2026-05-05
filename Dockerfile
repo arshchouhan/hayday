@@ -1,45 +1,58 @@
-FROM php:8.3-fpm
+FROM php:8.3-cli-bookworm AS base
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     curl \
+    unzip \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    zip \
-    unzip \
+    libzip-dev \
     libcurl4-openssl-dev \
     pkg-config \
     libssl-dev \
-    nodejs \
-    npm
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip \
+    && pecl install mongodb \
+    && docker-php-ext-enable mongodb \
+    && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd && \
-    pecl install mongodb && \
-    docker-php-ext-enable mongodb
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+WORKDIR /var/www/html
 
-# Set working directory
-WORKDIR /var/www
+FROM base AS vendor
 
-# Copy project files
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --optimize-autoloader
+
+FROM node:22-bookworm-slim AS frontend
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
 COPY . .
+RUN npm run build
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
+FROM base AS app
 
-# Install Node dependencies and build React
-RUN npm install && npm run build
+WORKDIR /var/www/html
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
+COPY . .
+COPY --from=vendor /var/www/html/vendor ./vendor
+COPY --from=frontend /app/public/build ./public/build
 
-# Expose port
+RUN php artisan storage:link || true && \
+    chown -R www-data:www-data storage bootstrap/cache
+
+USER www-data
+
 EXPOSE 10000
 
-# Start Laravel
-CMD php artisan serve --host=0.0.0.0 --port=10000
+CMD ["sh", "-c", "php artisan serve --host=0.0.0.0 --port=${PORT:-10000}"]

@@ -20,6 +20,7 @@ import RestockInventory from './RestockInventory';
 import Workers from './Workers';
 import AddWorker from './AddWorker';
 import EditCattle from './EditCattle';
+import Profile from './Profile';
 import RecordHeat from './health/RecordHeat';
 import PregnancyCheck from './health/PregnancyCheck';
 import BreedingSoundnessExam from './health/BreedingSoundnessExam';
@@ -293,6 +294,7 @@ export default function Farm() {
                             <Route path="activity/sales/:animalId/feeding-sale" element={<FeedingSale />} />
                             <Route path="activity/sales/:animalId/weight-management" element={<WeightManagement />} />
                             <Route path="notifications" element={<Notifications />} />
+                            <Route path="profile" element={<Profile />} />
                             <Route path="location/add" element={<Location />} />
                             <Route path="location/listing" element={<Location />} />
                             <Route path="location" element={<Location />} />

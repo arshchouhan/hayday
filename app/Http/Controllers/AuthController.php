@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -73,6 +74,51 @@ class AuthController extends Controller
     {
         return response()->json([
             'user' => $request->user(),
+        ]);
+    }
+
+    /**
+     * Update the current authenticated user profile.
+     */
+    public function update(Request $request)
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'ranch_name' => 'required|string|max:255',
+            'profile_image' => 'nullable|string|max:2048',
+            'profile_image_file' => 'nullable|image|max:4096',
+            'profile_image_remove' => 'nullable|boolean',
+        ]);
+
+        $profileImage = $validated['profile_image'] ?? $user->profile_image;
+
+        if ($request->boolean('profile_image_remove')) {
+            $profileImage = null;
+        }
+
+        if ($request->hasFile('profile_image_file')) {
+            $storedPath = $request->file('profile_image_file')->store('profiles', 'public');
+            $profileImage = Storage::disk('public')->url($storedPath);
+        }
+
+        if (array_key_exists('profile_image', $validated) && filled($validated['profile_image'])) {
+            $profileImage = $validated['profile_image'];
+        }
+
+        $user->update([
+            'name' => $validated['name'],
+            'phone' => $validated['phone'] ?? null,
+            'ranch_name' => $validated['ranch_name'],
+            'profile_image' => $profileImage,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully',
+            'user' => $user->fresh(),
         ]);
     }
 

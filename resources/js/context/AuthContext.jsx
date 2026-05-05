@@ -71,8 +71,34 @@ export function AuthProvider({ children }) {
         }
     };
 
+    const updateProfile = async (data) => {
+        try {
+            await axios.get('/sanctum/csrf-cookie');
+            const formData = new FormData();
+
+            Object.entries(data).forEach(([key, value]) => {
+                if (value !== null && value !== undefined && value !== '') {
+                    formData.append(key, value instanceof File ? value : value);
+                }
+            });
+
+            formData.append('_method', 'PATCH');
+
+            const response = await axios.post('/api/auth/user', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+            setUser(response.data.user);
+            localStorage.setItem('hayday_user', JSON.stringify(response.data.user));
+            return response.data;
+        } catch (error) {
+            throw error;
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, register, checkAuth }}>
+        <AuthContext.Provider value={{ user, loading, login, logout, register, checkAuth, updateProfile }}>
             {children}
         </AuthContext.Provider>
     );

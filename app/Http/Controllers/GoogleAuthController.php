@@ -46,17 +46,25 @@ class GoogleAuthController extends Controller
 
             if ($user) {
                 // Link Google ID to existing account
-                $user->update(['google_id' => $googleUser->id]);
+                $user->update([
+                    'google_id' => $googleUser->id,
+                    'profile_image' => $googleUser->avatar,
+                ]);
             } else {
                 // Create a new user
                 $user = User::create([
                     'name' => $googleUser->name,
                     'email' => $googleUser->email,
                     'google_id' => $googleUser->id,
+                    'profile_image' => $googleUser->avatar,
                     'password' => Hash::make(Str::random(24)), // Random password for new users
                     'ranch_name' => $googleUser->name . "'s Ranch", // Default ranch name
                 ]);
             }
+        }
+
+        if ($googleUser->avatar && $user->profile_image !== $googleUser->avatar) {
+            $user->update(['profile_image' => $googleUser->avatar]);
         }
 
         // Log the user in

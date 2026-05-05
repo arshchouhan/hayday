@@ -18,6 +18,7 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 // Protected auth routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/auth/user', [AuthController::class, 'user']);
+    Route::patch('/auth/user', [AuthController::class, 'update']);
     Route::post('/auth/logout', [AuthController::class, 'logout']);
 
     Route::get('/notifications', [NotificationController::class, 'index']);
