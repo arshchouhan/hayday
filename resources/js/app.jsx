@@ -27,7 +27,13 @@ const ProtectedRoute = ({ children }) => {
 const GuestRoute = ({ children }) => {
   const { user, loading } = useAuth();
   
-  if (loading) return null;
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#F8FAFD]">
+        <div className="text-[15px] font-black text-[#1a1a2e] animate-pulse">Loading HayDay...</div>
+      </div>
+    );
+  }
   
   if (user) {
     return <Navigate to="/farm" replace />;
