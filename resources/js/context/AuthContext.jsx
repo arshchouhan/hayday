@@ -5,12 +5,26 @@ import { clearDashboardCache } from '../utils/dashboardCache';
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(() => {
+    const loadSavedUser = () => {
         const savedUser = localStorage.getItem('hayday_user');
-        return savedUser ? JSON.parse(savedUser) : null;
+
+        if (!savedUser) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(savedUser);
+        } catch (error) {
+            localStorage.removeItem('hayday_user');
+            return null;
+        }
+    };
+
+    const [user, setUser] = useState(() => {
+        return loadSavedUser();
     });
     // If we have a saved user, don't show the full-screen "Loading HayDay..." message on refresh
-    const [loading, setLoading] = useState(!localStorage.getItem('hayday_user'));
+    const [loading, setLoading] = useState(() => loadSavedUser() !== null);
 
     useEffect(() => {
         checkAuth();
