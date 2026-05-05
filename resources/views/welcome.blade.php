@@ -13,8 +13,10 @@
         @endif
 
         <title>{{ config('app.name', 'hayday') }}</title>
-        @viteReactRefresh
-        @vite(['resources/css/app.css', 'resources/js/main.jsx'])
+        @if (file_exists(public_path('build/manifest.json')))
+            @viteReactRefresh
+            @vite(['resources/css/app.css', 'resources/js/main.jsx'])
+        @endif
     </head>
     <body>
         <div id="app"></div>
