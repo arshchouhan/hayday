@@ -8,9 +8,11 @@ function formatTimeAgo(value) {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return 'just now';
 
-    const diffMs = Date.now() - date.getTime();
-    const diffMinutes = Math.max(1, Math.floor(diffMs / 60000));
-
+    const diffSeconds = Math.max(1, Math.floor((Date.now() - date.getTime()) / 1000));
+    
+    if (diffSeconds < 60) return `${diffSeconds}s ago`;
+    
+    const diffMinutes = Math.floor(diffSeconds / 60);
     if (diffMinutes < 60) return `${diffMinutes}m ago`;
 
     const diffHours = Math.floor(diffMinutes / 60);

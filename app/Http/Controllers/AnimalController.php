@@ -441,6 +441,7 @@ class AnimalController extends Controller
                 'event' => 'animal_updated',
                 'animal_id' => (string) $animal->id,
             ],
+            'dedup_key' => 'animal_updated_' . $animal->id . '_' . now()->format('YmdHi'), // Dedup per minute per animal
         ]);
 
         $notifications->syncAnimalAttentionNotifications($request->user(), $animal);

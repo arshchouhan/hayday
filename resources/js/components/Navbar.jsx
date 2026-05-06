@@ -89,7 +89,11 @@ export default function Navbar() {
 
     const handleNotificationsClick = () => {
         setShowProfileMenu(false);
-        setShowNotifications(!showNotifications);
+        const becomingVisible = !showNotifications;
+        setShowNotifications(becomingVisible);
+        if (becomingVisible) {
+            loadNotifications(25, true); // Background refresh when opening
+        }
     };
 
     const formatTimeAgo = (value) => {
@@ -98,7 +102,11 @@ export default function Navbar() {
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return 'just now';
 
-        const diffMinutes = Math.max(1, Math.floor((Date.now() - date.getTime()) / 60000));
+        const diffSeconds = Math.max(1, Math.floor((Date.now() - date.getTime()) / 1000));
+        
+        if (diffSeconds < 60) return `${diffSeconds}s ago`;
+        
+        const diffMinutes = Math.floor(diffSeconds / 60);
         if (diffMinutes < 60) return `${diffMinutes}m ago`;
 
         const diffHours = Math.floor(diffMinutes / 60);
