@@ -309,6 +309,7 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                             <th className="p-4 text-[13px] font-black text-[#1a1a2e] uppercase tracking-wider whitespace-nowrap border-r border-gray-100/50">Group</th>
                             <th className="p-4 text-[13px] font-black text-[#1a1a2e] uppercase tracking-wider whitespace-nowrap border-r border-gray-100/50">Ownership</th>
                             <th className="p-4 text-[13px] font-black text-[#1a1a2e] uppercase tracking-wider whitespace-nowrap border-r border-gray-100/50">Location</th>
+                            <th className="p-4 text-[13px] font-black text-[#1a1a2e] uppercase tracking-wider whitespace-nowrap border-r border-gray-100/50">Assigned Worker</th>
                             <th className="p-4 text-[13px] font-black text-[#1a1a2e] uppercase tracking-wider whitespace-nowrap">Animal Weights</th>
                         </tr>
                     </thead>
@@ -369,6 +370,7 @@ const AnimalList = ({ animals, selectedIds, onToggleSelect, onSelectAll, onDesel
                                     <td className="p-4 text-[14px] font-medium text-gray-500 whitespace-nowrap border-r border-gray-100/50">{animal.group || "Default Group"}</td>
                                     <td className="p-4 text-[14px] font-medium text-gray-500 whitespace-nowrap border-r border-gray-100/50">{animal.ownership || "Self Owned"}</td>
                                     <td className="p-4 text-[14px] font-medium text-gray-500 whitespace-nowrap border-r border-gray-100/50">{animal.location || "Arsh's Farm"}</td>
+                                    <td className="p-4 text-[14px] font-medium text-gray-500 whitespace-nowrap border-r border-gray-100/50">{animal.worker && animal.worker !== 'N/A' ? animal.worker : '---'}</td>
                                     <td className="p-4 text-[14px] font-medium text-gray-500 whitespace-nowrap">{animal.weight || "N/A"}</td>
                                 </tr>
                             );
@@ -716,6 +718,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
     const [totalAnimals, setTotalAnimals] = useState(0);
     const [totalLocations, setTotalLocations] = useState(0);
     const [totalGroups, setTotalGroups] = useState(0);
+    const [totalWorkers, setTotalWorkers] = useState(0);
     const [selectedLocation, setSelectedLocation] = useState(() => DASHBOARD_CACHE.uiState?.selectedLocation || '');
     const [selectedGroup, setSelectedGroup] = useState(() => DASHBOARD_CACHE.uiState?.selectedGroup || '');
     const [searchQuery, setSearchQuery] = useState(() => DASHBOARD_CACHE.uiState?.searchQuery || '');
@@ -762,6 +765,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                 breed: breedLookup.get(String(animal.breed_id || animal.breed?.id || animal.breed?._id)) || animal.breed?.name || null,
                 location: locationLookup.get(String(animal.location_id || animal.location?.id || animal.location?._id)) || animal.location?.name || null,
                 group: groupLookup.get(String(animal.group_id || animal.group?.id || animal.group?._id)) || animal.group?.name || null,
+                worker: animal.assigned_worker || 'N/A',
             };
         });
     }, [rawAnimals, listData, viewMode, breeds, locations, groups]);
@@ -869,6 +873,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
             setTotalAnimals(cachedPage.meta?.total || 0);
             setTotalLocations(cachedPage.meta?.location_count || 0);
             setTotalGroups(cachedPage.meta?.group_count || 0);
+            setTotalWorkers(cachedPage.meta?.worker_count || 0);
             setIsLoading(false);
             return;
         }
@@ -886,6 +891,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                 setTotalAnimals(response.meta?.total || 0);
                 setTotalLocations(response.meta?.location_count || 0);
                 setTotalGroups(response.meta?.group_count || 0);
+                setTotalWorkers(response.meta?.worker_count || 0);
                 setIsLoading(false);
             })
             .catch(err => {
@@ -922,6 +928,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
             setTotalAnimals(response.meta?.total || 0);
             setTotalLocations(response.meta?.location_count || 0);
             setTotalGroups(response.meta?.group_count || 0);
+            setTotalWorkers(response.meta?.worker_count || 0);
 
             const pageData = response.data || [];
             setListData(prev => append ? [...prev, ...pageData] : pageData);
@@ -1071,7 +1078,7 @@ export default function ManageCattleDashboard({ selectedAnimal, onSelectAnimal }
                             />
                             <StatCard
                                 label="Total Workers"
-                                count="12"
+                                count={totalWorkers.toString()}
                                 icon={<img src={farmerIcon} className="h-24 w-24" style={{ filter: 'brightness(0) saturate(100%) invert(89%) sepia(14%) saturate(280%) hue-rotate(116deg) brightness(98%) contrast(88%)' }} alt="icon" />}
                             />
                         </div>

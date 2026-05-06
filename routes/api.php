@@ -55,6 +55,7 @@ Route::prefix('farm')->middleware('auth:sanctum')->group(function () {
     Route::get('/animals/{animalId}/weight-history',   [ActivityController::class, 'getWeightHistory']);
     Route::get('/animals/{animalId}/cost-stats',       [ActivityController::class, 'getCostStats']);
     Route::get('/animals/{animalId}/timeline', [ActivityController::class, 'getTimeline']);
+    Route::get('/locations/{locationId}/movement-history', [ActivityController::class, 'getLocationMovementHistory']);
 
     // Group Management
     Route::get('/groups', [GroupController::class, 'index']);

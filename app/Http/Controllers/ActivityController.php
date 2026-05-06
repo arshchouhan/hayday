@@ -169,26 +169,82 @@ class ActivityController extends Controller
         $period = $request->query('period', '3m');
         $months = ($period === '6m') ? 6 : (($period === '12m') ? 12 : 3);
         $since  = now()->subMonths($months);
-        
-        $movements = MovementRecord::where('animal_id', $animalId)->where('treatment_date', '>=', $since)->get();
+
+        $baseQuery = MovementRecord::withoutGlobalScopes()
+            ->where('animal_id', $animalId)
+            ->get()
+            ->map(function ($record) {
+                $record->normalized_treatment_date = Carbon::parse($record->treatment_date);
+                return $record;
+            })
+            ->unique('_id')
+            ->sortBy(fn ($r) => $r->normalized_treatment_date->timestamp)
+            ->values();
+
+        // ── Location movements (for location Gantt rows) ─────────────────────
+        $locationCache = [];
+        $allLocationMovements = $baseQuery->filter(fn ($r) => $r->type === 'location')->values();
+
+        $movementRecords = $allLocationMovements->map(function ($record) use (&$locationCache) {
+            $locationId = $record->to_location;
+            $locationData = null;
+            if ($locationId) {
+                if (!isset($locationCache[$locationId])) {
+                    $locationCache[$locationId] = $this->resolveLocationLabel($locationId);
+                }
+                $locationData = $locationCache[$locationId];
+            }
+            return [
+                'id'       => (string) $record->_id,
+                'date'     => $record->normalized_treatment_date->format('Y-m-d'),
+                'type'     => 'location',
+                'location' => $locationData,
+                'notes'    => $record->notes,
+            ];
+        })->values();
+
+        // ── Group movements (for group Gantt rows) ───────────────────────────
+        // to_group is stored as a plain string (group name), no DB lookup needed
+        $allGroupMovements = $baseQuery->filter(fn ($r) => $r->type === 'group')->values();
+
+        $groupMovementRecords = $allGroupMovements->map(function ($record) {
+            $groupName = $record->to_group;
+            return [
+                'id'    => (string) $record->_id,
+                'date'  => $record->normalized_treatment_date->format('Y-m-d'),
+                'type'  => 'group',
+                'group' => $groupName ? ['id' => $groupName, 'name' => $groupName] : null,
+                'from_group' => $record->from_group,
+                'notes' => $record->notes,
+            ];
+        })->values();
+
+        // ── Legacy bucket counts ──────────────────────────────────────────────
+        $periodMovements = $allLocationMovements->filter(
+            fn ($r) => $r->normalized_treatment_date->gte($since)
+        )->values();
+
         $history = [];
-        
-        if ($months == 3) {
-            for ($i = 11; $i >= 0; $i--) {
-                $start = now()->subWeeks($i)->startOfWeek();
-                $end   = now()->subWeeks($i)->endOfWeek();
-                $count = $movements->whereBetween('treatment_date', [$start, $end])->count();
-                $history[] = ['label' => 'W' . (12 - $i), 'count' => $count];
-            }
-        } else {
-            for ($i = $months - 1; $i >= 0; $i--) {
-                $date = now()->subMonths($i);
-                $count = $movements->whereBetween('treatment_date', [$date->copy()->startOfMonth(), $date->copy()->endOfMonth()])->count();
-                $history[] = ['label' => $date->format('M'), 'count' => $count];
-            }
+        $bucketCounts = [];
+        foreach ($periodMovements as $record) {
+            $bucketKey = $record->normalized_treatment_date->format('Y-m');
+            $bucketCounts[$bucketKey] = ($bucketCounts[$bucketKey] ?? 0) + 1;
+        }
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $count = $bucketCounts[$date->format('Y-m')] ?? 0;
+            $label = ($period === '3m') ? $date->format('M') : $date->format('M Y');
+            $history[] = ['label' => $label, 'count' => $count];
         }
 
-        return response()->json(['success' => true, 'data' => $history, 'total' => $movements->count()]);
+        return response()->json([
+            'success'          => true,
+            'data'             => $history,
+            'movements'        => $movementRecords,
+            'group_movements'  => $groupMovementRecords,
+            'total'            => $allLocationMovements->count() + $allGroupMovements->count(),
+            'current_location' => $this->resolveLocationLabel($this->findAnimal($animalId)?->location_id),
+        ]);
     }
 
     public function getWeightHistory(Request $request, $animalId)
@@ -202,17 +258,26 @@ class ActivityController extends Controller
         foreach (['birth', 'weaning', 'yearling'] as $m) {
             $dateCol = "{$m}_date";
             $weightCol = "{$m}_weight";
-            if ($animal->$weightCol && $animal->$dateCol && $animal->$dateCol >= $since) {
-                $milestones[] = ['date' => $animal->$dateCol->format('Y-m-d'), 'weight' => (float)$animal->$weightCol, 'label' => ucfirst(substr($m, 0, 4))];
+            $dateValue = $animal->$dateCol ? Carbon::parse($animal->$dateCol) : null;
+            if ($animal->$weightCol && $dateValue && $dateValue->gte($since)) {
+                $milestones[] = ['date' => $dateValue->format('Y-m-d'), 'weight' => (float)$animal->$weightCol, 'label' => ucfirst(substr($m, 0, 4))];
             }
         }
 
         $records = SalesRecord::where('animal_id', $animalId)
             ->where('type', 'weight')
-            ->where('treatment_date', '>=', $since)
-            ->orderBy('treatment_date', 'asc')
             ->get()
-            ->map(fn($r) => ['date' => $r->treatment_date->format('Y-m-d'), 'weight' => (float)$r->weight, 'label' => 'Rec'])
+            ->map(function ($r) use ($since) {
+                $dateValue = Carbon::parse($r->treatment_date);
+                if ($dateValue->lt($since)) {
+                    return null;
+                }
+
+                return ['date' => $dateValue->format('Y-m-d'), 'weight' => (float)$r->weight, 'label' => 'Rec'];
+            })
+            ->filter()
+            ->sortBy('date')
+            ->values()
             ->toArray();
 
         $history = array_merge($milestones, $records);
@@ -227,12 +292,74 @@ class ActivityController extends Controller
         $months = ($period === '6m') ? 6 : (($period === '12m') ? 12 : 3);
         $since  = now()->subMonths($months);
 
-        $breedingCost = BreedingRecord::where('animal_id', $animalId)->where('treatment_date', '>=', $since)->sum('cost');
-        $movementCost = MovementRecord::where('animal_id', $animalId)->where('treatment_date', '>=', $since)->sum('cost');
-        $healthCost   = \App\Models\HealthRecord::where('animal_id', $animalId)->where('treatment_date', '>=', $since)->sum('cost');
+        // ── Per-category records with individual cost items ──────────────────
+        $healthRecords    = \App\Models\HealthRecord::where('animal_id', $animalId)
+            ->where('treatment_date', '>=', $since)
+            ->get(['treatment_date', 'type', 'obs_type', 'cost', 'notes']);
 
-        $total = $breedingCost + $movementCost + $healthCost;
-        return response()->json(['success' => true, 'total' => $total, 'average' => 150]);
+        $movementRecords  = MovementRecord::where('animal_id', $animalId)
+            ->where('treatment_date', '>=', $since)
+            ->get(['treatment_date', 'type', 'to_location', 'to_group', 'cost', 'notes']);
+
+        $breedingRecords  = BreedingRecord::where('animal_id', $animalId)
+            ->where('treatment_date', '>=', $since)
+            ->get(['treatment_date', 'type', 'cost', 'notes']);
+
+        $healthCost   = $healthRecords->sum('cost');
+        $movementCost = $movementRecords->sum('cost');
+        $breedingCost = $breedingRecords->sum('cost');
+        $total        = $healthCost + $movementCost + $breedingCost;
+
+        // ── Build breakdown array for the tooltip ────────────────────────────
+        $breakdown = [];
+
+        if ($healthCost > 0) {
+            $breakdown[] = [
+                'category' => 'Health & Treatment',
+                'amount'   => round($healthCost, 2),
+                'count'    => $healthRecords->where('cost', '>', 0)->count(),
+                'items'    => $healthRecords->where('cost', '>', 0)->map(fn($r) => [
+                    'date'   => Carbon::parse($r->treatment_date)->format('M d, Y'),
+                    'label'  => ucfirst($r->type) . ($r->obs_type ? " ({$r->obs_type})" : ''),
+                    'amount' => round($r->cost, 2),
+                ])->values(),
+            ];
+        }
+
+        if ($movementCost > 0) {
+            $breakdown[] = [
+                'category' => 'Movement & Transport',
+                'amount'   => round($movementCost, 2),
+                'count'    => $movementRecords->where('cost', '>', 0)->count(),
+                'items'    => $movementRecords->where('cost', '>', 0)->map(fn($r) => [
+                    'date'   => Carbon::parse($r->treatment_date)->format('M d, Y'),
+                    'label'  => $r->type === 'group'
+                        ? 'Group Transfer → ' . ($r->to_group ?? '—')
+                        : 'Location Move → ' . ($r->to_location ?? '—'),
+                    'amount' => round($r->cost, 2),
+                ])->values(),
+            ];
+        }
+
+        if ($breedingCost > 0) {
+            $breakdown[] = [
+                'category' => 'Breeding',
+                'amount'   => round($breedingCost, 2),
+                'count'    => $breedingRecords->where('cost', '>', 0)->count(),
+                'items'    => $breedingRecords->where('cost', '>', 0)->map(fn($r) => [
+                    'date'   => Carbon::parse($r->treatment_date)->format('M d, Y'),
+                    'label'  => ucfirst($r->type ?? 'Breeding Activity'),
+                    'amount' => round($r->cost, 2),
+                ])->values(),
+            ];
+        }
+
+        return response()->json([
+            'success'    => true,
+            'total'      => round($total, 2),
+            'average'    => 150,
+            'breakdown'  => $breakdown,
+        ]);
     }
 
     public function getTimeline($animalId)
@@ -329,5 +456,64 @@ class ActivityController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
+    }
+
+    public function getLocationMovementHistory(Request $request, $locationId)
+    {
+        $period = $request->query('period', '3m');
+        $months = ($period === '6m') ? 6 : (($period === '12m') ? 12 : 3);
+        $since = now()->subMonths($months);
+
+        $movements = MovementRecord::where('to_location', $locationId)
+            ->get()
+            ->map(function ($record) {
+                $record->normalized_treatment_date = Carbon::parse($record->treatment_date);
+                return $record;
+            })
+            ->filter(fn ($record) => $record->normalized_treatment_date->gte($since))
+            ->values();
+
+        $history = [];
+        $bucketCounts = [];
+
+        foreach ($movements as $record) {
+            $bucketKey = $record->normalized_treatment_date->format('Y-m');
+            $bucketCounts[$bucketKey] = ($bucketCounts[$bucketKey] ?? 0) + 1;
+        }
+
+        for ($i = $months - 1; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $count = $bucketCounts[$date->format('Y-m')] ?? 0;
+            
+            // Format labels based on period
+            if ($period === '3m') {
+                $label = $date->format('M');
+            } else {
+                $label = $date->format('M Y');
+            }
+            
+            $history[] = ['label' => $label, 'count' => $count];
+        }
+
+        return response()->json(['success' => true, 'data' => $history, 'total' => $movements->count()]);
+    }
+
+    private function resolveLocationLabel($locationId)
+    {
+        if (!$locationId) {
+            return null;
+        }
+        
+        $location = \App\Models\Location::find($locationId);
+        if (!$location) {
+            return null;
+        }
+
+        return [
+            'id' => (string)$location->id,
+            'name' => $location->name,
+            'type' => $location->type,
+            'color' => $location->location_color ?? '#10B981'
+        ];
     }
 }

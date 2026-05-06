@@ -41,7 +41,6 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
-            { key: 'notifications', label: 'Notifications', to: '/farm/notifications' },
             { key: 'groups', label: 'Groups', to: '/farm/groups' },
             { key: 'workers', label: 'Workers', to: '/farm/workers' },
         ],
@@ -53,7 +52,6 @@ const sectionConfigs = {
             { key: 'records', label: 'Health Records', to: '/health' },
             { key: 'vaccinations', label: 'Vaccinations', to: '/health/vaccinations' },
             { key: 'treatments', label: 'Treatments', to: '/health/treatments' },
-            { key: 'notifications', label: 'Notifications', to: '/farm/notifications' },
         ],
     },
     inventory: {
@@ -62,7 +60,6 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
-            { key: 'notifications', label: 'Notifications', to: '/farm/notifications' },
             { key: 'groups', label: 'Groups', to: '/farm/groups' },
             { key: 'workers', label: 'Workers', to: '/farm/workers' },
             { key: 'inventory', label: 'Inventory', to: '/farm/inventory' },
@@ -83,7 +80,6 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
-            { key: 'notifications', label: 'Notifications', to: '/farm/notifications' },
             { key: 'groups', label: 'Groups', to: '/farm/groups' },
             { key: 'workers', label: 'Workers', to: '/farm/workers' },
             { key: 'location', label: 'Location', to: '/farm/location' },
@@ -95,7 +91,6 @@ const sectionConfigs = {
         suboptions: [
             { key: 'details', label: 'Animal Details', to: '/farm/details' },
             { key: 'activity', label: 'Activity', to: '/farm/activity' },
-            { key: 'notifications', label: 'Notifications', to: '/farm/notifications' },
             { key: 'groups', label: 'Groups', to: '/farm/groups' },
             { key: 'workers', label: 'Workers', to: '/farm/workers' },
         ],

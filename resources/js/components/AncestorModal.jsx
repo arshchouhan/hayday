@@ -2,23 +2,29 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, Search, Save } from 'lucide-react';
 
-export default function AncestorModal({ isOpen, onClose, animal, role, targetAnimalId, onSave }) {
+export default function AncestorModal({ isOpen, onClose, animal, role, targetAnimalId, species, onSave }) {
     const [search, setSearch] = useState('');
     const [options, setOptions] = useState([]);
     const [selectedId, setSelectedId] = useState('');
     const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
-            fetchOptions();
+            setFetching(true);
+            fetchOptions().finally(() => setFetching(false));
+        } else {
+            setSelectedId('');
+            setSearch('');
+            setOptions([]);
         }
     }, [isOpen]);
 
     const fetchOptions = async () => {
         try {
-            // Fetch potential sires or dams based on role
             const type = role.includes('Sire') ? 'male' : 'female';
-            const res = await axios.get(`/api/farm/animals/search?type=${type}`);
+            const url = `/api/farm/animals/search?type=${type}` + (species ? `&species=${species}` : '');
+            const res = await axios.get(url);
             setOptions(res.data);
         } catch (err) {
             console.error("Search error:", err);
@@ -29,12 +35,11 @@ export default function AncestorModal({ isOpen, onClose, animal, role, targetAni
         if (!selectedId) return;
         setLoading(true);
         try {
-            // Update the target animal's sire or dam
             const field = role.includes('Sire') ? 'sire_id' : 'dam_id';
             await axios.put(`/api/farm/animals/${targetAnimalId}`, {
                 [field]: selectedId
             });
-            onSave();
+            if (onSave) onSave();
             onClose();
         } catch (err) {
             alert("Error saving pedigree: " + err.message);
@@ -45,10 +50,12 @@ export default function AncestorModal({ isOpen, onClose, animal, role, targetAni
 
     if (!isOpen) return null;
 
-    const filteredOptions = options.filter(opt => 
-        opt.ear_tag.toLowerCase().includes(search.toLowerCase()) ||
-        (opt.animal_name && opt.animal_name.toLowerCase().includes(search.toLowerCase()))
-    );
+    const filteredOptions = options.filter(opt => {
+        const searchLower = search.toLowerCase();
+        const tagMatch = opt.ear_tag ? String(opt.ear_tag).toLowerCase().includes(searchLower) : false;
+        const nameMatch = opt.animal_name ? String(opt.animal_name).toLowerCase().includes(searchLower) : false;
+        return tagMatch || nameMatch;
+    });
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -73,7 +80,7 @@ export default function AncestorModal({ isOpen, onClose, animal, role, targetAni
                                 onChange={(e) => setSelectedId(e.target.value)}
                                 className="w-full h-14 appearance-none rounded-xl border border-gray-200 bg-white px-5 pr-10 text-[15px] font-bold text-[#1a1a2e] outline-none focus:border-[#22a06b] focus:ring-1 focus:ring-[#22a06b] transition-all"
                             >
-                                <option value="">Select {role.includes('Sire') ? 'sire' : 'dam'}</option>
+                                <option value="">{fetching ? 'Loading...' : `Select ${role.includes('Sire') ? 'sire' : 'dam'}`}</option>
                                 {filteredOptions.map(opt => (
                                     <option key={opt.id || opt._id} value={opt.id || opt._id}>
                                         {opt.ear_tag} {opt.animal_name ? `- ${opt.animal_name}` : ''}

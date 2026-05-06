@@ -109,7 +109,7 @@ export default function Pedigree() {
             {/* Tree Workspace */}
             <div className="flex-1 min-h-0 bg-[#F8FAFD]">
                 {selectedAnimal ? (
-                    <PedigreeTree rootAnimal={selectedAnimal} />
+                    <PedigreeTree rootAnimal={selectedAnimal} onRefresh={() => fetchAnimalDetails(selectedAnimal.id || selectedAnimal._id)} />
                 ) : (
                     <div className="flex h-full flex-col items-center justify-center p-12 text-center">
                         <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-white shadow-xl ring-1 ring-black/5">

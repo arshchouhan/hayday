@@ -247,7 +247,10 @@ const DateIcon = () => (
 
 export default function RegisterAnimal({ onSelectAnimal }) {
     const navigate = useNavigate();
-    const { pathname } = useLocation();
+    const { pathname, search } = useLocation();
+    const queryParams = new URLSearchParams(search);
+    const editId = queryParams.get('edit');
+    const isEdit = !!editId;
     const [lookupData, setLookupData] = useState({ breeds: [], locations: [], groups: [], sires: [], dams: [] });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSwitchingModel, setIsSwitchingModel] = useState(false);
@@ -308,7 +311,31 @@ export default function RegisterAnimal({ onSelectAnimal }) {
         axios.get('/api/farm/animals/form-data').then(res => {
             setLookupData(res.data);
         });
-    }, []);
+
+        if (isEdit) {
+            axios.get(`/api/farm/animals/${editId}`).then(res => {
+                const data = res.data;
+                setFormData({
+                    ...data,
+                    // Normalize values for the form
+                    species: data.species ? data.species.charAt(0).toUpperCase() + data.species.slice(1).toLowerCase() : 'Cow',
+                    status: data.status ? data.status.charAt(0).toUpperCase() + data.status.slice(1).toLowerCase() : 'Active',
+                    type: data.type ? data.type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : 'Cow',
+                    conception: data.conception ? data.conception.toUpperCase() : 'Natural',
+                    ownership: data.ownership ? data.ownership.charAt(0).toUpperCase() + data.ownership.slice(1).toLowerCase() : 'Purchased',
+                    // Ensure dates are in YYYY-MM-DD format
+                    birth_date: data.birth_date ? data.birth_date.split('T')[0] : '',
+                    weaning_date: data.weaning_date ? data.weaning_date.split('T')[0] : '',
+                    yearling_date: data.yearling_date ? data.yearling_date.split('T')[0] : '',
+                    castration_date: data.castration_date ? data.castration_date.split('T')[0] : '',
+                    death_date: data.death_date ? data.death_date.split('T')[0] : '',
+                });
+            }).catch(err => {
+                console.error('Error fetching animal for edit:', err);
+                alert('Could not load animal data');
+            });
+        }
+    }, [isEdit, editId]);
 
     // Filter breeds based on selected species
     const filteredBreeds = lookupData.breeds.filter(
@@ -375,14 +402,17 @@ export default function RegisterAnimal({ onSelectAnimal }) {
         };
 
         try {
-            const response = await axios.post('/api/farm/animals', payload);
+            const url = isEdit ? `/api/farm/animals/${editId}` : '/api/farm/animals';
+            const method = isEdit ? 'put' : 'post';
+            
+            const response = await axios[method](url, payload);
             if (response.data.success) {
-                // Clear cache so dashboard refetches fresh data including the new animal
+                // Clear cache so dashboard refetches fresh data
                 clearDashboardCache();
                 
-                alert('Animal registered successfully!');
+                alert(isEdit ? 'Animal updated successfully!' : 'Animal registered successfully!');
                 const root = pathname.startsWith('/farm') ? '/farm' : '/lifecycle';
-                navigate(`${root}/details`);
+                navigate(`${root}/details/${isEdit ? editId : ''}`);
             }
         } catch (err) {
             console.error('Save error:', err);
@@ -427,8 +457,8 @@ export default function RegisterAnimal({ onSelectAnimal }) {
                         </svg>
                     </button>
                     <div>
-                        <h1 className="text-2xl font-black text-[#1a1a2e] tracking-tight">Add Animal</h1>
-                        <p className="text-[15px] font-medium text-gray-500">Add the relevant information of the animal.</p>
+                        <h1 className="text-2xl font-black text-[#1a1a2e] tracking-tight">{isEdit ? 'Edit Animal' : 'Add Animal'}</h1>
+                        <p className="text-[15px] font-medium text-gray-500">{isEdit ? 'Update animal details.' : 'Add the relevant information of the animal.'}</p>
                     </div>
                 </div>
                 <div className="flex gap-3">
@@ -444,7 +474,7 @@ export default function RegisterAnimal({ onSelectAnimal }) {
                         disabled={isSubmitting || isSwitchingModel}
                         className="rounded-full bg-[#1a1a2e] px-10 py-2 text-sm font-bold text-white shadow-lg hover:bg-black disabled:opacity-50"
                     >
-                        {isSubmitting ? 'Saving...' : 'Save'}
+                        {isSubmitting ? 'Saving...' : (isEdit ? 'Update' : 'Save')}
                     </button>
                 </div>
             </div>

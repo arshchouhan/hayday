@@ -44,6 +44,8 @@ class BreedingRecord extends Model
         'days_pregnant',
         'next_check_date',
         'expected_calving',
+        'stillborn',
+        'cost',
         'notes',
         'attachments'
     ];

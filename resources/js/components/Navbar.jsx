@@ -9,7 +9,6 @@ const searchTargets = [
     { label: 'Farm: Animal Details', to: '/farm/details' },
     { label: 'Farm: Register Animal', to: '/farm/register' },
     { label: 'Farm: Activity', to: '/farm/activity' },
-    { label: 'Farm: Notifications', to: '/farm/notifications' },
     { label: 'Farm: Health', to: '/farm/health' },
     { label: 'Farm: Health Records', to: '/farm/health' },
     { label: 'Farm: Vaccinations', to: '/farm/health/vaccinations' },

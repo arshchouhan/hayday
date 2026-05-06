@@ -8,6 +8,7 @@ use App\Models\Sheep;
 use App\Models\Breed;
 use App\Models\Location;
 use App\Models\Group;
+use App\Models\Worker;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -103,8 +104,34 @@ class AnimalController extends Controller
         });
 
         $result = iterator_to_array($resultSet, false)[0] ?? [];
+        
+        // Fetch all workers to build a lookup
+        $workers = Worker::where('user_id', $userId)->get();
+        $animalWorkerMap = [];
+        $groupWorkerMap = [];
+        foreach ($workers as $w) {
+            if ($w->animal_id) {
+                $animalWorkerMap[$w->animal_id][] = $w->name;
+            }
+            if ($w->group_id) {
+                $groupWorkerMap[$w->group_id][] = $w->name;
+            }
+        }
+
         $rows = array_map(
-            [$this, 'normalizeMongoDocument'],
+            function($doc) use ($animalWorkerMap, $groupWorkerMap) {
+                $normalized = $this->normalizeMongoDocument($doc);
+                $id = $normalized['id'] ?? $normalized['_id'];
+                $groupId = $normalized['group_id'] ?? null;
+                
+                $assignedWorkers = $animalWorkerMap[(string)$id] ?? [];
+                if ($groupId && isset($groupWorkerMap[(string)$groupId])) {
+                    $assignedWorkers = array_merge($assignedWorkers, $groupWorkerMap[(string)$groupId]);
+                }
+                
+                $normalized['assigned_worker'] = !empty($assignedWorkers) ? implode(', ', array_unique($assignedWorkers)) : 'N/A';
+                return $normalized;
+            },
             $this->toPhpArray($result['data'] ?? [])
         );
         $meta = $this->toPhpArray($result['meta'] ?? []);
@@ -112,6 +139,7 @@ class AnimalController extends Controller
 
         $total = $meta[0]['total'] ?? 0;
         $summary = $summaryRows[0] ?? [];
+        $workerCount = Worker::where('user_id', $userId)->count();
 
         return response()->json([
             'data' => $rows,
@@ -122,6 +150,7 @@ class AnimalController extends Controller
                 'last_page' => (int) max(1, ceil($total / $perPage)),
                 'location_count' => $summary['location_count'] ?? 0,
                 'group_count' => $summary['group_count'] ?? 0,
+                'worker_count' => $workerCount,
             ],
         ]);
     }
@@ -207,10 +236,43 @@ class AnimalController extends Controller
             return response()->json(['message' => 'Animal not found'], 404);
         }
 
-        // Step 2: single eager-load only on the correct model
-        $animal = $modelClass::with(['breed', 'location', 'group', 'sire', 'dam'])->find($id);
+        // Step 2: single eager-load for normal relations
+        $animal = $modelClass::with(['breed', 'location', 'group'])->find($id);
+
+        // Manually populate pedigree to bypass MongoDB cross-collection strictness
+        $sire = $this->findAnimalAcrossCollections($animal->sire_id);
+        if ($sire) {
+            $gSire = $this->findAnimalAcrossCollections($sire->sire_id);
+            if ($gSire) $sire->setRelation('sire', $gSire);
+            
+            $gDam = $this->findAnimalAcrossCollections($sire->dam_id);
+            if ($gDam) $sire->setRelation('dam', $gDam);
+            
+            $animal->setRelation('sire', $sire);
+        }
+
+        $dam = $this->findAnimalAcrossCollections($animal->dam_id);
+        if ($dam) {
+            $gSire2 = $this->findAnimalAcrossCollections($dam->sire_id);
+            if ($gSire2) $dam->setRelation('sire', $gSire2);
+            
+            $gDam2 = $this->findAnimalAcrossCollections($dam->dam_id);
+            if ($gDam2) $dam->setRelation('dam', $gDam2);
+            
+            $animal->setRelation('dam', $dam);
+        }
 
         return response()->json($animal);
+    }
+
+    private function findAnimalAcrossCollections($id)
+    {
+        if (blank($id)) return null;
+        
+        // Eager load relations for the ancestor so Breed/Location show up in the pedigree tree
+        return Animal::with(['breed', 'location'])->find($id) 
+            ?? Cattle::with(['breed', 'location'])->find($id) 
+            ?? Sheep::with(['breed', 'location'])->find($id);
     }
 
     public function store(Request $request)
@@ -339,14 +401,23 @@ class AnimalController extends Controller
         $type = $request->query('type'); // male or female
         
         if ($type === 'male') {
-            $types = ['bull', 'ram', 'steer'];
+            $types = ['bull', 'ram', 'steer', 'Bull', 'Ram', 'Steer'];
         } else {
-            $types = ['cow', 'ewe', 'replacement_heifer'];
+            $types = ['cow', 'ewe', 'replacement_heifer', 'Cow', 'Ewe', 'Replacement_heifer'];
         }
 
-        $results = Animal::where('user_id', $userId)->whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name'])
-            ->merge(Cattle::where('user_id', $userId)->whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name']))
-            ->merge(Sheep::where('user_id', $userId)->whereIn('type', $types)->get(['id', 'ear_tag', 'animal_name']));
+        $results = Animal::where('user_id', $userId)->whereIn('type', $types)->get()
+            ->concat(Cattle::where('user_id', $userId)->whereIn('type', $types)->get())
+            ->concat(Sheep::where('user_id', $userId)->whereIn('type', $types)->get());
+
+        if ($request->has('species') && !empty($request->query('species'))) {
+            $targetSpecies = strtolower(trim($request->query('species')));
+            $results = $results->filter(function($item) use ($targetSpecies) {
+                return strtolower(trim($item->species)) === $targetSpecies;
+            })->values();
+        }
+
+        \Illuminate\Support\Facades\Log::info("Search API type $type returned " . $results->count() . " animals for user $userId");
 
         return response()->json($results);
     }

@@ -24,6 +24,8 @@ const LocationPage = () => {
 
     const [locations, setLocations] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [locationCharts, setLocationCharts] = useState({});
+    const [locationPeriods, setLocationPeriods] = useState({});
 
     useEffect(() => {
         fetchLocations();
@@ -46,9 +48,38 @@ const LocationPage = () => {
             const res = await fetch('/api/farm/locations');
             const data = await res.json();
             setLocations(data);
+            // Initialize periods to 3m for each location
+            const periods = {};
+            data.forEach(loc => periods[loc.id] = '3m');
+            setLocationPeriods(periods);
+            // Fetch movement history for each location
+            data.forEach(loc => fetchLocationChart(loc.id, '3m'));
         } catch (err) {
             console.error("Fetch locations error:", err);
         }
+    };
+
+    const fetchLocationChart = async (locationId, period = '3m') => {
+        try {
+            const res = await fetch(`/api/farm/locations/${locationId}/movement-history?period=${period}`);
+            const data = await res.json();
+            if (data.success) {
+                setLocationCharts(prev => ({
+                    ...prev,
+                    [locationId]: data.data || []
+                }));
+            }
+        } catch (err) {
+            console.error("Fetch location chart error:", err);
+        }
+    };
+
+    const handleLocationPeriodChange = (locationId, period) => {
+        setLocationPeriods(prev => ({
+            ...prev,
+            [locationId]: period
+        }));
+        fetchLocationChart(locationId, period);
     };
 
     const handleSave = async () => {
@@ -249,24 +280,113 @@ const LocationPage = () => {
                         </div>
                     </div>
                 ) : (
-                    <div className="h-full overflow-auto">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {locations.map(loc => (
-                                <div key={loc.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all group">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <h3 className="text-[16px] font-black text-[#1a1a2e]">{loc.name}</h3>
-                                        <span className="px-3 py-1 rounded-full bg-gray-50 text-[11px] font-bold text-gray-500 border border-gray-100">{loc.type}</span>
-                                    </div>
-                                    <div className="space-y-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500">
-                                                <MapIcon size={16} />
+                    <div className="h-full overflow-auto p-6">
+                        <div className="space-y-8">
+                            {locations.map(loc => {
+                                const chartData = locationCharts[loc.id] || [];
+                                const period = locationPeriods[loc.id] || '3m';
+                                const maxCount = Math.max(...chartData.map(m => m.count || 0), 1);
+                                const totalMovements = chartData.reduce((sum, bar) => sum + bar.count, 0);
+                                
+                                return (
+                                    <div key={loc.id} className="bg-white rounded-lg border border-[#80888F] p-6 space-y-6">
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="text-[16px] font-black text-[#1a1a2e]">{loc.name}</h3>
+                                                <p className="text-[12px] text-gray-500 mt-1">{loc.type} • {loc.area || '0'} Acres</p>
                                             </div>
-                                            <span className="text-[13px] font-bold text-[#1a1a2e]">{loc.area || '0'} Acres</span>
+                                            <div className="flex items-center rounded-lg border border-[#80888F]/20 bg-[#F8FAFD] p-1 gap-0">
+                                                {[
+                                                    { label: '3 Months', value: '3m' },
+                                                    { label: '6 Months', value: '6m' },
+                                                    { label: '12 Months', value: '12m' }
+                                                ].map((p) => (
+                                                    <button
+                                                        key={p.value}
+                                                        onClick={() => handleLocationPeriodChange(loc.id, p.value)}
+                                                        className={`rounded-md px-4 py-1.5 text-[12px] font-bold transition-all ${period === p.value
+                                                                ? 'bg-[#1a1a2e] text-white shadow-sm'
+                                                                : 'text-gray-500 hover:text-[#1a1a2e]'
+                                                            }`}
+                                                    >
+                                                        {p.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Chart */}
+                                        {chartData.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {/* Chart Area */}
+                                                <div className="flex gap-0">
+                                                    {/* Y-Axis Labels */}
+                                                    <div className="flex flex-col justify-between pr-4 py-2 text-right shrink-0 w-[50px] h-[var(--chart-height)]" style={{ '--chart-height': '250px' }}>
+                                                        <span className="text-[12px] font-semibold text-gray-500">5</span>
+                                                        <span className="text-[12px] font-semibold text-gray-500">4</span>
+                                                        <span className="text-[12px] font-semibold text-gray-500">3</span>
+                                                        <span className="text-[12px] font-semibold text-gray-500">2</span>
+                                                        <span className="text-[12px] font-semibold text-gray-500">1</span>
+                                                        <span className="text-[12px] font-semibold text-gray-500">0</span>
+                                                    </div>
+
+                                                    {/* Bars Area */}
+                                                    <div className="flex-1 relative border-l border-b border-gray-300 h-[var(--chart-height)]" style={{ '--chart-height': '250px' }}>
+                                                        {/* Horizontal grid lines */}
+                                                        {[0, 1, 2, 3, 4].map((i) => (
+                                                            <div
+                                                                key={i}
+                                                                style={{ '--grid-top': `${i * 20}%` }}
+                                                                className="absolute left-0 right-0 border-t border-dashed border-gray-200 top-[var(--grid-top)]"
+                                                            />
+                                                        ))}
+
+                                                        {/* Bars */}
+                                                        <div className="absolute inset-0 flex items-end justify-around px-3 pb-0">
+                                                            {chartData.map((bar, i) => {
+                                                                const barScale = maxCount > 0 ? Math.max(bar.count / maxCount, bar.count > 0 ? 0.08 : 0) : 0;
+                                                                const barStyle = { transform: `scaleY(${barScale})`, transformOrigin: 'bottom' };
+                                                                return (
+                                                                    <div key={i} className="flex flex-col items-center gap-1 flex-1">
+                                                                        <div
+                                                                            className="w-full max-w-[32px] h-[200px] rounded-t bg-[#f5a623] hover:bg-[#e69500] transition-colors cursor-pointer"
+                                                                            style={barStyle}
+                                                                            title={`${bar.count} animals moved`}
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* X-Axis Labels */}
+                                                <div className="flex gap-0 pl-[50px]">
+                                                    <div className="flex-1 flex items-center justify-around">
+                                                        {chartData.map((bar, i) => (
+                                                            <span key={i} className="text-[12px] font-semibold text-gray-600 flex-1 text-center">{bar.label}</span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-12 text-center">
+                                                <p className="text-[13px] font-bold text-gray-500">No movement data</p>
+                                            </div>
+                                        )}
+
+                                        {/* Legend */}
+                                        <div className="flex items-center gap-8 border-t border-gray-200 pt-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="h-3 w-3 rounded-full bg-[#f5a623]" />
+                                                <span className="text-[13px] font-bold text-[#1a1a2e]">Animals Moved In</span>
+                                                <span className="text-[13px] font-bold text-gray-600 ml-2">{totalMovements || 0}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
                 )}
