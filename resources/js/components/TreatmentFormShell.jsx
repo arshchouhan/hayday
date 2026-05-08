@@ -42,26 +42,64 @@ export const FInput = ({ label, required, type = 'text', placeholder, value, onC
     </div>
 );
 
-export const FSelect = ({ label, required, placeholder, options = [], value, onChange, info }) => (
-    <div className="flex flex-col gap-1">
-        <label className="flex items-center gap-1 text-[11px] font-semibold text-[#059669]">
-            {label}{required && <span className="ml-0.5 text-red-400">*</span>}
-            {info && <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-gray-400 text-[9px] text-gray-400">i</span>}
-        </label>
-        <div className="flex items-center rounded-md border border-[#D1D5DB] bg-white px-3 py-2 focus-within:border-[#059669]">
-            <select value={value} onChange={onChange}
-                className="w-full bg-transparent text-[14px] text-[#1a1a2e] outline-none appearance-none cursor-pointer">
-                <option value="" disabled>{placeholder}</option>
-                {options.map(o => (
-                    <option key={o.value ?? o} value={o.value ?? o}>{o.label ?? o}</option>
-                ))}
-            </select>
-            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="m6 9 6 6 6-6" />
-            </svg>
+export const FSelect = ({ label, required, placeholder, options = [], value, onChange, info }) => {
+    const [opts, setOpts] = React.useState([]);
+    const mountedRef = React.useRef(true);
+
+    React.useEffect(() => {
+        mountedRef.current = true;
+        const load = async () => {
+            // If options is a keyword, fetch remote list
+            if (typeof options === 'string') {
+                if (options === 'workers') {
+                    try {
+                        const res = await fetch('/api/farm/workers');
+                        const data = await res.json();
+                        if (!mountedRef.current) return;
+                        const list = Array.isArray(data) ? data : data?.data ?? [];
+                        setOpts(list.map(w => ({ value: w._id || w.id, label: w.name })));
+                        return;
+                    } catch (e) {
+                        // fallthrough to empty
+                    }
+                }
+            }
+
+            // Normalize provided options array
+            const normalized = (options || []).map(o => {
+                if (typeof o === 'string') return { value: o, label: o };
+                if (o && typeof o === 'object') return { value: o.value ?? o.key ?? o.id ?? o, label: o.label ?? o.name ?? String(o) };
+                return { value: o, label: String(o) };
+            });
+            setOpts(normalized);
+        };
+
+        void load();
+
+        return () => { mountedRef.current = false; };
+    }, [options]);
+
+    return (
+        <div className="flex flex-col gap-1">
+            <label className="flex items-center gap-1 text-[11px] font-semibold text-[#059669]">
+                {label}{required && <span className="ml-0.5 text-red-400">*</span>}
+                {info && <span className="flex h-3.5 w-3.5 items-center justify-center rounded-full border border-gray-400 text-[9px] text-gray-400">i</span>}
+            </label>
+            <div className="flex items-center rounded-md border border-[#D1D5DB] bg-white px-3 py-2 focus-within:border-[#059669]">
+                <select value={value} onChange={onChange}
+                    className="w-full bg-transparent text-[14px] text-[#1a1a2e] outline-none appearance-none cursor-pointer">
+                    <option value="" disabled>{placeholder}</option>
+                    {opts.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                </select>
+                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="m6 9 6 6 6-6" />
+                </svg>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 export const FTextarea = ({ label, required, placeholder, value, onChange, rows = 3 }) => (
     <div className="flex flex-col gap-1">

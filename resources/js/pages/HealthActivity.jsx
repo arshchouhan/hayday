@@ -40,66 +40,108 @@ const TREATMENTS = [
    FIELD COMPONENTS
 ══════════════════════════════════════════════════════════════════ */
 const FloatingInput = ({ label, required, type = 'text', placeholder, value, onChange }) => (
-    <div className="flex flex-col gap-1">
-        <label className="text-[11px] font-semibold text-[#059669]">
-            {label}{required && <span className="ml-0.5 text-red-400">*</span>}
+    <div className="relative pt-3">
+        <label className="absolute left-3 top-0 z-10 bg-[#F8FAFD] px-1 text-[12px] font-semibold text-[#8C9BB3]">
+            {label}{required && <span className="ml-0.5 text-red-500">*</span>}
         </label>
-        <div className="flex items-center rounded-md border border-[#D1D5DB] bg-white px-3 py-2 focus-within:border-[#059669] focus-within:ring-1 focus-within:ring-[#059669]">
+        <div className="flex h-[52px] items-center rounded-xl border border-[#D6E2EE] bg-white px-4 shadow-sm transition-colors focus-within:border-[#DCE9E3] focus-within:ring-1 focus-within:ring-[#E9EEF6]">
             <input
                 type={type}
                 placeholder={placeholder}
                 value={value}
                 onChange={onChange}
-                className="w-full bg-transparent text-[14px] text-[#1a1a2e] outline-none placeholder:text-gray-400"
+                className="w-full bg-transparent text-[15px] text-[#1a1a2e] outline-none placeholder:text-[#8C9BB3]"
             />
         </div>
     </div>
 );
 
-const FloatingSelect = ({ label, required, placeholder, options = [], value, onChange }) => (
-    <div className="flex flex-col gap-1">
-        <label className="text-[11px] font-semibold text-[#059669]">
-            {label}{required && <span className="ml-0.5 text-red-400">*</span>}
-        </label>
-        <div className="flex items-center rounded-md border border-[#D1D5DB] bg-white px-3 py-2 focus-within:border-[#059669]">
-            <select
-                value={value}
-                onChange={onChange}
-                className="w-full bg-transparent text-[14px] text-[#1a1a2e] outline-none appearance-none cursor-pointer"
+const FloatingSelect = ({ label, required, placeholder, options = [], value, onChange }) => {
+    const dropdownRef = useRef(null);
+    const [isOpen, setIsOpen] = useState(false);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const selectedOption = options.find((option) => option.key === value);
+
+    return (
+        <div className="relative pt-3" ref={dropdownRef}>
+            <label className="absolute left-3 top-0 z-10 bg-[#F8FAFD] px-1 text-[12px] font-semibold text-[#8C9BB3]">
+                {label}{required && <span className="ml-0.5 text-red-500">*</span>}
+            </label>
+
+            <button
+                type="button"
+                onClick={() => setIsOpen((open) => !open)}
+                className="flex h-[52px] w-full items-center justify-between rounded-xl border border-[#D6E2EE] bg-white px-4 text-left shadow-sm transition-colors hover:border-[#DCE9E3]"
             >
-                <option value="" disabled>{placeholder}</option>
-                {options.map(o => (
-                    <option key={o.key} value={o.key}>{o.label}</option>
-                ))}
-            </select>
-            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="m6 9 6 6 6-6" />
-            </svg>
+                <span className={`text-[15px] ${selectedOption ? 'text-[#1a1a2e]' : 'text-[#8C9BB3]'}`}>
+                    {selectedOption ? selectedOption.label : placeholder}
+                </span>
+                <svg
+                    viewBox="0 0 24 24"
+                    className={`h-4 w-4 shrink-0 text-[#8C9BB3] transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                >
+                    <path d="m6 9 6 6 6-6" />
+                </svg>
+            </button>
+
+            {isOpen && (
+                <div className="absolute left-0 top-[58px] z-50 w-full overflow-hidden rounded-xl border border-[#D6E2EE] bg-white shadow-xl">
+                    <div className="max-h-[280px] overflow-y-auto py-2">
+                        {options.map((option) => (
+                            <button
+                                key={option.key}
+                                type="button"
+                                onClick={() => {
+                                    onChange({ target: { value: option.key } });
+                                    setIsOpen(false);
+                                }}
+                                className={`flex w-full items-center px-4 py-3 text-left text-[15px] transition-colors ${value === option.key ? 'bg-[#F8FAFD] text-[#1a1a2e] font-semibold' : 'text-[#1a1a2e] hover:bg-[#F8FAFD]'}`}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 /* ══════════════════════════════════════════════════════════════════
    IDLE ILLUSTRATION
 ══════════════════════════════════════════════════════════════════ */
 function IdlePrompt() {
     return (
-        <div className="flex flex-col items-center justify-center gap-5 rounded-2xl border-2 border-dashed border-gray-200 bg-white/70 px-8 py-16 text-center">
+        <div className="flex flex-col items-center justify-center gap-5 px-8 py-16 text-center">
             {/* Illustration */}
             <svg viewBox="0 0 120 100" className="h-28 w-28 opacity-80" fill="none" xmlns="http://www.w3.org/2000/svg">
                 {/* clipboard body */}
-                <rect x="20" y="14" width="80" height="76" rx="8" fill="#E9F7F1" stroke="#059669" strokeWidth="2.5"/>
+                <rect x="20" y="14" width="80" height="76" rx="8" fill="#E9EEF6" stroke="#DCE9E3" strokeWidth="2.5"/>
                 {/* clip */}
-                <rect x="42" y="8" width="36" height="14" rx="5" fill="white" stroke="#059669" strokeWidth="2"/>
+                <rect x="42" y="8" width="36" height="14" rx="5" fill="white" stroke="#DCE9E3" strokeWidth="2"/>
                 {/* lines */}
-                <rect x="34" y="36" width="52" height="5" rx="2.5" fill="#059669" opacity="0.25"/>
-                <rect x="34" y="48" width="40" height="5" rx="2.5" fill="#059669" opacity="0.18"/>
-                <rect x="34" y="60" width="46" height="5" rx="2.5" fill="#059669" opacity="0.18"/>
-                <rect x="34" y="72" width="30" height="5" rx="2.5" fill="#059669" opacity="0.12"/>
+                <rect x="34" y="36" width="52" height="5" rx="2.5" fill="#1a1a2e" opacity="0.14"/>
+                <rect x="34" y="48" width="40" height="5" rx="2.5" fill="#1a1a2e" opacity="0.1"/>
+                <rect x="34" y="60" width="46" height="5" rx="2.5" fill="#1a1a2e" opacity="0.1"/>
+                <rect x="34" y="72" width="30" height="5" rx="2.5" fill="#1a1a2e" opacity="0.08"/>
                 {/* sparkle dots */}
-                <circle cx="97" cy="24" r="4" fill="#059669" opacity="0.3"/>
-                <circle cx="108" cy="14" r="2.5" fill="#059669" opacity="0.2"/>
-                <circle cx="104" cy="32" r="2" fill="#059669" opacity="0.15"/>
+                <circle cx="97" cy="24" r="4" fill="#DCE9E3" opacity="0.9"/>
+                <circle cx="108" cy="14" r="2.5" fill="#DCE9E3" opacity="0.8"/>
+                <circle cx="104" cy="32" r="2" fill="#DCE9E3" opacity="0.7"/>
             </svg>
             <div>
                 <p className="text-[15px] font-bold text-[#1a1a2e]">Select a treatment to get started</p>
@@ -123,10 +165,8 @@ function SkeletonField() {
 
 function SkeletonSection({ count = 6 }) {
     return (
-        <div className="rounded-xl border border-gray-200 bg-white/70 p-6">
-            <div className="grid grid-cols-3 gap-4">
-                {Array.from({ length: count }).map((_, i) => <SkeletonField key={i} />)}
-            </div>
+        <div className="grid grid-cols-3 gap-4">
+            {Array.from({ length: count }).map((_, i) => <SkeletonField key={i} />)}
         </div>
     );
 }
@@ -137,12 +177,12 @@ function SkeletonSection({ count = 6 }) {
 ══════════════════════════════════════════════════════════════════ */
 function PageLoader() {
     return (
-        <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-[#F4F6F8]">
+        <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-[#F8FAFD]">
             <div className="relative h-14 w-14">
-                <div className="absolute inset-0 rounded-full border-4 border-[#059669]/20" />
-                <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-[#059669]" />
+                <div className="absolute inset-0 rounded-full border-4 border-[#DCE9E3]" />
+                <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-[#1a1a2e]" />
             </div>
-            <p className="text-[14px] font-semibold text-[#059669]">Loading animal data…</p>
+            <p className="text-[14px] font-semibold text-[#1a1a2e]">Loading animal data…</p>
         </div>
     );
 }
@@ -247,15 +287,15 @@ export default function HealthActivity() {
                 <UnsavedWarningModal onDiscard={handleDiscard} onKeepEditing={() => setShowWarning(false)} />
             )}
 
-            <div className="flex h-full w-full flex-col overflow-hidden bg-[#F4F6F8]">
+            <div className="flex h-full w-full flex-col overflow-hidden bg-[#F8FAFD]">
 
                 {/* Header */}
-                <div className="shrink-0 border-b border-gray-200 bg-white px-6 py-4">
+                <div className="shrink-0 border-b border-[#D6E2EE] bg-white px-6 py-4 shadow-sm">
                     <div className="flex items-center justify-between">
                         <div>
                             <button
                                 onClick={handleBack}
-                                className="flex items-center gap-1.5 text-[14px] font-bold text-[#059669] hover:opacity-75 transition"
+                                className="flex items-center gap-1.5 text-[14px] font-bold text-[#1a1a2e] hover:opacity-75 transition"
                             >
                                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
                                     <path d="m15 18-6-6 6-6" />
@@ -271,7 +311,7 @@ export default function HealthActivity() {
                         </div>
                         <button
                             onClick={handleBack}
-                            className="rounded-full border border-gray-300 bg-white px-6 py-2 text-[13px] font-semibold text-gray-600 hover:bg-gray-50 transition"
+                            className="rounded-full border border-[#D6E2EE] bg-[#E9EEF6] px-6 py-2 text-[13px] font-semibold text-[#1a1a2e] hover:bg-[#DCE9E3] transition"
                         >
                             Cancel
                         </button>
@@ -282,36 +322,27 @@ export default function HealthActivity() {
                 <div className="flex-1 overflow-y-auto px-6 py-6 space-y-5">
 
                     {/* ── Step 1: Date + Treatment ── */}
-                    <div className="rounded-xl border border-gray-200 bg-white p-6">
-                        <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+                    <div className="space-y-4">
+                        <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-[#8C9BB3]">
                             Step 1 — Select Treatment
                         </p>
-                        <div className="grid grid-cols-3 gap-4">
-                            <FloatingInput
-                                label="Treatment Date" required
-                                type="date"
-                                value={treatmentDate}
-                                onChange={e => { setTreatmentDate(e.target.value); setIsDirty(true); }}
-                            />
-                            <FloatingSelect
-                                label="Treatment Name" required
-                                placeholder="Select treatment type…"
-                                options={TREATMENTS}
-                                value={treatment}
-                                onChange={handleTreatmentChange}
-                            />
-                        </div>
+                        <FloatingInput
+                            label="Treatment Date" required
+                            type="date"
+                            value={treatmentDate}
+                            onChange={e => { setTreatmentDate(e.target.value); setIsDirty(true); }}
+                        />
+                        <FloatingSelect
+                            label="Treatment Name" required
+                            placeholder="Select treatment type…"
+                            options={TREATMENTS}
+                            value={treatment}
+                            onChange={handleTreatmentChange}
+                        />
                     </div>
 
                     {/* ── Step 2 area: skeleton loader → idle illustration ── */}
-                    {formLoading ? (
-                        <>
-                            <SkeletonSection count={6} />
-                            <SkeletonSection count={3} />
-                        </>
-                    ) : (
-                        <IdlePrompt />
-                    )}
+                    {formLoading ? <SkeletonSection count={6} /> : <IdlePrompt />}
 
                 </div>
             </div>

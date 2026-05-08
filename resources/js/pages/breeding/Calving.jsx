@@ -78,7 +78,7 @@ export default function Calving() {
                         options={['Normal', 'Retained Placenta', 'Prolapse', 'Other Complication']}
                         value={form.dam_health} onChange={set('dam_health')} />
                     <FSelect label="Assisted By" required placeholder="Select person…"
-                        options={['Arsh Chauhan', 'Farm Vet', 'Farm Worker']}
+                        options={'workers'}
                         value={form.assisted_by} onChange={set('assisted_by')} />
                     <FSelect label="Location" placeholder="Select location…"
                         options={['Calving Pen', 'Barn', 'Pasture', 'Clinic']}

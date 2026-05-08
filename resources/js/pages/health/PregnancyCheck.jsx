@@ -72,7 +72,7 @@ export default function PregnancyCheck() {
                     <FInput  label="Expected Calving Date" type="date"
                         value={form.calving_date} onChange={set('calving_date')} />
                     <FSelect label="Checked By" required placeholder="Select person…"
-                        options={['Arsh Chauhan', 'Farm Vet', 'Farm Worker']}
+                        options={'workers'}
                         value={form.checked_by} onChange={set('checked_by')} />
                 </div>
             </SectionCard>

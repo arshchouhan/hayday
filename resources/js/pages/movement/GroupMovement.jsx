@@ -69,7 +69,7 @@ export default function GroupMovement() {
                         options={['Routine Rotation', 'Health Separation', 'Breeding Group', 'Dry-off', 'Weaning', 'Other']}
                         value={form.reason} onChange={set('reason')} />
                     <FSelect label="Moved By" required placeholder="Select person…"
-                        options={['Arsh Chauhan', 'Farm Vet', 'Farm Worker']}
+                        options={'workers'}
                         value={form.moved_by} onChange={set('moved_by')} />
                     <FInput  label="Effective Date" type="date"
                         value={form.effective_date} onChange={set('effective_date')} />

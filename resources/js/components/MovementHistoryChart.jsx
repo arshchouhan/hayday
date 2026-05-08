@@ -344,7 +344,13 @@ export default function MovementHistoryChart({ movements = [], groupMovements = 
                                         key={grp.id}
                                         className="flex items-center border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50 transition-colors"
                                     >
-                                        <div className="w-40 flex-shrink-0 pr-3 text-[13px] font-semibold text-[#374151] truncate">
+                                        <div
+                                            className="w-40 flex-shrink-0 pr-3 text-[13px] font-semibold text-[#374151] truncate cursor-pointer hover:text-[#7C3AED] hover:underline"
+                                            title={`View ${grp.name} group`}
+                                            onClick={() => {
+                                                if (grp.id) window.location.href = `/farm/groups/${grp.id}`;
+                                            }}
+                                        >
                                             {grp.name}
                                         </div>
                                         {months.map((m, mIdx) => {

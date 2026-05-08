@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
@@ -35,6 +36,18 @@ class AuthController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
+        app(NotificationService::class)->logActivityAlert([
+            'category' => 'activity',
+            'level' => 'success',
+            'title' => 'Account created',
+            'message' => 'A new farm account was created successfully.',
+            'action_url' => '/farm',
+            'metadata' => [
+                'event' => 'account_created',
+                'user_id' => (string) $user->getKey(),
+            ],
+        ], $user);
+
         return response()->json([
             'success' => true,
             'message' => 'Account created successfully',
@@ -59,6 +72,19 @@ class AuthController extends Controller
         }
 
         $request->session()->regenerate();
+
+        $user = Auth::user();
+        app(NotificationService::class)->logActivityAlert([
+            'category' => 'activity',
+            'level' => 'info',
+            'title' => 'Logged in',
+            'message' => 'The farm account signed in successfully.',
+            'action_url' => '/farm',
+            'metadata' => [
+                'event' => 'user_login',
+                'user_id' => (string) $user?->getKey(),
+            ],
+        ], $user);
 
         return response()->json([
             'success' => true,
@@ -115,6 +141,16 @@ class AuthController extends Controller
             'profile_image' => $profileImage,
         ]);
 
+        app(NotificationService::class)->logActivityUpdated($user, 'profile', $user->name, [
+            'category' => 'activity',
+            'level' => 'info',
+            'action_url' => '/farm/profile',
+            'metadata' => [
+                'event' => 'profile_updated',
+                'user_id' => (string) $user->getKey(),
+            ],
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Profile updated successfully',
@@ -127,6 +163,22 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
+        $user = $request->user();
+
+        if ($user) {
+            app(NotificationService::class)->logActivityAlert([
+                'category' => 'activity',
+                'level' => 'info',
+                'title' => 'Logged out',
+                'message' => 'The farm account signed out.',
+                'action_url' => '/login',
+                'metadata' => [
+                    'event' => 'user_logout',
+                    'user_id' => (string) $user->getKey(),
+                ],
+            ], $user);
+        }
+
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

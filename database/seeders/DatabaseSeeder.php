@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Animal;
 use App\Models\Cattle;
+use App\Models\FarmNotification;
+use App\Models\Worker;
 use App\Models\User;
 use App\Models\Breed;
 use App\Models\BreedingRecord;
@@ -17,6 +19,7 @@ use Database\Factories\AnimalFactory;
 use Database\Factories\BreedingRecordFactory;
 use Database\Factories\HealthRecordFactory;
 use Database\Factories\MovementRecordFactory;
+use Database\Factories\WorkerFactory;
 use Database\Factories\SalesRecordFactory;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -567,5 +570,129 @@ class DatabaseSeeder extends Seeder
         foreach ($allAnimals as $index => $animal) {
             $seedActivityBundle($animal, $index);
         }
+
+        $seedWorker = function (string $email, array $overrides) use ($demoUser): Worker {
+            $payload = WorkerFactory::new()->raw(array_merge([
+                'user_id' => $demoUser->id,
+                'email' => $email,
+            ], $overrides));
+
+            return Worker::updateOrCreate(
+                ['user_id' => $demoUser->id, 'email' => $email],
+                $payload
+            );
+        };
+
+        $seedWorker('emma@demo-farm.test', [
+            'name' => 'Emma Brooks',
+            'animal_id' => (string) $heroCow->getKey(),
+            'group_id' => $groupIds['Breeding Herd'],
+            'task' => 'Morning feeding and calving prep',
+            'cost' => 180.00,
+            'status' => 'On Duty',
+        ]);
+
+        $seedWorker('noah@demo-farm.test', [
+            'name' => 'Noah Patel',
+            'animal_id' => null,
+            'group_id' => $groupIds['Default Group'],
+            'task' => 'Pasture inspection and water checks',
+            'cost' => 145.00,
+            'status' => 'Scheduled',
+        ]);
+
+        $seedWorker('olivia@demo-farm.test', [
+            'name' => 'Olivia Grant',
+            'animal_id' => (string) $heroCow->getKey(),
+            'group_id' => $groupIds['Young Stock'],
+            'task' => 'Vaccination support and notes review',
+            'cost' => 220.00,
+            'status' => 'Completed',
+        ]);
+
+        $seedWorker('liam@demo-farm.test', [
+            'name' => 'Liam Carter',
+            'animal_id' => null,
+            'group_id' => $groupIds['Breeding Herd'],
+            'task' => 'Barn cleanup and inventory restock',
+            'cost' => 96.00,
+            'status' => 'On Duty',
+        ]);
+
+        $seedAlert = function (string $key, array $attributes) use ($demoUser): FarmNotification {
+            $alert = FarmNotification::firstOrNew([
+                'user_id' => $demoUser->id,
+                'dedup_key' => $key,
+            ]);
+
+            $alert->forceFill(array_merge([
+                'user_id' => $demoUser->id,
+                'dedup_key' => $key,
+            ], $attributes));
+
+            $alert->save();
+
+            return $alert;
+        };
+
+        $seedAlert('demo-worker-check-in', [
+            'animal_id' => null,
+            'category' => 'activity',
+            'level' => 'info',
+            'title' => 'Worker check-in completed',
+            'message' => 'Emma Brooks checked in for morning feeding and calving prep.',
+            'action_url' => '/farm/workers',
+            'metadata' => ['source' => 'seed', 'type' => 'worker_check_in'],
+            'status' => 'unread',
+            'read_at' => null,
+            'resolved_at' => null,
+            'created_at' => now()->subMinutes(18),
+            'updated_at' => now()->subMinutes(18),
+        ]);
+
+        $seedAlert('demo-pasture-inspection', [
+            'animal_id' => (string) $heroCow->getKey(),
+            'category' => 'attention',
+            'level' => 'warning',
+            'title' => 'Pasture inspection due',
+            'message' => 'North Pasture needs a follow-up inspection before the next rotation.',
+            'action_url' => '/farm/activity/movement',
+            'metadata' => ['source' => 'seed', 'type' => 'inspection_due'],
+            'status' => 'unread',
+            'read_at' => null,
+            'resolved_at' => null,
+            'created_at' => now()->subHours(2),
+            'updated_at' => now()->subHours(2),
+        ]);
+
+        $seedAlert('demo-breeding-review', [
+            'animal_id' => (string) $heroCow->getKey(),
+            'category' => 'activity',
+            'level' => 'success',
+            'title' => 'Breeding review logged',
+            'message' => 'Breeding support was recorded for Mabel this morning.',
+            'action_url' => '/farm/activity/breeding',
+            'metadata' => ['source' => 'seed', 'type' => 'breeding_review'],
+            'status' => 'read',
+            'read_at' => now()->subHour(),
+            'resolved_at' => null,
+            'created_at' => now()->subHours(5),
+            'updated_at' => now()->subHour(),
+        ]);
+
+        $seedAlert('demo-health-followup', [
+            'animal_id' => (string) $heroCow->getKey(),
+            'category' => 'attention',
+            'level' => 'danger',
+            'title' => 'Health follow-up required',
+            'message' => 'A follow-up treatment note was added for the demo cow.',
+            'action_url' => '/farm/activity/health',
+            'metadata' => ['source' => 'seed', 'type' => 'health_followup'],
+            'status' => 'unread',
+            'read_at' => null,
+            'resolved_at' => null,
+            'created_at' => now()->subDays(1),
+            'updated_at' => now()->subDays(1),
+        ]);
     }
 }

@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const FilterDropdown = ({ label, value, options, onChange, placeholder }) => {
@@ -47,10 +47,10 @@ const FilterDropdown = ({ label, value, options, onChange, placeholder }) => {
 };
 
 const Activity = () => {
-    const [searchQuery, setSearchQuery] = useState('');
     const [selectedAnimal, setSelectedAnimal] = useState(() => localStorage.getItem('selectedAnimal') || '');
     const [loading, setLoading] = useState(false);
-    const [pendingActivity, setPendingActivity] = useState(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
 
     const handleAnimalChange = (val) => {
         if (val === selectedAnimal) return;
@@ -69,23 +69,47 @@ const Activity = () => {
 
     const carouselRef = useRef(null);
 
+    const updateCarouselScrollState = () => {
+        const carousel = carouselRef.current;
+
+        if (!carousel) {
+            setCanScrollLeft(false);
+            setCanScrollRight(false);
+            return;
+        }
+
+        const maxScrollLeft = carousel.scrollWidth - carousel.clientWidth;
+
+        setCanScrollLeft(carousel.scrollLeft > 4);
+        setCanScrollRight(carousel.scrollLeft < maxScrollLeft - 4);
+    };
+
+    useEffect(() => {
+        updateCarouselScrollState();
+
+        const carousel = carouselRef.current;
+
+        if (!carousel) return undefined;
+
+        carousel.addEventListener('scroll', updateCarouselScrollState, { passive: true });
+        window.addEventListener('resize', updateCarouselScrollState);
+
+        return () => {
+            carousel.removeEventListener('scroll', updateCarouselScrollState);
+            window.removeEventListener('resize', updateCarouselScrollState);
+        };
+    }, [selectedAnimal, loading]);
+
     const scroll = (direction) => {
         if (carouselRef.current) {
             const scrollAmount = 350;
-            carouselRef.current.scrollBy({
-                [direction === 'left' ? 'left' : 'right']: scrollAmount,
-                behavior: 'smooth'
-            });
+            const delta = direction === 'left' ? -scrollAmount : scrollAmount;
+
+            carouselRef.current.scrollBy(delta, 0);
         }
     };
 
-    const searchRef = useRef(null);
-
     const navigate = useNavigate();
-
-    const navigateToAnimalSelection = () => {
-        navigate('/farm/activity/animalselection');
-    };
 
     return (
         <div className="relative flex h-full flex-col bg-[#F8FAFD] p-8 overflow-y-auto overflow-x-hidden scrollbar-hide">
@@ -110,24 +134,50 @@ const Activity = () => {
                         {selectedAnimal === 'sheep' ? (
                             <p className="text-[15px] font-semibold text-gray-400">Not ready yet.</p>
                         ) : (
-                            <div ref={carouselRef} className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide">
-                                {[
-                                    { id: 'health', title: 'Animal Health & Treatment', icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20" /></svg> },
-                                    { id: 'breeding', title: 'Breeding & Reproduction', icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg> },
-                                    { id: 'movement', title: 'Movement & Location Management', icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M12 8l4 4-4 4M8 12h7" /></svg> },
-                                    { id: 'sales', title: 'Sales & Records', icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg> }
-                                ].map((card, i) => (
-                                    <div
-                                        key={i}
-                                        onClick={() => navigate(`/farm/activity/${card.id}`)}
-                                        className="w-[320px] shrink-0 rounded-2xl border border-[#80888F]/30 bg-white p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-200 transition-all active:scale-[0.98]"
-                                    >
-                                        <div className="mb-3 text-[#1a1a2e]/60">{card.icon}</div>
-                                        <span className="inline-flex rounded-full bg-[#DCE9E3] px-3 py-1 text-[14px] font-medium text-[#233746]">
-                                            {card.title}
-                                        </span>
-                                    </div>
-                                ))}
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => scroll('left')}
+                                    disabled={!canScrollLeft}
+                                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#D6E2EE] bg-white text-[#1a1a2e] shadow-sm transition-all hover:bg-[#F1F5F9] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:shadow-sm"
+                                    aria-label="Scroll activity cards backward"
+                                >
+                                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M15 18l-6-6 6-6" />
+                                    </svg>
+                                </button>
+
+                                <div ref={carouselRef} className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide">
+                                    {[
+                                        { id: 'health', title: 'Animal Health & Treatment', icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2v20M2 12h20" /></svg> },
+                                        { id: 'breeding', title: 'Breeding & Reproduction', icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg> },
+                                        { id: 'movement', title: 'Movement & Location Management', icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><path d="M12 8l4 4-4 4M8 12h7" /></svg> },
+                                        { id: 'sales', title: 'Sales & Records', icon: <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg> }
+                                    ].map((card, i) => (
+                                        <div
+                                            key={i}
+                                            onClick={() => navigate(`/farm/activity/${card.id}`)}
+                                            className="w-[320px] shrink-0 rounded-2xl border border-[#80888F]/30 bg-white p-4 shadow-sm cursor-pointer hover:shadow-md hover:border-blue-200 transition-all active:scale-[0.98]"
+                                        >
+                                            <div className="mb-3 text-[#1a1a2e]/60">{card.icon}</div>
+                                            <span className="inline-flex rounded-full bg-[#DCE9E3] px-3 py-1 text-[14px] font-medium text-[#233746]">
+                                                {card.title}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => scroll('right')}
+                                    disabled={!canScrollRight}
+                                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#D6E2EE] bg-white text-[#1a1a2e] shadow-sm transition-all hover:bg-[#F1F5F9] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-white disabled:hover:shadow-sm"
+                                    aria-label="Scroll activity cards forward"
+                                >
+                                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M9 18l6-6-6-6" />
+                                    </svg>
+                                </button>
                             </div>
                         )}
                     </div>
@@ -180,47 +230,6 @@ const Activity = () => {
                         )}
                     </section>
 
-                    {/* Search Bar */}
-                    <div ref={searchRef} className="xl:col-span-12">
-                        <div className={`flex items-center gap-3 rounded-2xl border bg-white px-5 py-3 shadow-sm transition-all duration-300 ${searchQuery ? 'border-[#233746] rounded-b-none' : 'border-[#D6E2EE]'}`}>
-                            <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="m21 21-4.35-4.35" />
-                            </svg>
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search workers and activity alerts..."
-                                className="w-full bg-transparent text-[14px] font-medium text-[#1a1a2e] placeholder-gray-400 outline-none"
-                            />
-                            {searchQuery && (
-                                <button onClick={() => setSearchQuery('')} className="shrink-0 text-gray-400 hover:text-gray-600 transition-colors">
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                        <path d="M18 6 6 18M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            )}
-                        </div>
-                        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${searchQuery ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                            <div className="rounded-b-2xl border border-t-0 border-[#233746] bg-white text-center">
-                                <div className="flex items-center gap-6 border-b border-[#D6E2EE] px-4 pt-2">
-                                    <button className="text-[15px] font-bold text-[#1a1a2e] border-b-2 border-[#1a1a2e] pb-2">Workers</button>
-                                    <button className="text-[15px] font-medium text-gray-400 pb-2 hover:text-[#1a1a2e] transition-colors">Activity Alerts</button>
-                                </div>
-                                <div className="flex min-h-[180px] flex-col items-center justify-center px-4 py-8">
-                                    <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[#F1F5F9] text-gray-400">
-                                        <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
-                                            <circle cx="11" cy="11" r="8" />
-                                            <path d="m21 21-4.35-4.35" />
-                                        </svg>
-                                    </div>
-                                    <p className="text-[15px] font-bold text-slate-700 mb-1">No results found</p>
-                                    <p className="text-[13px] font-medium text-slate-500">No matches for "{searchQuery}"</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             )}
         </div>

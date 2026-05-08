@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNotifications } from '../../context/NotificationContext';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import TreatmentFormShell, {
     SectionCard, FInput, FSelect, FTextarea, Pill, Attachments,
@@ -22,6 +23,7 @@ export default function RecordHeat() {
     });
     const [attachments, setAttachments] = useState([]);
     const [isDirty, setIsDirty] = useState(false);
+    const { showToast } = useNotifications();
 
     const set    = (key) => (e) => { setForm(f => ({ ...f, [key]: e.target.value })); setIsDirty(true); };
     const setPill = (key, val) =>  { setForm(f => ({ ...f, [key]: val }));            setIsDirty(true); };
@@ -42,14 +44,14 @@ export default function RecordHeat() {
 
             if (data.success) {
                 setIsDirty(false);
-                alert('Record Heat activity saved!');
+                showToast('Activity saved', data.message || 'Record Heat activity saved!');
                 navigate('/farm/details/' + animalId);
             } else {
-                alert('Error: ' + (data.message || 'Failed to save record'));
+                showToast('Error', data.message || 'Failed to save record');
             }
         } catch (error) {
             console.error('Submit error:', error);
-            alert('An error occurred while saving the record.');
+            showToast('Error', 'An error occurred while saving the record.');
         }
     };
 
@@ -69,7 +71,7 @@ export default function RecordHeat() {
                     <FInput  label="Expected Return Date" type="date"
                         value={form.expected_return} onChange={set('expected_return')} />
                     <FSelect label="Observed By" required placeholder="Select observer…"
-                        options={['Arsh Chauhan', 'Farm Vet', 'Farm Worker']}
+                        options={'workers'}
                         value={form.observed_by} onChange={set('observed_by')} />
                     <FSelect label="Location" placeholder="Select location…"
                         options={['Barn', 'Pasture', 'Quarantine', 'Clinic']}

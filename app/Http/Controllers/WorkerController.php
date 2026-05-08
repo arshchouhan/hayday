@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Worker;
 use App\Mail\WorkerWelcomeMail;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
@@ -41,6 +42,16 @@ class WorkerController extends Controller
 
         $worker = Worker::create($validated);
 
+        app(NotificationService::class)->logActivityCreated($request->user(), 'worker', $worker->name, [
+            'category' => 'activity',
+            'level' => 'info',
+            'action_url' => '/farm/workers',
+            'metadata' => [
+                'event' => 'worker_created',
+                'worker_id' => (string) $worker->getKey(),
+            ],
+        ]);
+
         // Send welcome email
         try {
             Mail::to($worker->email)->send(new WorkerWelcomeMail($worker));
@@ -60,13 +71,36 @@ class WorkerController extends Controller
     {
         $worker = Worker::findOrFail($id);
         $worker->update($request->all());
+
+        app(NotificationService::class)->logActivityUpdated($request->user(), 'worker', $worker->name, [
+            'category' => 'activity',
+            'level' => 'info',
+            'action_url' => '/farm/workers',
+            'metadata' => [
+                'event' => 'worker_updated',
+                'worker_id' => (string) $worker->getKey(),
+            ],
+        ]);
+
         return $worker;
     }
 
     public function destroy($id)
     {
         $worker = Worker::findOrFail($id);
+        $workerName = $worker->name;
         $worker->delete();
+
+        app(NotificationService::class)->logActivityDeleted(request()->user(), 'worker', $workerName, [
+            'category' => 'activity',
+            'level' => 'warning',
+            'action_url' => '/farm/workers',
+            'metadata' => [
+                'event' => 'worker_deleted',
+                'worker_id' => (string) $id,
+            ],
+        ]);
+
         return response()->json(null, 204);
     }
 }

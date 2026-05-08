@@ -47,6 +47,7 @@ Route::prefix('farm')->middleware('auth:sanctum')->group(function () {
     Route::put('/locations/{id}', [LocationController::class, 'update']);
     Route::delete('/locations/{id}', [LocationController::class, 'destroy']);
     Route::get('/health/animal/{animalId}', [HealthController::class, 'getByAnimal']);
+    Route::post('/health', [HealthController::class, 'store']);
 
     // General Activities (Breeding, Movement, Sales)
     Route::post('/activities/{hub}', [ActivityController::class, 'store']);

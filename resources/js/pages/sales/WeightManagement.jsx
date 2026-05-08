@@ -83,7 +83,7 @@ export default function WeightManagement() {
                         options={['1 – Emaciated', '2 – Thin', '3 – Moderate', '4 – Good', '5 – Obese']}
                         value={form.body_condition} onChange={set('body_condition')} />
                     <FSelect label="Recorded By" required placeholder="Select person…"
-                        options={['Arsh Chauhan', 'Farm Vet', 'Farm Worker']}
+                        options={'workers'}
                         value={form.recorded_by} onChange={set('recorded_by')} />
                     <FInput  label="Next Weigh Date" type="date"
                         value={form.next_weigh_date} onChange={set('next_weigh_date')} />

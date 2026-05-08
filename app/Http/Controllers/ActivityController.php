@@ -85,18 +85,19 @@ class ActivityController extends Controller
             }
 
             $notifications = app(NotificationService::class);
-            $notifications->createActivityNotification($request->user(), $animal, [
-                'category' => $hub,
+            $notifications->logActivityAlert([
+                'category' => 'activity',
                 'level' => $hub === 'sales' && $request->type === 'dead' ? 'danger' : 'info',
                 'title' => ucfirst($hub) . ' activity recorded',
                 'message' => $this->buildActivityMessage($hub, $request->type, $animal),
                 'action_url' => '/farm/details/' . $animal->id,
+                'animal_id' => (string) $animal->id,
                 'metadata' => [
                     'hub' => $hub,
                     'type' => $request->type,
                     'animal_id' => (string) $animal->id,
                 ],
-            ]);
+            ], $request->user());
 
             $notifications->syncAnimalAttentionNotifications($request->user(), $animal);
 

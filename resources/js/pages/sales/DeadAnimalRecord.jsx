@@ -69,7 +69,7 @@ export default function DeadAnimalRecord() {
                         options={['Natural', 'Accidental', 'Emergency Slaughter', 'Euthanasia']}
                         value={form.death_category} onChange={set('death_category')} />
                     <FSelect label="Found / Reported By" required placeholder="Select person…"
-                        options={['Arsh Chauhan', 'Farm Vet', 'Farm Worker']}
+                        options={'workers'}
                         value={form.found_by} onChange={set('found_by')} />
                     <FSelect label="Location" placeholder="Select location…"
                         options={['Barn', 'Pasture', 'Quarantine', 'Calving Pen', 'Other']}
@@ -88,7 +88,7 @@ export default function DeadAnimalRecord() {
             <SectionCard title="Post-Mortem & Disposal">
                 <div className="grid grid-cols-3 gap-4">
                     <FSelect label="Post-Mortem By" placeholder="Select person…"
-                        options={['Farm Vet', 'External Specialist', 'N/A']}
+                        options={'workers'}
                         value={form.post_mortem_by} onChange={set('post_mortem_by')} />
                     <FSelect label="Disposal Method" placeholder="Select method…"
                         options={['Burial on Farm', 'Rendering Plant', 'Incineration', 'Composting', 'Knackery']}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Group;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class GroupController extends Controller
@@ -37,6 +38,17 @@ class GroupController extends Controller
         $validated['user_id'] = $userId;
 
         $group = Group::create($validated);
+
+        app(NotificationService::class)->logActivityCreated($request->user(), 'group', $group->name, [
+            'category' => 'activity',
+            'level' => 'info',
+            'action_url' => '/farm/groups',
+            'metadata' => [
+                'event' => 'group_created',
+                'group_id' => (string) $group->getKey(),
+            ],
+        ]);
+
         return response()->json($group, 201);
     }
 
@@ -49,13 +61,36 @@ class GroupController extends Controller
     {
         $group = Group::findOrFail($id);
         $group->update($request->all());
+
+        app(NotificationService::class)->logActivityUpdated($request->user(), 'group', $group->name, [
+            'category' => 'activity',
+            'level' => 'info',
+            'action_url' => '/farm/groups',
+            'metadata' => [
+                'event' => 'group_updated',
+                'group_id' => (string) $group->getKey(),
+            ],
+        ]);
+
         return $group;
     }
 
     public function destroy($id)
     {
         $group = Group::findOrFail($id);
+        $groupName = $group->name;
         $group->delete();
+
+        app(NotificationService::class)->logActivityDeleted(request()->user(), 'group', $groupName, [
+            'category' => 'activity',
+            'level' => 'warning',
+            'action_url' => '/farm/groups',
+            'metadata' => [
+                'event' => 'group_deleted',
+                'group_id' => (string) $id,
+            ],
+        ]);
+
         return response()->json(null, 204);
     }
 }

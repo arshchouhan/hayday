@@ -74,7 +74,7 @@ export default function LocationMovement() {
                         options={['Grazing Rotation', 'Veterinary Visit', 'Sale / Transfer', 'Show / Exhibition', 'Quarantine', 'Other']}
                         value={form.reason} onChange={set('reason')} />
                     <FSelect label="Moved By" required placeholder="Select person…"
-                        options={['Arsh Chauhan', 'Farm Vet', 'Farm Worker', 'Transport Company']}
+                        options={'workers'}
                         value={form.moved_by} onChange={set('moved_by')} />
                     <FInput  label="Distance" type="number" placeholder="e.g. 12"
                         value={form.distance} onChange={set('distance')} suffix="km" />

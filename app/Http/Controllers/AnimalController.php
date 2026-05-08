@@ -344,17 +344,18 @@ class AnimalController extends Controller
         \Illuminate\Support\Facades\Log::info('Animal saved successfully ID: ' . $animal->id);
 
         $notifications = app(NotificationService::class);
-        $notifications->createActivityNotification($request->user(), $animal, [
-            'category' => 'animal',
+        $notifications->logActivityAlert([
+            'category' => 'activity',
             'level' => 'info',
             'title' => 'Animal registered',
             'message' => $this->animalNotificationMessage($animal, 'was registered on the farm.'),
             'action_url' => '/farm/details/' . $animal->id,
+            'animal_id' => (string) $animal->id,
             'metadata' => [
                 'event' => 'animal_registered',
                 'animal_id' => (string) $animal->id,
             ],
-        ]);
+        ], $request->user());
 
         $notifications->syncAnimalAttentionNotifications($request->user(), $animal);
 
@@ -431,18 +432,19 @@ class AnimalController extends Controller
         $animal->update($request->all());
 
         $notifications = app(NotificationService::class);
-        $notifications->createActivityNotification($request->user(), $animal, [
-            'category' => 'animal',
+        $notifications->logActivityAlert([
+            'category' => 'activity',
             'level' => 'info',
             'title' => 'Animal details updated',
             'message' => $this->animalNotificationMessage($animal, 'details were updated.'),
             'action_url' => '/farm/details/' . $animal->id,
+            'animal_id' => (string) $animal->id,
             'metadata' => [
                 'event' => 'animal_updated',
                 'animal_id' => (string) $animal->id,
             ],
             'dedup_key' => 'animal_updated_' . $animal->id . '_' . now()->format('YmdHi'), // Dedup per minute per animal
-        ]);
+        ], $request->user());
 
         $notifications->syncAnimalAttentionNotifications($request->user(), $animal);
 
@@ -454,7 +456,23 @@ class AnimalController extends Controller
         $animal = Animal::find($id) ?? Cattle::find($id) ?? Sheep::find($id);
         if (!$animal) return response()->json(['message' => 'Animal not found'], 404);
 
+        $animalLabel = $this->animalNotificationMessage($animal, 'was removed from the farm.');
+
         $animal->delete();
+
+        app(NotificationService::class)->logActivityAlert([
+            'category' => 'activity',
+            'level' => 'warning',
+            'title' => 'Animal deleted',
+            'message' => $animalLabel,
+            'action_url' => '/farm/animals',
+            'animal_id' => (string) $id,
+            'metadata' => [
+                'event' => 'animal_deleted',
+                'animal_id' => (string) $id,
+            ],
+        ], request()->user());
+
         return response()->json(['success' => true, 'message' => 'Animal deleted successfully']);
     }
 
@@ -467,6 +485,19 @@ class AnimalController extends Controller
         Animal::whereIn('_id', $ids)->delete();
         Cattle::whereIn('_id', $ids)->delete();
         Sheep::whereIn('_id', $ids)->delete();
+
+        app(NotificationService::class)->logActivityAlert([
+            'category' => 'activity',
+            'level' => 'warning',
+            'title' => 'Animals deleted',
+            'message' => 'Multiple animals were removed from the farm.',
+            'action_url' => '/farm/animals',
+            'metadata' => [
+                'event' => 'animals_bulk_deleted',
+                'count' => count($ids),
+                'animal_ids' => array_values($ids),
+            ],
+        ], $request->user());
 
         return response()->json(['success' => true, 'message' => 'Animals deleted successfully']);
     }

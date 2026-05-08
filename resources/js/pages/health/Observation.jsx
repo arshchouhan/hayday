@@ -70,7 +70,7 @@ export default function Observation() {
                         options={['Low', 'Medium', 'High', 'Critical']}
                         value={form.severity} onChange={set('severity')} />
                     <FSelect label="Observed By" required placeholder="Select observer…"
-                        options={['Arsh Chauhan', 'Farm Vet', 'Farm Worker']}
+                        options={'workers'}
                         value={form.observed_by} onChange={set('observed_by')} />
                     <FSelect label="Location" placeholder="Select location…"
                         options={['Barn', 'Pasture', 'Quarantine', 'Clinic']}

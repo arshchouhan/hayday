@@ -1,26 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../context/NotificationContext';
-
-function formatTimeAgo(value) {
-    if (!value) return 'just now';
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return 'just now';
-
-    const diffSeconds = Math.max(1, Math.floor((Date.now() - date.getTime()) / 1000));
-    
-    if (diffSeconds < 60) return `${diffSeconds}s ago`;
-    
-    const diffMinutes = Math.floor(diffSeconds / 60);
-    if (diffMinutes < 60) return `${diffMinutes}m ago`;
-
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-
-    const diffDays = Math.floor(diffHours / 24);
-    return `${diffDays}d ago`;
-}
+import { formatTimeAgo } from '../utils/notifications';
 
 const levelStyles = {
     info: 'bg-blue-50 text-blue-700 ring-blue-100',
@@ -35,6 +16,7 @@ export default function Notifications() {
         notifications,
         unreadCount,
         loading,
+        markAllReadLoading,
         loadNotifications,
         markAsRead,
         markAllAsRead,
@@ -78,10 +60,16 @@ export default function Notifications() {
                             </button>
                             <button
                                 type="button"
-                                onClick={() => void markAllAsRead()}
-                                className="rounded-full bg-[#1a1a2e] px-5 py-2 text-[13px] font-bold text-white hover:bg-[#233746] transition-colors"
+                                onClick={() => { void markAllAsRead(); }}
+                                disabled={markAllReadLoading}
+                                className="inline-flex items-center gap-2 rounded-full bg-[#1a1a2e] px-5 py-2 text-[13px] font-bold text-white hover:bg-[#233746] transition-colors disabled:cursor-not-allowed disabled:opacity-70"
                             >
-                                Mark all read
+                                {markAllReadLoading && (
+                                    <svg viewBox="0 0 24 24" className="h-4 w-4 animate-spin" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                        <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
+                                    </svg>
+                                )}
+                                {markAllReadLoading ? 'Marking all read...' : 'Mark all read'}
                             </button>
                         </div>
                     </div>

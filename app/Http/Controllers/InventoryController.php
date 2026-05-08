@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory;
 use App\Models\InventoryHistory;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class InventoryController extends Controller
@@ -44,6 +45,18 @@ class InventoryController extends Controller
         $validated['user_id'] = $userId;
 
         $item = Inventory::create($validated);
+
+        app(NotificationService::class)->logActivityCreated($request->user(), 'inventory item', $item->name, [
+            'category' => 'activity',
+            'level' => 'info',
+            'action_url' => '/farm/inventory',
+            'metadata' => [
+                'event' => 'inventory_created',
+                'inventory_id' => (string) $item->getKey(),
+                'type' => $item->type,
+            ],
+        ]);
+
         return response()->json($item, 201);
     }
 
@@ -70,6 +83,17 @@ class InventoryController extends Controller
         // Log history
         $history = InventoryHistory::create($validated);
 
+        app(NotificationService::class)->logActivityRecorded($request->user(), 'inventory restock', $item->name, [
+            'category' => 'activity',
+            'level' => 'info',
+            'action_url' => '/farm/inventory',
+            'metadata' => [
+                'event' => 'inventory_restocked',
+                'inventory_id' => (string) $item->getKey(),
+                'quantity_added' => $validated['quantity_added'],
+            ],
+        ]);
+
         return response()->json([
             'item' => $item,
             'history' => $history
@@ -79,8 +103,20 @@ class InventoryController extends Controller
     public function destroy($id)
     {
         $item = Inventory::findOrFail($id);
+        $itemName = $item->name;
         $item->history()->delete();
         $item->delete();
+
+        app(NotificationService::class)->logActivityDeleted(request()->user(), 'inventory item', $itemName, [
+            'category' => 'activity',
+            'level' => 'warning',
+            'action_url' => '/farm/inventory',
+            'metadata' => [
+                'event' => 'inventory_deleted',
+                'inventory_id' => (string) $id,
+            ],
+        ]);
+
         return response()->json(null, 204);
     }
 }

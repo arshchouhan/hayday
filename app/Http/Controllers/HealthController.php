@@ -50,18 +50,19 @@ class HealthController extends Controller
             Log::info("Health record ({$request->type}) saved for animal: {$request->animal_id}");
 
             $notifications = app(NotificationService::class);
-            $notifications->createActivityNotification($request->user(), $animal, [
-                'category' => 'health',
+            $notifications->logActivityAlert([
+                'category' => 'activity',
                 'level' => in_array($request->type, ['treatment', 'observation'], true) ? 'warning' : 'info',
                 'title' => ucfirst($request->type) . ' record saved',
                 'message' => $this->buildHealthMessage($animal, $request->type),
                 'action_url' => '/farm/activity/health/' . $animal->id,
+                'animal_id' => (string) $animal->id,
                 'metadata' => [
                     'event' => 'health_record',
                     'type' => $request->type,
                     'animal_id' => (string) $animal->id,
                 ],
-            ]);
+            ], $request->user());
 
             $notifications->syncAnimalAttentionNotifications($request->user(), $animal);
 

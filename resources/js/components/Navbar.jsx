@@ -2,6 +2,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
+import { formatTimeAgo } from '../utils/notifications';
 import hayIcon from '../assets/noun-hay-7549821.svg';
 
 const searchTargets = [
@@ -26,7 +27,7 @@ export default function Navbar() {
     const navigate = useNavigate();
     const { pathname } = useLocation();
     const { user, logout } = useAuth();
-    const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+    const { notifications, unreadCount, markAsRead, markAllAsRead, loadNotifications, markAllReadLoading } = useNotifications();
     const [searchQuery, setSearchQuery] = useState('');
     const [showQueryError, setShowQueryError] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
@@ -87,32 +88,13 @@ export default function Navbar() {
         }
     };
 
-    const handleNotificationsClick = () => {
+    const handleNotificationsClick = async () => {
         setShowProfileMenu(false);
         const becomingVisible = !showNotifications;
         setShowNotifications(becomingVisible);
         if (becomingVisible) {
-            loadNotifications(25, true); // Background refresh when opening
+            await loadNotifications(25, true);
         }
-    };
-
-    const formatTimeAgo = (value) => {
-        if (!value) return 'just now';
-
-        const date = new Date(value);
-        if (Number.isNaN(date.getTime())) return 'just now';
-
-        const diffSeconds = Math.max(1, Math.floor((Date.now() - date.getTime()) / 1000));
-        
-        if (diffSeconds < 60) return `${diffSeconds}s ago`;
-        
-        const diffMinutes = Math.floor(diffSeconds / 60);
-        if (diffMinutes < 60) return `${diffMinutes}m ago`;
-
-        const diffHours = Math.floor(diffMinutes / 60);
-        if (diffHours < 24) return `${diffHours}h ago`;
-
-        return `${Math.floor(diffHours / 24)}d ago`;
     };
 
     return (
@@ -186,7 +168,7 @@ export default function Navbar() {
                                 <div ref={notificationMenuRef} className="relative">
                                     <button
                                         type="button"
-                                        onClick={handleNotificationsClick}
+                                        onClick={() => { void handleNotificationsClick(); }}
                                         className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-transparent text-gray-700 hover:bg-black/5 transition-colors relative"
                                         aria-label="Open notifications"
                                     >
@@ -210,10 +192,16 @@ export default function Navbar() {
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    onClick={() => markAllAsRead()}
-                                                    className="rounded-full bg-[#E9EEF6] px-3 py-1.5 text-[11px] font-bold text-[#1a1a2e] hover:bg-[#dde6f2] transition-colors"
+                                                    onClick={() => { void markAllAsRead(); }}
+                                                    disabled={markAllReadLoading}
+                                                    className="inline-flex items-center gap-2 rounded-full bg-[#E9EEF6] px-3 py-1.5 text-[11px] font-bold text-[#1a1a2e] hover:bg-[#dde6f2] transition-colors disabled:cursor-not-allowed disabled:opacity-70"
                                                 >
-                                                    Mark all read
+                                                    {markAllReadLoading && (
+                                                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 animate-spin" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                                            <path d="M21 12a9 9 0 1 1-6.219-8.56" strokeLinecap="round" />
+                                                        </svg>
+                                                    )}
+                                                    {markAllReadLoading ? 'Marking...' : 'Mark all read'}
                                                 </button>
                                             </div>
 

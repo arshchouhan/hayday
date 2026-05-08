@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, useState, useEffect, useMemo } from 'react';
-import { Map as MapIcon, Fence, Weight, Users, Maximize, X } from 'lucide-react';
+import { Map as MapIcon, Fence, Weight, Users, Maximize, X, Square, Trash2, Navigation, Loader2 } from 'lucide-react';
 import Map, { NavigationControl, useControl, Popup, Marker } from 'react-map-gl/maplibre';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import maplibregl from 'maplibre-gl';
@@ -91,7 +91,7 @@ const DRAW_STYLES = [
 const InfoCard = ({ name, type, area, animals = 0, feed = 0, onRemove }) => (
     <div className="bg-white rounded-2xl p-4 shadow-2xl min-w-[220px] border border-gray-100 relative scale-90 origin-bottom pointer-events-auto">
         {onRemove && (
-            <button 
+            <button
                 onClick={(e) => { e.stopPropagation(); onRemove(); }}
                 className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors"
             >
@@ -124,25 +124,35 @@ const InfoCard = ({ name, type, area, animals = 0, feed = 0, onRemove }) => (
 
 // Custom Draw Control for react-map-gl
 function DrawControl(props) {
-    useControl(
+    const draw = useControl(
         () => new MapboxDraw({
             ...props,
             styles: DRAW_STYLES
         }),
-        ({map}) => {
+        ({ map }) => {
             map.on('draw.create', props.onUpdate);
             map.on('draw.update', props.onUpdate);
             map.on('draw.delete', props.onUpdate);
+            map.on('draw.modechange', (e) => props.onModeChange && props.onModeChange(e.mode));
+            map.on('draw.selectionchange', (e) => props.onSelectionChange && props.onSelectionChange(e.features));
         },
-        ({map}) => {
+        ({ map }) => {
             map.off('draw.create', props.onUpdate);
             map.off('draw.update', props.onUpdate);
             map.off('draw.delete', props.onUpdate);
+            map.off('draw.modechange', (e) => props.onModeChange && props.onModeChange(e.mode));
+            map.off('draw.selectionchange', (e) => props.onSelectionChange && props.onSelectionChange(e.features));
         },
         {
             position: props.position
         }
     );
+
+    useEffect(() => {
+        if (props.onDrawInstance && draw) {
+            props.onDrawInstance(draw);
+        }
+    }, [draw, props]);
 
     return null;
 }
@@ -151,6 +161,48 @@ export default function MapEditor({ onUpdate, initialData, isReadOnly = false, c
     const mapRef = useRef();
     const [activeDrawInfo, setActiveDrawInfo] = useState(null);
     const [mapLoaded, setMapLoaded] = useState(false);
+    
+    // Custom Toolbar State
+    const [drawInstance, setDrawInstance] = useState(null);
+    const [drawMode, setDrawMode] = useState('simple_select');
+    const [hasSelection, setHasSelection] = useState(false);
+    const [isLocating, setIsLocating] = useState(false);
+
+    const handleLocateMe = useCallback((e) => {
+        if (e) e.stopPropagation();
+        if (!navigator.geolocation) {
+            alert("Geolocation is not supported by your browser");
+            return;
+        }
+
+        setIsLocating(true);
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                setIsLocating(false);
+                const map = mapRef.current?.getMap();
+                if (map) {
+                    map.flyTo({
+                        center: [position.coords.longitude, position.coords.latitude],
+                        zoom: 16,
+                        essential: true,
+                        duration: 2500
+                    });
+                }
+            },
+            (error) => {
+                setIsLocating(false);
+                console.warn("Location permission denied or unavailable", error);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }, []);
+
+    // Auto-locate on first load if creating a new location
+    useEffect(() => {
+        if (mapLoaded && !initialData && !isReadOnly) {
+            handleLocateMe();
+        }
+    }, [mapLoaded, initialData, isReadOnly, handleLocateMe]);
 
     // Native layer management
     useEffect(() => {
@@ -205,7 +257,7 @@ export default function MapEditor({ onUpdate, initialData, isReadOnly = false, c
 
     const onDrawUpdate = useCallback((e) => {
         let feature;
-        const draw = e.target._controls.find(c => c instanceof MapboxDraw);
+        const draw = drawInstance || (e.target && e.target._controls && e.target._controls.find(c => c.getAll));
         if (!draw) return;
 
         const all = draw.getAll();
@@ -229,9 +281,11 @@ export default function MapEditor({ onUpdate, initialData, isReadOnly = false, c
                     feed: 0
                 }
             });
+        } else {
+            setActiveDrawInfo(null);
         }
         if (onUpdate) onUpdate(all);
-    }, [onUpdate, currentName]);
+    }, [onUpdate, currentName, drawInstance]);
 
     // Update drawing popup name in real-time
     useEffect(() => {
@@ -244,77 +298,139 @@ export default function MapEditor({ onUpdate, initialData, isReadOnly = false, c
     }, [currentName, isReadOnly]);
 
     return (
-        <Map
-            ref={mapRef}
-            initialViewState={{
-                longitude: 75.772,
-                latitude: 31.22,
-                zoom: 13
-            }}
-            style={{ width: '100%', height: '100%' }}
-            mapStyle={FREE_SATELLITE_STYLE}
-            mapLib={maplibregl}
-            onLoad={() => setMapLoaded(true)}
-        >
-            <NavigationControl position="bottom-right" />
-            
+        <div className="relative w-full h-full">
+            <Map
+                ref={mapRef}
+                initialViewState={{
+                    longitude: 75.772,
+                    latitude: 31.22,
+                    zoom: 13
+                }}
+                style={{ width: '100%', height: '100%' }}
+                mapStyle={FREE_SATELLITE_STYLE}
+                mapLib={maplibregl}
+                onLoad={() => setMapLoaded(true)}
+            >
+                <NavigationControl position="bottom-right" />
+
+                {!isReadOnly && (
+                    <DrawControl
+                        position="top-right"
+                        displayControlsDefault={false}
+                        controls={{}} // We will render completely custom controls
+                        defaultMode="simple_select"
+                        onUpdate={onDrawUpdate}
+                        onModeChange={setDrawMode}
+                        onSelectionChange={(features) => setHasSelection(features && features.length > 0)}
+                        onDrawInstance={setDrawInstance}
+                    />
+                )}
+
+                {/* PERSISTENT CARDS for all saved locations */}
+                {isReadOnly && persistentLabels.map(label => (
+                    <Marker
+                        key={label.id}
+                        longitude={label.lng}
+                        latitude={label.lat}
+                        anchor="bottom"
+                        offset={[0, -10]}
+                    >
+                        <InfoCard
+                            name={label.properties.name}
+                            type={label.properties.type}
+                            area={label.properties.area}
+                            animals={label.properties.animals}
+                            feed={label.properties.feed}
+                        />
+                    </Marker>
+                ))}
+
+                {/* ACTIVE DRAWING CARD */}
+                {!isReadOnly && activeDrawInfo && (
+                    <Marker
+                        longitude={activeDrawInfo.longitude}
+                        latitude={activeDrawInfo.latitude}
+                        anchor="bottom"
+                        offset={[0, -10]}
+                    >
+                        <InfoCard
+                            name={activeDrawInfo.properties.name}
+                            type={activeDrawInfo.properties.type}
+                            area={activeDrawInfo.properties.area}
+                            animals={activeDrawInfo.properties.animals}
+                            feed={activeDrawInfo.properties.feed}
+                        />
+                    </Marker>
+                )}
+
+                <style>{`
+                    .maplibregl-marker {
+                        pointer-events: none;
+                    }
+                    .location-popup .maplibregl-popup-content {
+                        padding: 0 !important;
+                        background: transparent !important;
+                        box-shadow: none !important;
+                    }
+                    /* Ensure Mapbox's default controls are 100% hidden in case it tries to inject them */
+                    .mapboxgl-ctrl-group.mapboxgl-ctrl {
+                        display: none !important;
+                    }
+                `}</style>
+            </Map>
+
+            {/* CUSTOM FLOATING ACTION BUTTONS (FABs) FOR MAP DRAWING */}
             {!isReadOnly && (
-                <DrawControl
-                    position="top-left"
-                    displayControlsDefault={false}
-                    controls={{ polygon: true, trash: true }}
-                    defaultMode="draw_polygon"
-                    onUpdate={onDrawUpdate}
-                />
-            )}
-            
-            {/* PERSISTENT CARDS for all saved locations */}
-            {isReadOnly && persistentLabels.map(label => (
-                <Marker 
-                    key={label.id} 
-                    longitude={label.lng} 
-                    latitude={label.lat} 
-                    anchor="bottom"
-                    offset={[0, -10]}
-                >
-                    <InfoCard 
-                        name={label.properties.name} 
-                        type={label.properties.type} 
-                        area={label.properties.area}
-                        animals={label.properties.animals}
-                        feed={label.properties.feed}
-                    />
-                </Marker>
-            ))}
+                <div className="absolute top-6 left-6 flex flex-col gap-3 z-10">
+                    <button
+                        title="Locate Me"
+                        onClick={handleLocateMe}
+                        disabled={isLocating}
+                        className="flex items-center justify-center w-12 h-12 rounded-2xl shadow-xl border border-gray-100 bg-white/95 text-[#1a1a2e] backdrop-blur-md transition-all hover:bg-white hover:scale-105 disabled:opacity-70 disabled:hover:scale-100"
+                    >
+                        {isLocating ? <Loader2 size={20} className="animate-spin text-[#00B4D8]" /> : <Navigation size={20} strokeWidth={2.5} />}
+                    </button>
 
-            {/* ACTIVE DRAWING CARD */}
-            {!isReadOnly && activeDrawInfo && (
-                <Marker 
-                    longitude={activeDrawInfo.longitude} 
-                    latitude={activeDrawInfo.latitude} 
-                    anchor="bottom"
-                    offset={[0, -10]}
-                >
-                    <InfoCard 
-                        name={activeDrawInfo.properties.name} 
-                        type={activeDrawInfo.properties.type} 
-                        area={activeDrawInfo.properties.area}
-                        animals={activeDrawInfo.properties.animals}
-                        feed={activeDrawInfo.properties.feed}
-                    />
-                </Marker>
-            )}
+                    {drawInstance && (
+                        <>
+                            <button
+                        title="Draw Polygon"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (drawMode === 'draw_polygon') {
+                                drawInstance.changeMode('simple_select');
+                            } else {
+                                drawInstance.changeMode('draw_polygon');
+                            }
+                        }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border backdrop-blur-md transition-all group ${
+                            drawMode === 'draw_polygon' 
+                                ? 'bg-[#00B4D8] border-[#00B4D8] text-white' 
+                                : 'bg-white/95 border-gray-100 text-[#1a1a2e] hover:bg-white hover:scale-105'
+                        }`}
+                    >
+                        <Square size={20} strokeWidth={2.5} className={drawMode === 'draw_polygon' ? 'text-white' : 'text-[#00B4D8] group-hover:text-[#00B4D8]'} />
+                        <span className="text-[13px] font-black tracking-wide">
+                            {drawMode === 'draw_polygon' ? 'Drawing...' : 'Draw Area'}
+                        </span>
+                    </button>
 
-            <style>{`
-                .maplibregl-marker {
-                    pointer-events: none;
-                }
-                .location-popup .maplibregl-popup-content {
-                    padding: 0 !important;
-                    background: transparent !important;
-                    box-shadow: none !important;
-                }
-            `}</style>
-        </Map>
+                    <button
+                        title="Delete Selection"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            drawInstance.trash();
+                        }}
+                        disabled={!hasSelection && drawMode !== 'draw_polygon'}
+                        className="flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl border border-gray-100 bg-white/95 text-red-500 backdrop-blur-md transition-all hover:bg-red-50 hover:border-red-100 disabled:opacity-50 disabled:cursor-not-allowed hover:scale-105"
+                    >
+                        <Trash2 size={20} strokeWidth={2.5} />
+                        <span className="text-[13px] font-black tracking-wide">Clear</span>
+                    </button>
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
     );
 }

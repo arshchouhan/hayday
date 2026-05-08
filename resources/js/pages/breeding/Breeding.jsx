@@ -70,7 +70,7 @@ export default function Breeding() {
                     <FInput  label="Semen Batch / Straw ID" placeholder="e.g. SB-2024-001"
                         value={form.semen_batch} onChange={set('semen_batch')} />
                     <FSelect label="Technician" required placeholder="Select technician…"
-                        options={['Arsh Chauhan', 'Farm Vet', 'AI Technician', 'Farm Worker']}
+                        options={'workers'}
                         value={form.technician} onChange={set('technician')} />
                     <FSelect label="Location" placeholder="Select location…"
                         options={['Barn', 'Pasture', 'Breeding Pen', 'Clinic']}

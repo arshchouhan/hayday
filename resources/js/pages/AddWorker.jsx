@@ -8,6 +8,10 @@ const AddWorker = () => {
     const [searchParams] = useSearchParams();
     const workerId = searchParams.get('workerId');
     const isEditMode = !!workerId;
+    const preselectedAnimalId = searchParams.get('animalId')
+        || (searchParams.get('animals') || '').split(',').filter(Boolean)[0]
+        || '';
+    const preselectedGroupId = searchParams.get('groupId') || '';
 
     const [formData, setFormData] = useState({
         name: '',
@@ -21,6 +25,7 @@ const AddWorker = () => {
     const [animals, setAnimals] = useState([]);
     const [groups, setGroups] = useState([]);
     const [loading, setLoading] = useState(isEditMode);
+    const [resourcesLoading, setResourcesLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -30,16 +35,58 @@ const AddWorker = () => {
         }
     }, [workerId]);
 
+    useEffect(() => {
+        if (isEditMode || !preselectedAnimalId || animals.length === 0) return;
+
+        const normalizedPreselected = String(preselectedAnimalId);
+        const matchedAnimal = animals.find((animal) => {
+            const ids = [animal?._id, animal?.id]
+                .filter(Boolean)
+                .map((id) => String(id));
+            return ids.includes(normalizedPreselected);
+        });
+
+        const matchedId = matchedAnimal?._id || matchedAnimal?.id || preselectedAnimalId;
+
+        setFormData((prev) => ({
+            ...prev,
+            animal_id: prev.animal_id || String(matchedId),
+        }));
+    }, [animals, isEditMode, preselectedAnimalId]);
+
+    useEffect(() => {
+        if (isEditMode || !preselectedGroupId || groups.length === 0) return;
+
+        const normalizedPreselected = String(preselectedGroupId);
+        const matchedGroup = groups.find((group) => {
+            const ids = [group?._id, group?.id]
+                .filter(Boolean)
+                .map((id) => String(id));
+            return ids.includes(normalizedPreselected);
+        });
+
+        const matchedId = matchedGroup?._id || matchedGroup?.id || preselectedGroupId;
+
+        setFormData((prev) => ({
+            ...prev,
+            group_id: prev.group_id || String(matchedId),
+        }));
+    }, [groups, isEditMode, preselectedGroupId]);
+
     const fetchResources = async () => {
         try {
             const [animalsRes, groupsRes] = await Promise.all([
                 axios.get('/api/farm/animals'),
                 axios.get('/api/farm/groups')
             ]);
-            setAnimals(animalsRes.data);
-            setGroups(groupsRes.data);
+            const animalList = Array.isArray(animalsRes.data) ? animalsRes.data : (animalsRes.data?.data || []);
+            const groupList = Array.isArray(groupsRes.data) ? groupsRes.data : (groupsRes.data?.data || []);
+            setAnimals(animalList);
+            setGroups(groupList);
         } catch (err) {
             console.error("Fetch resources error:", err);
+        } finally {
+            setResourcesLoading(false);
         }
     };
 
@@ -92,33 +139,33 @@ const AddWorker = () => {
     }
 
     return (
-        <div className="flex h-full flex-col bg-[#F8FAFD] rounded-xl overflow-auto p-4 sm:p-6 lg:p-8">
+        <div className="flex h-full flex-col bg-white rounded-xl overflow-auto">
             {/* Header Section */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between bg-white rounded-2xl p-6 border border-gray-200 shadow-sm mb-6 gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between px-8 pt-8 pb-6 border-b border-[#D6DEE9]">
                 <div className="space-y-1">
                     <button 
                         onClick={() => navigate('/farm/workers')}
-                        className="flex items-center gap-2 text-[20px] font-black text-[#059669] hover:opacity-80 transition-opacity"
+                        className="flex items-center gap-2 text-[20px] font-black text-[#0F172A] hover:opacity-80 transition-opacity"
                     >
                         <ChevronLeft size={24} strokeWidth={3} />
                         {isEditMode ? 'Edit Worker' : 'Add Worker'}
                     </button>
-                    <p className="text-[14px] font-medium text-[#1a1a2e] ml-8">
+                    <p className="text-[14px] font-medium text-gray-500 ml-8 leading-relaxed">
                         {isEditMode ? 'Edit worker assignments and details.' : 'Register a new worker and assign animals, groups, and tasks.'}
                     </p>
                 </div>
                 
-                <div className="flex items-center gap-3 md:ml-auto">
+                <div className="flex items-center gap-3 md:ml-auto mt-4 md:mt-0">
                     <button 
                         onClick={() => navigate('/farm/workers')}
-                        className="rounded-full bg-gray-50 border border-gray-200 px-6 py-2.5 text-[14px] font-bold text-[#1a1a2e] hover:bg-gray-100 transition-all"
+                        className="rounded-full bg-white border border-[#80888F]/40 px-6 py-2 text-[14px] font-bold text-[#1a1a2e] hover:bg-gray-50 transition-all active:scale-95"
                     >
                         Cancel
                     </button>
                     <button 
                         onClick={handleSave}
                         disabled={saving}
-                        className="rounded-full bg-[#1a1a2e] px-8 py-2.5 text-[14px] font-black text-white shadow-md hover:bg-black transition-all disabled:opacity-50 flex items-center gap-2"
+                        className="rounded-full bg-[#1a1a2e] px-8 py-2 text-[14px] font-black text-white shadow-lg hover:bg-black transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
                     >
                         {saving && <Loader2 className="animate-spin" size={16} />}
                         {isEditMode ? 'Update Worker' : 'Save Worker'}
@@ -127,7 +174,7 @@ const AddWorker = () => {
             </div>
 
             {/* Form Section */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm space-y-8">
+            <div className="px-8 py-8 space-y-8 max-w-4xl">
                 {/* Row 1: Name and Email */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Name */}
@@ -176,9 +223,10 @@ const AddWorker = () => {
                             <select 
                                 value={formData.animal_id}
                                 onChange={(e) => setFormData({...formData, animal_id: e.target.value})}
-                                className="w-full appearance-none rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] bg-transparent cursor-pointer relative z-0"
+                                disabled={resourcesLoading}
+                                className="w-full appearance-none rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] bg-transparent cursor-pointer relative z-0 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                <option value="" disabled>Select animals...</option>
+                                <option value="" disabled>{resourcesLoading ? 'Loading animals...' : 'Select animals...'}</option>
                                 <option value="all">All Animals</option>
                                 {animals.map(animal => (
                                     <option key={animal._id || animal.id} value={animal._id || animal.id}>
@@ -199,9 +247,10 @@ const AddWorker = () => {
                             <select 
                                 value={formData.group_id}
                                 onChange={(e) => setFormData({...formData, group_id: e.target.value})}
-                                className="w-full appearance-none rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] bg-transparent cursor-pointer relative z-0"
+                                disabled={resourcesLoading}
+                                className="w-full appearance-none rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] bg-transparent cursor-pointer relative z-0 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                                <option value="" disabled>Select group...</option>
+                                <option value="" disabled>{resourcesLoading ? 'Loading groups...' : 'Select group...'}</option>
                                 {groups.map(group => (
                                     <option key={group._id || group.id} value={group._id || group.id}>
                                         {group.name}

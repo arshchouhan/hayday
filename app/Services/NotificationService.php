@@ -63,6 +63,77 @@ class NotificationService
             : $this->deleteLaravel($notificationId);
     }
 
+    public function logActivityAlert(array $data, ?User $user = null)
+    {
+        $userId = $this->resolveUserId($user);
+
+        if (! $userId) {
+            return null;
+        }
+
+        $payload = array_merge([
+            'user_id' => $userId,
+            'category' => 'activity',
+            'level' => 'info',
+            'title' => 'Activity logged',
+            'message' => 'An activity was recorded.',
+            'action_url' => null,
+            'animal_id' => null,
+            'metadata' => [],
+            'dedup_key' => null,
+        ], $data);
+
+        return $this->driver === 'java'
+            ? $this->createViaJava($payload)
+            : FarmNotification::create([
+                'user_id' => (string) $payload['user_id'],
+                'animal_id' => $payload['animal_id'] !== null ? (string) $payload['animal_id'] : null,
+                'category' => $payload['category'],
+                'level' => $payload['level'],
+                'title' => $payload['title'],
+                'message' => $payload['message'],
+                'action_url' => $payload['action_url'],
+                'metadata' => $payload['metadata'],
+                'status' => 'unread',
+                'read_at' => null,
+                'resolved_at' => null,
+                'dedup_key' => $payload['dedup_key'],
+            ]);
+    }
+
+    public function logActivityCreated(?User $user, string $subject, string $label = '', array $data = [])
+    {
+        return $this->logActivityAlert(array_merge([
+            'title' => ucfirst($subject) . ' created',
+            'message' => $this->buildActivityMessage($subject, 'created', $label),
+        ], $data), $user);
+    }
+
+    public function logActivityUpdated(?User $user, string $subject, string $label = '', array $data = [])
+    {
+        return $this->logActivityAlert(array_merge([
+            'title' => ucfirst($subject) . ' updated',
+            'message' => $this->buildActivityMessage($subject, 'updated', $label),
+        ], $data), $user);
+    }
+
+    public function logActivityDeleted(?User $user, string $subject, string $label = '', array $data = [])
+    {
+        return $this->logActivityAlert(array_merge([
+            'level' => 'warning',
+            'title' => ucfirst($subject) . ' deleted',
+            'message' => $this->buildActivityMessage($subject, 'deleted', $label),
+        ], $data), $user);
+    }
+
+    public function logActivityRecorded(?User $user, string $subject, string $label = '', array $data = [])
+    {
+        return $this->logActivityAlert(array_merge([
+            'title' => ucfirst($subject) . ' recorded',
+            'message' => $this->buildActivityMessage($subject, 'recorded', $label),
+        ], $data), $user);
+    }
+
     public function createActivityNotification(?User $user, Animal $animal, array $data): ?FarmNotification
     {
         $userId = $this->resolveUserId($user);
@@ -491,9 +562,22 @@ class NotificationService
             'action_url' => $notification->action_url,
             'metadata' => $notification->metadata ?? [],
             'status' => $notification->status,
-            'created_at' => optional($notification->created_at)->toDateTimeString(),
-            'read_at' => optional($notification->read_at)->toDateTimeString(),
-            'resolved_at' => optional($notification->resolved_at)->toDateTimeString(),
+            'created_at' => optional($notification->created_at)->toIso8601String(),
+            'read_at' => optional($notification->read_at)->toIso8601String(),
+            'resolved_at' => optional($notification->resolved_at)->toIso8601String(),
         ];
+    }
+
+    private function buildActivityMessage(string $subject, string $action, string $label = ''): string
+    {
+        $entity = trim($label) !== '' ? $label : ucfirst($subject);
+
+        return match ($action) {
+            'created' => "{$entity} was created.",
+            'updated' => "{$entity} was updated.",
+            'deleted' => "{$entity} was deleted.",
+            'recorded' => "{$entity} was recorded.",
+            default => "{$entity} activity was logged.",
+        };
     }
 }

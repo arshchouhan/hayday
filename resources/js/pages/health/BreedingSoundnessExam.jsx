@@ -62,7 +62,7 @@ export default function BreedingSoundnessExam() {
                     <FInput  label="Treatment Date" required type="date"
                         value={form.treatment_date} onChange={set('treatment_date')} />
                     <FSelect label="Examiner" required placeholder="Select examiner…"
-                        options={['Arsh Chauhan', 'Farm Vet', 'External Specialist']}
+                        options={'workers'}
                         value={form.examiner} onChange={set('examiner')} />
                     <FSelect label="Overall Result" required placeholder="Select result…"
                         options={['Satisfactory', 'Unsatisfactory', 'Deferred – Recheck in 60 days']}

@@ -11,6 +11,7 @@ export function NotificationProvider({ children }) {
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [loading, setLoading] = useState(false);
+    const [markAllReadLoading, setMarkAllReadLoading] = useState(false);
     const [error, setError] = useState(null);
     const [toast, setToast] = useState(null);
     const lastNotifiedIdRef = useRef(null);
@@ -80,8 +81,15 @@ export function NotificationProvider({ children }) {
     }, [loadNotifications]);
 
     const markAllAsRead = useCallback(async () => {
-        await api.patch('/notifications/read-all');
-        await loadNotifications();
+        setMarkAllReadLoading(true);
+
+        try {
+            await api.patch('/notifications/read-all');
+            showToast('Notifications updated', 'All notifications were marked as read.');
+            await loadNotifications();
+        } finally {
+            setMarkAllReadLoading(false);
+        }
     }, [loadNotifications]);
 
     const removeNotification = useCallback(async (id) => {
@@ -95,7 +103,9 @@ export function NotificationProvider({ children }) {
                 notifications,
                 unreadCount,
                 loading,
+                markAllReadLoading,
                 error,
+                showToast,
                 loadNotifications,
                 markAsRead,
                 markAllAsRead,
