@@ -11,6 +11,11 @@ use App\Http\Controllers\WorkerController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\NotificationController;
 
+// Public health ping for cron-jobs to keep Render server awake
+Route::get('/ping', function () {
+    return response()->json(['status' => 'awake', 'time' => now()->toIso8601String()]);
+});
+
 // Public auth routes (no middleware)
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
