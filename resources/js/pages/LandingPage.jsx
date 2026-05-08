@@ -1,3 +1,4 @@
+// Landing Page - Latest Update: 2026-05-09
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, Activity, MapPin, ShieldCheck, Cloud, Zap, ClipboardList, Plus, ChevronDown } from 'lucide-react';
