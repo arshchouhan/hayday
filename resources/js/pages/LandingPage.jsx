@@ -1,25 +1,77 @@
 // Landing Page - Latest Update: 2026-05-09
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogIn, Activity, MapPin, ShieldCheck, Cloud, Zap, ClipboardList, Plus, ChevronDown } from 'lucide-react';
+import { LogIn, Activity, MapPin, ShieldCheck, Cloud, Zap, ClipboardList, Plus, ChevronDown, TrendingUp, GitBranch, Package } from 'lucide-react';
 import HeroImage from '../assets/Hero-Support-1.webp';
+import TrackingMap from '../assets/first.png';
+import MovementChart from '../assets/second.png';
+import CostChart from '../assets/third.png';
+import PedigreeChart from '../assets/fourth.png';
+import InventoryChart from '../assets/fifth.png';
+import DashboardImage from '../assets/dashb.png';
+
+const BorderTraceStyles = () => (
+    <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes borderTrace {
+            0% { clip-path: inset(0 100% 100% 0); }
+            25% { clip-path: inset(0 0 100% 0); }
+            50% { clip-path: inset(0 0 0 0); }
+            75% { clip-path: inset(100% 0 0 0); }
+            100% { clip-path: inset(100% 100% 0 0); }
+        }
+        .border-trace::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border: 2px solid #0A4736;
+            border-radius: inherit;
+            animation: borderTrace 4s linear infinite;
+            pointer-events: none;
+            opacity: 0.4;
+        }
+    `}} />
+);
 
 export default function LandingPage() {
     const navigate = useNavigate();
     const [openFaq, setOpenFaq] = React.useState(null);
 
+    const scrollToSection = (e, id) => {
+        e.preventDefault();
+        const element = document.getElementById(id);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+        }
+    };
+
     return (
-        <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#FFFFEB] px-6 text-center overflow-hidden font-sans">
+        <div className="relative flex min-h-screen flex-col items-center justify-center bg-[#FFFFEB] px-6 text-center overflow-hidden font-sans scroll-smooth">
+            <BorderTraceStyles />
 
             {/* Floating Navbar */}
             <nav className="fixed top-8 left-1/2 -translate-x-1/2 bg-[#FEFFE8]/90 backdrop-blur-xl border border-[#E0E1CF] rounded-full p-1.5 flex items-center shadow-[0_16px_40px_-8px_rgba(10,71,54,0.15)] z-50">
-                <div className="pl-5 pr-4 font-black text-[#1a1a2e] text-[15px] tracking-tight cursor-pointer">
+                <div 
+                    onClick={() => {
+                        navigate('/');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="pl-5 pr-4 font-black text-[#1a1a2e] text-[15px] tracking-tight cursor-pointer hover:opacity-70 transition-opacity"
+                >
                     HayDay
                 </div>
-                <div className="flex items-center gap-6 px-2 text-[13px] font-semibold text-gray-500">
-                    <a href="#features" className="hover:text-gray-900 transition-colors">Features</a>
-                    <a href="#faq" className="hover:text-gray-900 transition-colors">FAQ</a>
-                    <a href="#contact" className="hover:text-gray-900 transition-colors">Contact</a>
+                <div className="flex items-center gap-8 px-4 text-[13px] font-bold text-gray-400">
+                    <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="relative group py-2 hover:text-[#0A4736] transition-all duration-300">
+                        Features
+                        <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0A4736] transition-all duration-300 group-hover:w-full"></span>
+                    </a>
+                    <a href="#faq" onClick={(e) => scrollToSection(e, 'faq')} className="relative group py-2 hover:text-[#0A4736] transition-all duration-300">
+                        FAQ
+                        <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0A4736] transition-all duration-300 group-hover:w-full"></span>
+                    </a>
+                    <a href="#contact" onClick={(e) => scrollToSection(e, 'contact')} className="relative group py-2 hover:text-[#0A4736] transition-all duration-300">
+                        Contact
+                        <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#0A4736] transition-all duration-300 group-hover:w-full"></span>
+                    </a>
                 </div>
                 <div className="w-[1px] h-5 bg-gray-200/80 mx-2"></div>
                 <button
@@ -52,12 +104,12 @@ export default function LandingPage() {
             </div>
 
             {/* Features Section */}
-            <div className="w-full border-t border-[#0A4736]/5 mt-20">
+            <div id="features" className="w-full border-t border-[#0A4736]/5 mt-20">
                 <div className="max-w-6xl mx-auto px-6 py-32">
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-y-24">
                         
                         {/* Large Feature Item */}
-                        <div className="md:col-span-6 md:pr-16 flex flex-col justify-between min-h-[400px]">
+                        <div className="md:col-span-6 md:pr-16 flex flex-col justify-start">
                             <div>
                                 <div className="inline-flex items-center gap-2 mb-8">
                                     <Zap size={14} className="text-[#0A4736]" />
@@ -72,12 +124,23 @@ export default function LandingPage() {
                                 </p>
                             </div>
                             
-                            <div className="mt-12">
-                                <div className="flex items-center justify-between mb-4 max-w-xs">
-                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Latest Update</span>
-                                    <div className="w-2 h-2 rounded-full bg-[#0A4736] animate-pulse"></div>
+                            <div className="mt-8 relative flex justify-center">
+                                {/* Polaroid Style Frame */}
+                                <div className="relative border-trace bg-white p-4 pb-16 shadow-2xl shadow-[#0A4736]/10 -rotate-2 transform transition-all hover:rotate-0 hover:scale-105 duration-500 max-w-[90%]">
+                                    {/* Tape Top Left */}
+                                    <div className="absolute -top-6 -left-8 w-24 h-8 bg-[#0A4736]/10 backdrop-blur-sm border border-[#0A4736]/5 rotate-[-35deg] shadow-sm"></div>
+                                    {/* Tape Top Right */}
+                                    <div className="absolute -top-4 -right-10 w-24 h-8 bg-[#0A4736]/10 backdrop-blur-sm border border-[#0A4736]/5 rotate-[25deg] shadow-sm"></div>
+                                    
+                                    <img 
+                                        src={TrackingMap} 
+                                        alt="Live Tracking Map" 
+                                        className="w-full h-auto"
+                                    />
+                                    <div className="absolute bottom-4 left-6">
+                                        <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest italic">Live. Feed. 01</span>
+                                    </div>
                                 </div>
-                                <p className="text-sm font-semibold italic text-[#0A4736]">"Cattle #204 moved to North Pasture"</p>
                             </div>
                         </div>
 
@@ -99,22 +162,53 @@ export default function LandingPage() {
                                         </span>
                                     ))}
                                 </div>
-                            </div>
-
-                            {/* Medium Item 2 */}
-                            <div className="flex flex-col justify-center pt-24 border-t border-[#0A4736]/10">
-                                <div className="flex items-center gap-2 mb-4 opacity-40">
-                                    <span className="text-[10px] font-bold tracking-widest uppercase">02 • Mapping</span>
-                                </div>
-                                <h3 className="text-2xl font-black text-[#1a1a2e] mb-3">Smart Location History.</h3>
-                                <p className="text-gray-500 font-medium text-lg max-w-md leading-relaxed">
-                                    Visualize movement patterns over time with interactive maps and historical playback of animal paths.
-                                </p>
-                                <div className="mt-6 flex items-center gap-4">
-                                    <MapPin size={20} className="text-[#0A4736]" />
-                                    <div className="flex-1 h-1 bg-[#0A4736]/10 rounded-full overflow-hidden max-w-xs">
-                                        <div className="w-[70%] h-full bg-[#0A4736]"></div>
+                                <div className="mt-8 relative flex justify-center">
+                                    {/* Polaroid Style Frame */}
+                                    <div className="relative border-trace bg-white p-3 pb-12 shadow-2xl shadow-[#0A4736]/10 rotate-1 transform transition-all hover:rotate-0 hover:scale-105 duration-500 w-full">
+                                        {/* Tape Top Right */}
+                                        <div className="absolute -top-4 -right-10 w-24 h-8 bg-[#0A4736]/10 backdrop-blur-sm border border-[#0A4736]/5 rotate-[25deg] shadow-sm"></div>
+                                        
+                                        <img 
+                                            src={MovementChart} 
+                                            alt="Movement History Chart" 
+                                            className="w-full h-auto"
+                                        />
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Pedigree Row */}
+                        <div className="md:col-span-12 grid grid-cols-1 md:grid-cols-12 mt-24 pt-24 border-t border-[#0A4736]/10 gap-y-16 items-center">
+                            <div className="md:col-span-8 md:pr-16">
+                                <div className="relative flex justify-center">
+                                    {/* Polaroid Style Frame */}
+                                    <div className="relative border-trace bg-white p-4 pb-16 shadow-2xl shadow-[#0A4736]/10 -rotate-1 transform transition-all hover:rotate-0 hover:scale-105 duration-500 w-full">
+                                        {/* Tape Top Left */}
+                                        <div className="absolute -top-6 -left-8 w-24 h-8 bg-[#0A4736]/10 backdrop-blur-sm border border-[#0A4736]/5 rotate-[-15deg] shadow-sm"></div>
+                                        
+                                        <img 
+                                            src={PedigreeChart} 
+                                            alt="Pedigree Tree Chart" 
+                                            className="w-full h-auto"
+                                        />
+                                        <div className="absolute bottom-4 left-6">
+                                            <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest italic">Ancestry. View. 04</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="md:col-span-4 md:pl-8">
+                                <div className="flex items-center gap-2 mb-4 opacity-40">
+                                    <span className="text-[10px] font-bold tracking-widest uppercase">02 • Pedigree</span>
+                                </div>
+                                <h3 className="text-2xl font-black text-[#1a1a2e] mb-3">Advanced Pedigree Management.</h3>
+                                <p className="text-gray-500 font-medium text-lg max-w-md leading-relaxed">
+                                    Map lineages and trace breeding history with ease. Maintain detailed records of sires, dams, and multi-generational ancestry.
+                                </p>
+                                <div className="mt-6 flex gap-4">
+                                    <GitBranch size={20} className="text-[#0A4736]" />
+                                    <Activity size={20} className="text-[#0A4736]" />
                                 </div>
                             </div>
                         </div>
@@ -124,42 +218,75 @@ export default function LandingPage() {
                             {/* Wide Item */}
                             <div className="md:col-span-6 md:pr-16 md:border-r border-[#0A4736]/10">
                                 <div className="flex items-center gap-2 mb-4 opacity-40">
-                                    <span className="text-[10px] font-bold tracking-widest uppercase">03 • Species</span>
+                                    <span className="text-[10px] font-bold tracking-widest uppercase">03 • Finance</span>
                                 </div>
-                                <h3 className="text-2xl font-black text-[#1a1a2e] mb-3">Multi-Species Support.</h3>
+                                <h3 className="text-2xl font-black text-[#1a1a2e] mb-3">Financial Performance Tracking.</h3>
                                 <p className="text-gray-500 font-medium text-lg mb-8 leading-relaxed">
-                                    Tailored management workflows for cattle, sheep, goats, and more.
+                                    Track expenses and gain clear insights into your farm's profitability with automated cost breakdowns.
                                 </p>
-                                <div className="flex gap-8">
+                                <div className="flex gap-8 mb-10">
+                                    <div className="flex items-center gap-3">
+                                        <TrendingUp size={20} className="text-[#0A4736]" />
+                                        <span className="text-sm font-bold text-[#1a1a2e]">Cost Analytics</span>
+                                    </div>
                                     <div className="flex items-center gap-3">
                                         <Activity size={20} className="text-[#0A4736]" />
-                                        <span className="text-sm font-bold text-[#1a1a2e]">Analytics</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <ClipboardList size={20} className="text-[#0A4736]" />
-                                        <span className="text-sm font-bold text-[#1a1a2e]">Reports</span>
+                                        <span className="text-sm font-bold text-[#1a1a2e]">Profit Margin</span>
                                     </div>
                                 </div>
-                            </div>
-
-                            {/* Small Item 1 */}
-                            <div className="md:col-span-3 md:px-12 md:border-r border-[#0A4736]/10">
-                                <div className="w-10 h-10 bg-[#0A4736]/5 rounded-xl flex items-center justify-center mb-6">
-                                    <ShieldCheck size={24} className="text-[#0A4736]" />
+                                <div className="relative flex justify-start">
+                                    {/* Polaroid Style Frame */}
+                                    <div className="relative border-trace bg-white p-3 pb-12 shadow-2xl shadow-[#0A4736]/10 rotate-1 transform transition-all hover:rotate-0 hover:scale-105 duration-500 w-full max-w-[90%]">
+                                        {/* Tape Top Right */}
+                                        <div className="absolute -top-4 -right-10 w-24 h-8 bg-[#0A4736]/10 backdrop-blur-sm border border-[#0A4736]/5 rotate-[25deg] shadow-sm"></div>
+                                        
+                                        <img 
+                                            src={CostChart} 
+                                            alt="Financial Cost Chart" 
+                                            className="w-full h-auto"
+                                        />
+                                        <div className="absolute bottom-4 left-6">
+                                            <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest italic">Finance. Log. 03</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <h4 className="font-black text-[#1a1a2e] mb-2">Stays Private.</h4>
-                                <p className="text-sm text-gray-500 font-medium">Your farm data is encrypted and secure.</p>
                             </div>
-
-                            {/* Small Item 2 */}
-                            <div className="md:col-span-3 md:pl-12">
-                                <div className="flex justify-between items-center mb-6">
-                                    <span className="text-[10px] font-bold tracking-widest uppercase opacity-40">Sync</span>
-                                    <Cloud size={20} className="text-[#0A4736]" />
-                                </div>
-                                <h4 className="font-black text-[#1a1a2e] mb-2">Cloud Sync.</h4>
-                                <p className="text-sm text-gray-500 font-medium leading-relaxed">Access your data anywhere, any time.</p>
-                            </div>
+                            {/* Inventory Management */}
+                             <div className="md:col-span-6 md:pl-16">
+                                 <div className="flex items-center gap-2 mb-4 opacity-40">
+                                     <span className="text-[10px] font-bold tracking-widest uppercase">04 • Supplies</span>
+                                 </div>
+                                 <h4 className="text-2xl font-black text-[#1a1a2e] mb-3">Inventory Management.</h4>
+                                 <p className="text-gray-500 font-medium text-lg mb-8 leading-relaxed">
+                                     Keep track of your farm's vital supplies. From feed stocks to medical inventory, manage resources efficiently.
+                                 </p>
+                                 <div className="flex gap-8 mb-10">
+                                     <div className="flex items-center gap-3">
+                                         <TrendingUp size={20} className="text-[#0A4736]" />
+                                         <span className="text-sm font-bold text-[#1a1a2e]">Analytics</span>
+                                     </div>
+                                     <div className="flex items-center gap-3">
+                                         <Package size={20} className="text-[#0A4736]" />
+                                         <span className="text-sm font-bold text-[#1a1a2e]">Stock Control</span>
+                                     </div>
+                                 </div>
+                                 <div className="relative flex justify-start">
+                                     {/* Polaroid Style Frame */}
+                                     <div className="relative border-trace bg-white p-3 pb-12 shadow-2xl shadow-[#0A4736]/10 -rotate-1 transform transition-all hover:rotate-0 hover:scale-105 duration-500 w-full max-w-[90%]">
+                                         {/* Tape Top Left */}
+                                         <div className="absolute -top-6 -left-8 w-24 h-8 bg-[#0A4736]/10 backdrop-blur-sm border border-[#0A4736]/5 rotate-[-15deg] shadow-sm"></div>
+                                         
+                                         <img 
+                                             src={InventoryChart} 
+                                             alt="Inventory Management Chart" 
+                                             className="w-full h-auto"
+                                         />
+                                         <div className="absolute bottom-4 left-6">
+                                             <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest italic">Supplies. Log. 05</span>
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
                         </div>
 
                     </div>
@@ -167,8 +294,8 @@ export default function LandingPage() {
             </div>
 
             {/* Comparison Section */}
-            <div className="w-full border-t border-[#0A4736]/5 bg-[#FEFFE8]/20">
-                <div className="max-w-4xl mx-auto px-6 py-32 text-center">
+            <div id="pricing" className="w-full border-t border-[#0A4736]/5 bg-[#FEFFE8]/20">
+                <div className="max-w-6xl mx-auto px-6 py-32 text-center">
                     <div className="inline-flex items-center gap-2 mb-6 opacity-40">
                         <span className="text-[10px] font-bold tracking-[0.3em] uppercase">Why HayDay</span>
                     </div>
@@ -179,6 +306,15 @@ export default function LandingPage() {
                     <p className="text-gray-500 font-medium text-lg mb-20 max-w-xl mx-auto leading-relaxed">
                         A clear, honest comparison vs. the alternatives — so you can decide for yourself.
                     </p>
+
+                    <div className="mb-24 relative group">
+                        <div className="absolute -inset-4 bg-[#0A4736]/5 rounded-[2.5rem] blur-2xl group-hover:bg-[#0A4736]/10 transition-all duration-700"></div>
+                        <img 
+                            src={DashboardImage} 
+                            alt="HayDay Dashboard Overview" 
+                            className="relative w-full h-auto rounded-[2rem] border border-[#0A4736]/10 shadow-2xl shadow-[#0A4736]/5"
+                        />
+                    </div>
 
                     <div className="w-full overflow-x-auto">
                         <table className="w-full text-left border-collapse">
@@ -192,12 +328,12 @@ export default function LandingPage() {
                             </thead>
                             <tbody className="text-[13px] font-semibold text-[#1a1a2e]">
                                 {[
-                                    { cap: 'Real-time multi-species tracking', hay: 'full', pap: 'none', spr: 'partial' },
-                                    { cap: 'Automated movement history', hay: 'full', pap: 'none', spr: 'none' },
-                                    { cap: 'Health & vitality analytics', hay: 'full', pap: 'partial', spr: 'partial' },
-                                    { cap: 'Secure cloud synchronization', hay: 'full', pap: 'none', spr: 'none' },
-                                    { cap: 'Multi-user collaboration', hay: 'full', pap: 'none', spr: 'partial' },
-                                    { cap: 'Offline-first data entry', hay: 'full', pap: 'full', spr: 'none' },
+                                    { cap: 'Real-time Animal Tracking', hay: 'full', pap: 'none', spr: 'partial' },
+                                    { cap: 'Detailed Vitality & Health Logs', hay: 'full', pap: 'partial', spr: 'partial' },
+                                    { cap: 'Advanced Pedigree Management', hay: 'full', pap: 'none', spr: 'none' },
+                                    { cap: 'Effective Cost Management', hay: 'full', pap: 'none', spr: 'none' },
+                                    { cap: 'Smart Inventory Control', hay: 'full', pap: 'none', spr: 'partial' },
+                                    { cap: 'Offline-first Field Access', hay: 'full', pap: 'full', spr: 'none' },
                                 ].map((row, idx) => (
                                     <tr key={idx} className="border-b border-[#0A4736]/5 group">
                                         <td className="py-8 text-gray-600 group-hover:text-[#1a1a2e] transition-colors">{row.cap}</td>
@@ -322,7 +458,7 @@ export default function LandingPage() {
                     <div className="mt-20 p-8 bg-[#F4F4E0] border border-[#E0E1CF] rounded-[2rem] flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                         <div>
                             <h4 className="font-bold text-[#1a1a2e] mb-1">Prefer email?</h4>
-                            <p className="text-sm text-gray-500 font-medium">You can also reach us directly at <a href="mailto:support@hayday.me" className="text-[#0A4736] underline underline-offset-4 decoration-[#0A4736]/30">support@hayday.me</a></p>
+                            <p className="text-sm text-gray-500 font-medium">You can also reach us directly at <a href="mailto:arshchouhan004@gmail.com" className="text-[#0A4736] underline underline-offset-4 decoration-[#0A4736]/30">arshchouhan004@gmail.com</a></p>
                         </div>
                     </div>
                 </div>
@@ -358,7 +494,7 @@ export default function LandingPage() {
                             <ul className="space-y-4 text-[13px] font-semibold text-gray-600">
                                 <li><a href="#contact" className="hover:text-[#0A4736] transition-colors">Contact</a></li>
                                 <li><a href="#" className="hover:text-[#0A4736] transition-colors">Privacy Policy</a></li>
-                                <li><a href="mailto:contact@hayday.me" className="hover:text-[#0A4736] transition-colors">contact@hayday.me</a></li>
+                                <li><a href="mailto:arshchouhan004@gmail.com" className="hover:text-[#0A4736] transition-colors">arshchouhan004@gmail.com</a></li>
                             </ul>
                         </div>
                     </div>
