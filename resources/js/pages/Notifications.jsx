@@ -12,8 +12,8 @@ const levelStyles = {
 
 export default function Notifications() {
     const navigate = useNavigate();
-    const serviceMode = (import.meta.env.VITE_NOTIFICATIONS_SERVICE || 'laravel').toLowerCase();
-    const isJavaNotifications = serviceMode === 'java';
+    const isLocalHost = typeof window !== 'undefined' && /^(localhost|127\.)/.test(window.location.hostname);
+    const isJavaNotifications = !isLocalHost;
     const {
         notifications,
         unreadCount,
