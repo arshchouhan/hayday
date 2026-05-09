@@ -10,6 +10,7 @@ Add these in GitHub: **Settings > Secrets and variables > Actions > New reposito
 |---|---|---|
 | `RENDER_SERVICE_ID` | Render Dashboard | Open your service, copy ID from URL: `srv-xxxxx` |
 | `RENDER_API_KEY` | Render Account Settings | Settings > Account > API Keys, create new token |
+| `RENDER_KEEPALIVE_URL` | Render Service URL | Your deployed app URL or health endpoint, for example `https://your-app.onrender.com/up` |
 
 ### Optional: Code Quality
 
@@ -28,6 +29,8 @@ APP_KEY=base64:xxxxx
 APP_ENV=production
 APP_DEBUG=false
 DB_CONNECTION=mongodb
+NOTIFICATIONS_SERVICE=java
+NOTIFICATION_API_URL=https://your-java-notification-service.onrender.com
 REDIS_URL=redis://...
 LOG_CHANNEL=stack
 MAIL_MAILER=smtp
@@ -36,6 +39,8 @@ MAIL_PORT=...
 MAIL_USERNAME=...
 MAIL_PASSWORD=...
 ```
+
+Leave the local `.env` values as `NOTIFICATIONS_SERVICE=laravel` and `NOTIFICATION_API_URL=http://localhost:8080` so development keeps using the existing Laravel-backed notifications.
 
 Get `APP_KEY` by running locally:
 ```bash
@@ -100,6 +105,14 @@ Common fixes:
 - Restart service
 - Check disk space
 - Verify MongoDB connection
+
+### Keepalive workflow does not ping
+
+Check:
+- `RENDER_KEEPALIVE_URL` is set in GitHub Secrets
+- The URL returns `200 OK` when opened in a browser
+- The keepalive workflow is enabled in the Actions tab
+- Render is not blocking the request because of auth or IP restrictions
 
 ## Quick Start Checklist
 

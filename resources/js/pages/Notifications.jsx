@@ -12,11 +12,14 @@ const levelStyles = {
 
 export default function Notifications() {
     const navigate = useNavigate();
+    const serviceMode = (import.meta.env.VITE_NOTIFICATIONS_SERVICE || 'laravel').toLowerCase();
+    const isJavaNotifications = serviceMode === 'java';
     const {
         notifications,
         unreadCount,
         loading,
         markAllReadLoading,
+        error,
         loadNotifications,
         markAsRead,
         markAllAsRead,
@@ -48,6 +51,15 @@ export default function Notifications() {
                             <p className="mt-2 max-w-2xl text-[14px] font-medium leading-relaxed text-gray-500">
                                 Every activity on the farm creates a notification, and animals that need attention stay visible until the issue is resolved.
                             </p>
+                            {isJavaNotifications && (
+                                <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-[#D6E2EE] bg-[#F8FAFD] px-3 py-1.5 text-[12px] font-bold text-[#1a1a2e]">
+                                    <span className="relative flex h-2.5 w-2.5">
+                                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                                    </span>
+                                    Powered by Maven notifications
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex flex-wrap gap-3">
@@ -107,7 +119,16 @@ export default function Notifications() {
 
                     <div className="divide-y divide-[#EEF2F7]">
                         {loading && notifications.length === 0 ? (
-                            <div className="px-6 py-10 text-center text-[14px] font-medium text-gray-500">Loading notifications...</div>
+                            <div className="px-6 py-10 text-center text-[14px] font-medium text-gray-500">
+                                {isJavaNotifications ? 'Waiting for Maven service...' : 'Loading notifications...'}
+                            </div>
+                        ) : isJavaNotifications && error ? (
+                            <div className="px-6 py-12 text-center">
+                                <p className="text-[16px] font-black text-[#1a1a2e]">Maven service is warming up</p>
+                                <p className="mt-2 text-[13px] font-medium text-gray-500">
+                                    Notifications will appear once the deployed Java service responds.
+                                </p>
+                            </div>
                         ) : notifications.length === 0 ? (
                             <div className="px-6 py-12 text-center">
                                 <p className="text-[16px] font-black text-[#1a1a2e]">No notifications yet</p>

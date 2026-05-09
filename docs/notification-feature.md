@@ -2,6 +2,9 @@
 
 This document describes only the notification feature in HayDay, so the frontend can keep working even if the backend is later replaced with Java.
 
+Local development stays on the Laravel notification implementation. Render production can switch to the Java microservice by setting `NOTIFICATIONS_SERVICE=java` and `NOTIFICATION_API_URL` in the Render environment.
+If you want the UI to show the deployed-mode message, also set `VITE_NOTIFICATIONS_SERVICE=java` for the frontend build.
+
 ## Goal
 
 The notification feature should do three things:
@@ -51,6 +54,8 @@ The UI also expects the response shape to stay stable:
 ```
 
 If the backend keeps this contract, the React app does not need to change.
+
+The code already defaults to Laravel when `NOTIFICATIONS_SERVICE` is not set, so localhost behavior is unchanged unless you explicitly override it in a deployment environment.
 
 ## Data Model
 

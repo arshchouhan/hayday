@@ -35,6 +35,7 @@ Go to **Settings > Secrets and variables > Actions** and add:
 
 - **RENDER_SERVICE_ID** — Your Render service ID (found in Render dashboard)
 - **RENDER_API_KEY** — Your Render API key (Settings > Account > API Keys)
+- **RENDER_KEEPALIVE_URL** — The Render app URL or health endpoint to ping on a schedule
 
 ### Optional Secrets (for code quality)
 
@@ -105,6 +106,13 @@ Runs on every push to `main`:
 - **Build Laravel** — Docker build + push to GHCR
 - **Build Java** — Only runs if `notification-service/pom.xml` exists
 - **Deploy** — Calls Render API to redeploy
+
+### render-keepalive.yml
+
+Runs every 10 minutes and pings the Render app URL so the service is less likely to go idle:
+
+- **Ping** — Calls the `RENDER_KEEPALIVE_URL` secret
+- **Schedule** — `*/10 * * * *`
 
 Images are tagged with:
 - Branch name: `laravel:main`, `laravel:develop`
