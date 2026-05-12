@@ -10,8 +10,6 @@ trait TenantScoped
 {
     protected static function bootTenantScoped()
     {
-        \Illuminate\Support\Facades\Log::info("TenantScoped: Booting trait for model " . static::class);
-
         // Auto-assign user_id on create
         static::creating(function ($model) {
             if (!$model->user_id) {
@@ -19,18 +17,6 @@ trait TenantScoped
             }
         });
 
-        // Global scope: always filter by the authenticated user's ID.
-        // Fails CLOSED — if there is no authenticated user and no demo
-        // fallback, the query returns zero rows rather than leaking data.
-        static::addGlobalScope('user_id', function (Builder $builder) {
-            $userId = Auth::id();
-            \Illuminate\Support\Facades\Log::info("TenantScoped: Applying scope for user ID: " . ($userId ?: 'NULL'));
-
-            if ($userId) {
-                $builder->where('user_id', (string) $userId);
-            } else {
-                $builder->whereRaw(['_id' => ['$exists' => false]]);
-            }
-        });
+        static::addGlobalScope(new \App\Scopes\TenantScope());
     }
 }

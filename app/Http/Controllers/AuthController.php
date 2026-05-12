@@ -98,8 +98,10 @@ class AuthController extends Controller
      */
     public function user(Request $request)
     {
+        $user = $request->user();
+        \Illuminate\Support\Facades\Log::info("AuthController: Checking auth for user: " . ($user ? $user->email : 'NULL'));
         return response()->json([
-            'user' => $request->user(),
+            'user' => $user,
         ]);
     }
 

@@ -19,4 +19,4 @@ jobs:
             exit 1
           fi
 
-          curl --fail --silent --show-error --max-time 20 "$KEEPALIVE_URL"
+          curl --fail --silent --show-error --max-time 60 "$KEEPALIVE_URL"
