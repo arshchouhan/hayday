@@ -1,6 +1,17 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { HelpCircle } from 'lucide-react';
+import loaderIcon from '../assets/198070322_3f302672-6b8c-4494-a9fe-ab4d59db64cb.svg';
+
+const STYLES = `
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
+  }
+`;
 
 /* ── Color config ────────────────────────────────────────────────────────── */
 const CFG = {
@@ -47,7 +58,7 @@ function spanOverlapsMonth(span, monthKey) {
 }
 
 /* ── Portal tooltip ──────────────────────────────────────────────────────── */
-function SpanTooltip({ span, monthLabel, mouseX, mouseY }) {
+function SpanTooltip({ span, monthLabel, mouseX, mouseY, isCurrentRow = false }) {
     const W = 224, OFFSET = 18;
     const ref = useRef(null);
     const [pos, setPos] = useState({ x: 0, y: 0 });
@@ -66,7 +77,7 @@ function SpanTooltip({ span, monthLabel, mouseX, mouseY }) {
     const entityLabel = span.entity?.name ?? '—';
 
     const fmt = (d) => new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const isToday = span.departureDate === new Date().toISOString().split('T')[0];
+    const isToday = isCurrentRow && span.departureDate === new Date().toISOString().split('T')[0];
 
     return createPortal(
         <div ref={ref} className="pointer-events-none fixed z-[9999]" style={{ left: pos.x, top: pos.y, width: W }}>
@@ -111,7 +122,7 @@ function SpanTooltip({ span, monthLabel, mouseX, mouseY }) {
 }
 
 /* ── Single Gantt cell ───────────────────────────────────────────────────── */
-function GanttCell({ span, monthLabel, isAlt, isFirst, isLast, rowH = 44 }) {
+function GanttCell({ span, monthLabel, isAlt, isFirst, isLast, isMuted = false, isCurrentRow = false, rowH = 44 }) {
     const [mouse, setMouse] = useState(null);
     const bg = isAlt ? '#F9FAFB' : '#FFFFFF';
 
@@ -144,11 +155,11 @@ function GanttCell({ span, monthLabel, isAlt, isFirst, isLast, rowH = 44 }) {
                     backgroundColor: cfg.bg,
                     borderRadius: radius,
                     boxShadow: `0 1px 4px ${cfg.bg}44`,
-                    opacity: 0.92,
+                    opacity: isMuted ? 0.32 : 0.92,
                 }}
             />
             {mouse && (
-                <SpanTooltip span={span} monthLabel={monthLabel} mouseX={mouse.x} mouseY={mouse.y} />
+                <SpanTooltip span={span} monthLabel={monthLabel} mouseX={mouse.x} mouseY={mouse.y} isCurrentRow={isCurrentRow} />
             )}
         </div>
     );
@@ -186,9 +197,10 @@ function LegendItem({ type }) {
      groupMovements – group movement records (sorted by backend)
      onPeriodChange – callback
 ══════════════════════════════════════════════════════════════════════════ */
-export default function MovementHistoryChart({ movements = [], groupMovements = [], onPeriodChange }) {
+export default function MovementHistoryChart({ movements = [], groupMovements = [], currentLocation = null, onPeriodChange, loading = false }) {
     const [period, setPeriod] = useState('3m');
     const today = new Date().toISOString().split('T')[0];
+    const normalizedCurrentLocationId = String(currentLocation?.id ?? currentLocation?._id ?? currentLocation?.value ?? '') || null;
 
     /* ── Deduplicate helpers ─────────────────────────────────── */
     const dedup = (arr) => {
@@ -206,13 +218,17 @@ export default function MovementHistoryChart({ movements = [], groupMovements = 
     /* ── Build spans ─────────────────────────────────────────── */
     const locSpans   = useMemo(() => buildSpans(sortedLocMoves,   'location', today), [sortedLocMoves,   today]);
     const groupSpans = useMemo(() => buildSpans(sortedGroupMoves, 'group',    today), [sortedGroupMoves, today]);
+    const derivedCurrentLocationId = normalizedCurrentLocationId ?? (locSpans.length > 0 ? String(locSpans[locSpans.length - 1]?.entity?.id ?? '') || null : null);
 
     /* ── Unique entities per section ─────────────────────────── */
     const locations = useMemo(() => {
         const map = new Map();
         locSpans.forEach(s => { if (s.entity?.id && !map.has(s.entity.id)) map.set(s.entity.id, s.entity); });
+        if (currentLocation?.id && !map.has(currentLocation.id)) {
+            map.set(currentLocation.id, currentLocation);
+        }
         return Array.from(map.values());
-    }, [locSpans]);
+    }, [locSpans, currentLocation]);
 
     const groups = useMemo(() => {
         const map = new Map();
@@ -236,7 +252,9 @@ export default function MovementHistoryChart({ movements = [], groupMovements = 
     }, [period]);
 
     /* ── Lookup helpers ──────────────────────────────────────── */
-    const getLocSpan   = (entityId, mk) => locSpans.find(s => s.entity?.id === entityId && spanOverlapsMonth(s, mk)) ?? null;
+    const getLocSpan   = (entityId, mk) => {
+        return locSpans.find(s => String(s.entity?.id) === String(entityId) && spanOverlapsMonth(s, mk)) ?? null;
+    };
     const getGroupSpan = (entityId, mk) => groupSpans.find(s => s.entity?.id === entityId && spanOverlapsMonth(s, mk)) ?? null;
 
     const isArrival   = (span, mk) => span && span.arrivalDate.startsWith(mk);
@@ -255,6 +273,7 @@ export default function MovementHistoryChart({ movements = [], groupMovements = 
     /* ── Render ──────────────────────────────────────────────── */
     return (
         <div className="bg-white rounded-lg border border-[#80888F] p-6 space-y-5">
+            <style>{STYLES}</style>
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -284,7 +303,23 @@ export default function MovementHistoryChart({ movements = [], groupMovements = 
             </div>
 
             {/* Chart */}
-            {!hasData ? (
+            {loading ? (
+                <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-16 flex flex-col items-center justify-center gap-4 min-h-[300px]">
+                    <div className="relative flex items-center justify-center h-36 w-36">
+                        <div className="absolute inset-0 rounded-full border-4 border-[#7C3AED]/10 animate-ping" />
+                        <div className="absolute inset-2 rounded-full border-2 border-dashed border-[#7C3AED]/20 animate-spin-slow" />
+                        <img 
+                            src={loaderIcon} 
+                            alt="Loading" 
+                            className="h-24 w-24 relative z-10 animate-bounce opacity-80" 
+                        />
+                    </div>
+                    <div className="text-center">
+                        <p className="text-[14px] font-black text-[#1a1a2e] uppercase tracking-widest animate-pulse">Analysing Movements</p>
+                        <p className="text-[11px] text-gray-400 mt-1 font-medium italic">Tracing the animal's journey across the farm...</p>
+                    </div>
+                </div>
+            ) : !hasData ? (
                 <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-12 text-center">
                     <p className="text-[13px] font-bold text-gray-400">No movement history</p>
                     <p className="text-[12px] text-gray-400 mt-1">Record location or group movements to see the chart</p>
@@ -314,7 +349,7 @@ export default function MovementHistoryChart({ movements = [], groupMovements = 
                                         key={loc.id}
                                         className="flex items-center border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50 transition-colors"
                                     >
-                                        <div className="w-40 flex-shrink-0 pr-3 text-[13px] font-semibold text-[#374151] truncate">
+                                        <div className={`w-40 flex-shrink-0 pr-3 text-[13px] font-semibold truncate ${String(loc.id) === String(derivedCurrentLocationId) ? 'text-[#1a1a2e]' : 'text-gray-400'}`}>
                                             {loc.name}
                                         </div>
                                         {months.map((m, mIdx) => {
@@ -327,6 +362,8 @@ export default function MovementHistoryChart({ movements = [], groupMovements = 
                                                     isAlt={mIdx % 2 !== 0}
                                                     isFirst={isArrival(span, m.key)}
                                                     isLast={isDeparture(span, m.key)}
+                                                    isMuted={String(loc.id) !== String(derivedCurrentLocationId)}
+                                                    isCurrentRow={String(loc.id) === String(derivedCurrentLocationId)}
                                                 />
                                             );
                                         })}

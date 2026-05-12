@@ -23,8 +23,7 @@
                 <li><strong>Status:</strong> {{ $worker->status }}</li>
                 <li><strong>Primary Task:</strong> {{ $worker->task ?? 'General Duties' }}</li>
             </ul>
-            <p>Please log in to your dashboard to view your full assignments and schedule.</p>
-            <a href="{{ config('app.url') }}" class="btn">Go to Dashboard</a>
+            <p>Please visit the ranch for further process and onboarding.</p>
         </div>
         <div class="footer">
             <p>&copy; {{ date('Y') }} hayday Ranch Management System. All rights reserved.</p>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Activity, Syringe, Move, Baby, ShoppingCart, Plus } from 'lucide-react';
 
 const TimelineEvent = ({ event, index }) => {
@@ -61,7 +62,8 @@ const TimelineEvent = ({ event, index }) => {
     );
 };
 
-export default function Timeline({ animal }) {
+export default function Timeline({ animal, onChooseActivity }) {
+    const navigate = useNavigate();
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -113,9 +115,12 @@ export default function Timeline({ animal }) {
                 
                 {!loading && (
                     <div className="flex justify-center mt-4">
-                        <button className="flex items-center gap-2 rounded-full border border-[#80888F] bg-white px-6 py-2.5 text-[13px] font-bold text-[#1a1a2e] shadow-sm transition-all hover:bg-gray-50 hover:shadow">
-                            <Plus size={16} className="text-gray-400" />
-                            Add New Lifecycle Event
+                        <button
+                            onClick={onChooseActivity}
+                            className="flex items-center gap-2 rounded-full border border-[#80888F] bg-white px-6 py-2.5 text-[13px] font-bold text-[#1a1a2e] shadow-sm transition-all hover:bg-gray-50 hover:shadow"
+                        >
+                            <Activity size={16} className="text-gray-400" />
+                            Choose Activity
                         </button>
                     </div>
                 )}

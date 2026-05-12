@@ -10,12 +10,7 @@ class LocationController extends Controller
 {
     public function index()
     {
-        $userId = \Illuminate\Support\Facades\Auth::id();
-        if (!$userId) {
-            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
-            $userId = $demoUser ? $demoUser->id : null;
-        }
-        return response()->json(Location::where('user_id', $userId)->get());
+        return response()->json(Location::all());
     }
 
     public function store(Request $request)
@@ -23,8 +18,7 @@ class LocationController extends Controller
         $data = $request->all();
         $userId = \Illuminate\Support\Facades\Auth::id();
         if (!$userId) {
-            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
-            $userId = $demoUser ? $demoUser->id : null;
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
         $data['user_id'] = $userId;
         

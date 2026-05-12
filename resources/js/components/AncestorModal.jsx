@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, Search, Save } from 'lucide-react';
+import pedigreeIllustration from '../assets/hand-drawn-cow-outline-illustration.png';
 
 export default function AncestorModal({ isOpen, onClose, animal, role, targetAnimalId, species, onSave }) {
     const [search, setSearch] = useState('');
@@ -8,9 +9,14 @@ export default function AncestorModal({ isOpen, onClose, animal, role, targetAni
     const [selectedId, setSelectedId] = useState('');
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(false);
+    const parentLabel = role.includes('Sire') ? 'Sire' : 'Dam';
+    const parentTerm = parentLabel.toLowerCase();
 
     useEffect(() => {
         if (isOpen) {
+            // Reset selection on every open/target change so previous choice is not reused accidentally.
+            setSelectedId('');
+            setSearch('');
             setFetching(true);
             fetchOptions().finally(() => setFetching(false));
         } else {
@@ -18,16 +24,16 @@ export default function AncestorModal({ isOpen, onClose, animal, role, targetAni
             setSearch('');
             setOptions([]);
         }
-    }, [isOpen]);
+    }, [isOpen, role, targetAnimalId, species]);
 
     const fetchOptions = async () => {
         try {
-            const type = role.includes('Sire') ? 'male' : 'female';
-            const url = `/api/farm/animals/search?type=${type}` + (species ? `&species=${species}` : '');
-            const res = await axios.get(url);
-            setOptions(res.data);
+            const res = await axios.get('/api/farm/animals/form-data');
+            const list = role.includes('Sire') ? (res.data?.sires ?? []) : (res.data?.dams ?? []);
+            setOptions(list);
         } catch (err) {
             console.error("Search error:", err);
+            setOptions([]);
         }
     };
 
@@ -51,6 +57,12 @@ export default function AncestorModal({ isOpen, onClose, animal, role, targetAni
     if (!isOpen) return null;
 
     const filteredOptions = options.filter(opt => {
+        const optId = String(opt.id || opt._id || '');
+        const targetId = String(targetAnimalId || '');
+        if (optId !== '' && targetId !== '' && optId === targetId) {
+            return false;
+        }
+
         const searchLower = search.toLowerCase();
         const tagMatch = opt.ear_tag ? String(opt.ear_tag).toLowerCase().includes(searchLower) : false;
         const nameMatch = opt.animal_name ? String(opt.animal_name).toLowerCase().includes(searchLower) : false;
@@ -72,7 +84,7 @@ export default function AncestorModal({ isOpen, onClose, animal, role, targetAni
                 <div className="px-8 py-8 flex flex-col items-center">
                     <div className="w-full mb-6">
                         <label className="text-[11px] font-bold text-[#22a06b] mb-1 block uppercase tracking-wider">
-                            {role.includes('Sire') ? 'Sire' : 'Dam'} <span className="text-red-500">*</span>
+                            {parentLabel} <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
                             <select 
@@ -80,7 +92,7 @@ export default function AncestorModal({ isOpen, onClose, animal, role, targetAni
                                 onChange={(e) => setSelectedId(e.target.value)}
                                 className="w-full h-14 appearance-none rounded-xl border border-gray-200 bg-white px-5 pr-10 text-[15px] font-bold text-[#1a1a2e] outline-none focus:border-[#22a06b] focus:ring-1 focus:ring-[#22a06b] transition-all"
                             >
-                                <option value="">{fetching ? 'Loading...' : `Select ${role.includes('Sire') ? 'sire' : 'dam'}`}</option>
+                                <option value="">{fetching ? 'Loading...' : `Select ${parentTerm}`}</option>
                                 {filteredOptions.map(opt => (
                                     <option key={opt.id || opt._id} value={opt.id || opt._id}>
                                         {opt.ear_tag} {opt.animal_name ? `- ${opt.animal_name}` : ''}
@@ -97,12 +109,12 @@ export default function AncestorModal({ isOpen, onClose, animal, role, targetAni
 
                     <div className="mb-10 text-center">
                         <img 
-                            src="https://img.freepik.com/free-vector/cattle-breeding-isometric-composition_1284-25037.jpg?w=826&t=st=1714472859~exp=1714473459~hmac=2b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b" 
+                            src={pedigreeIllustration}
                             alt="Cattle Pedigree" 
                             className="mx-auto h-32 w-auto object-contain mb-4"
                         />
                         <p className="text-[13px] font-medium text-gray-500 max-w-[280px]">
-                            Select the biological {role.includes('Sire') ? 'father' : 'mother'} of this animal from the above dropdown
+                            Select the biological {parentTerm} of this animal from the above dropdown
                         </p>
                     </div>
 

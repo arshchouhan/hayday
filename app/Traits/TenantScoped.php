@@ -10,15 +10,12 @@ trait TenantScoped
 {
     protected static function bootTenantScoped()
     {
+        \Illuminate\Support\Facades\Log::info("TenantScoped: Booting trait for model " . static::class);
+
         // Auto-assign user_id on create
         static::creating(function ($model) {
             if (!$model->user_id) {
-                $userId = Auth::id();
-                if (!$userId) {
-                    $demoUser = User::where('email', 'demo@gmail.com')->first();
-                    $userId = $demoUser ? $demoUser->id : null;
-                }
-                $model->user_id = $userId;
+                $model->user_id = Auth::id();
             }
         });
 
@@ -27,16 +24,11 @@ trait TenantScoped
         // fallback, the query returns zero rows rather than leaking data.
         static::addGlobalScope('user_id', function (Builder $builder) {
             $userId = Auth::id();
-
-            if (!$userId) {
-                $demoUser = User::where('email', 'demo@gmail.com')->first();
-                $userId = $demoUser ? $demoUser->id : null;
-            }
+            \Illuminate\Support\Facades\Log::info("TenantScoped: Applying scope for user ID: " . ($userId ?: 'NULL'));
 
             if ($userId) {
                 $builder->where('user_id', (string) $userId);
             } else {
-                // No authenticated user and no demo account — return nothing.
                 $builder->whereRaw(['_id' => ['$exists' => false]]);
             }
         });

@@ -20,6 +20,9 @@ export default function WeightManagement() {
         body_condition:  '',
         recorded_by:     '',
         next_weigh_date: '',
+        cost:            '',
+        payment_date:    '',
+        vendor:          '',
         notes:           '',
     });
     const [attachments, setAttachments] = useState([]);
@@ -87,6 +90,18 @@ export default function WeightManagement() {
                         value={form.recorded_by} onChange={set('recorded_by')} />
                     <FInput  label="Next Weigh Date" type="date"
                         value={form.next_weigh_date} onChange={set('next_weigh_date')} />
+                </div>
+            </SectionCard>
+
+            <SectionCard title="Cost & Payment">
+                <div className="grid grid-cols-3 gap-4">
+                    <FInput label="Weighing Cost" type="number" placeholder="0.00" suffix="₹"
+                        value={form.cost} onChange={set('cost')} />
+                    <FInput label="Payment Date" type="date"
+                        value={form.payment_date} onChange={set('payment_date')} />
+                    <FSelect label="Vendor" placeholder="Select vendor…"
+                        options={['Farm Equipment', 'Vet Service', 'Scale Provider', 'Farm Labor']}
+                        value={form.vendor} onChange={set('vendor')} />
                 </div>
             </SectionCard>
 

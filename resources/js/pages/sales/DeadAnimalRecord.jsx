@@ -22,6 +22,9 @@ export default function DeadAnimalRecord() {
         disposal_date:     '',
         insurance_claimed: 'No',
         estimated_value:   '',
+        cost:              '',
+        payment_date:      '',
+        vendor:            '',
         notes:             '',
     });
     const [attachments, setAttachments] = useState([]);
@@ -97,7 +100,17 @@ export default function DeadAnimalRecord() {
                         value={form.disposal_date} onChange={set('disposal_date')} />
                 </div>
             </SectionCard>
-
+            <SectionCard title="Cost & Payment">
+                <div className="grid grid-cols-3 gap-4">
+                    <FInput label="Disposal Cost" type="number" placeholder="0.00" suffix="₹"
+                        value={form.cost} onChange={set('cost')} />
+                    <FInput label="Payment Date" type="date"
+                        value={form.payment_date} onChange={set('payment_date')} />
+                    <FSelect label="Vendor" placeholder="Select vendor…"
+                        options={['Rendering Plant', 'Knackery', 'Veterinary Service', 'Farm Labor']}
+                        value={form.vendor} onChange={set('vendor')} />
+                </div>
+            </SectionCard>
             <SectionCard title="Notes">
                 <FTextarea placeholder="Additional notes about the death event…"
                     value={form.notes} onChange={set('notes')} rows={4} />

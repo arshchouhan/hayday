@@ -4,6 +4,130 @@ import { Search, LayoutGrid, List, Plus, X, Check, ChevronDown, Loader2 } from '
 import axios from 'axios';
 import illustration from '../assets/no-enterprises.svg';
 
+const StockCircle = ({ item, onUpdate }) => {
+    const circleRef = React.useRef(null);
+    const [isDragging, setIsDragging] = React.useState(false);
+    const [localPercent, setLocalPercent] = React.useState(null);
+
+    const calculatePercent = (e) => {
+        if (!circleRef.current) return;
+        const rect = circleRef.current.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const x = e.clientX - centerX;
+        const y = e.clientY - centerY;
+        
+        // Calculate angle (radians) and convert to degrees
+        let angle = Math.atan2(y, x) * (180 / Math.PI);
+        // Normalize angle to start from top (0 degrees)
+        angle = (angle + 90 + 360) % 360;
+        
+        return Math.round((angle / 360) * 100);
+    };
+
+    const handleMouseDown = (e) => {
+        setIsDragging(true);
+        setLocalPercent(calculatePercent(e));
+    };
+
+    React.useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isDragging) return;
+            setLocalPercent(calculatePercent(e));
+        };
+
+        const handleMouseUp = () => {
+            setIsDragging(false);
+            // Don't reset localPercent yet, so we can show the "Update" option
+        };
+
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isDragging]);
+
+    const handleConfirm = (e) => {
+        e.stopPropagation();
+        if (localPercent !== null) {
+            onUpdate(localPercent);
+            setLocalPercent(null);
+        }
+    };
+
+    const handleCancel = (e) => {
+        e.stopPropagation();
+        setLocalPercent(null);
+    };
+
+    const currentP = (item.capacity ? (item.quantity / item.capacity) * 100 : (item.quantity > 0 ? 100 : 0));
+    const p = localPercent !== null ? localPercent : currentP;
+    const color = p > 60 ? '#059669' : (p > 20 ? '#F59E0B' : '#EF4444');
+    const hasChanges = localPercent !== null && Math.round(localPercent) !== Math.round(currentP);
+
+    return (
+        <div className="flex flex-col items-center gap-4">
+            <div 
+                ref={circleRef}
+                onMouseDown={handleMouseDown}
+                className={`relative h-24 w-24 flex items-center justify-center cursor-pointer select-none transition-transform ${isDragging ? 'scale-110' : 'hover:scale-105'}`}
+            >
+                {/* Outer Circle (Background) */}
+                <div className="absolute inset-0 rounded-full bg-[#E9EEF6]"></div>
+                
+                {/* Progress Fill (Conic Gradient) */}
+                <div 
+                    className={`absolute inset-0 rounded-full ${!isDragging ? 'transition-all duration-700' : ''}`} 
+                    style={{ 
+                        background: `conic-gradient(${color} ${p}%, transparent ${p}% 100%)`
+                    }}
+                ></div>
+
+                {/* Inner Mask (to create the ring effect) */}
+                <div className="absolute inset-[8px] rounded-full bg-white flex items-center justify-center shadow-inner">
+                    <span 
+                        className="text-[16px] font-black tracking-tight"
+                        style={{ color }}
+                    >
+                        {Math.round(p)}%
+                    </span>
+                </div>
+                
+                {/* Drag Handle Dot */}
+                <div 
+                    className="absolute w-3 h-3 bg-white border-2 rounded-full shadow-md z-10"
+                    style={{
+                        borderColor: color,
+                        transform: `rotate(${p * 3.6 - 90}deg) translateX(40px) rotate(${-(p * 3.6 - 90)}deg)`
+                    }}
+                />
+            </div>
+
+            {hasChanges && (
+                <div className="flex gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                    <button 
+                        onClick={handleConfirm}
+                        className="bg-[#059669] text-white text-[10px] font-black px-3 py-1 rounded-full shadow-sm hover:bg-green-700 transition-colors"
+                    >
+                        Update
+                    </button>
+                    <button 
+                        onClick={handleCancel}
+                        className="bg-gray-100 text-gray-500 text-[10px] font-black px-3 py-1 rounded-full shadow-sm hover:bg-gray-200 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const InventoryPage = () => {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('Feed');
@@ -16,7 +140,7 @@ const InventoryPage = () => {
 
     // Modal State
     const [inventoryType, setInventoryType] = useState('Feed');
-    const [newItem, setNewItem] = useState({ name: '', subtype: '', unit: 'kg' });
+    const [newItem, setNewItem] = useState({ name: '', subtype: '', unit: 'kg', capacity: '' });
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
@@ -51,6 +175,40 @@ const InventoryPage = () => {
             console.error("Add item error:", err);
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleStatusUpdate = async (item, status) => {
+        const capacity = item.capacity || item.quantity || 100;
+        let newQuantity = 0;
+        
+        if (status === 'Full') newQuantity = capacity;
+        else if (status === 'Half') newQuantity = capacity / 2;
+        else if (status === 'Empty') newQuantity = 0;
+
+        try {
+            await axios.put(`/api/farm/inventory/${item._id || item.id}`, { 
+                quantity: newQuantity,
+                capacity: capacity // Ensure capacity is saved if it was missing
+            });
+            fetchData();
+        } catch (err) {
+            console.error("Status update error:", err);
+        }
+    };
+
+    const handlePercentUpdate = async (item, percent) => {
+        const capacity = item.capacity || item.quantity || 100;
+        const newQuantity = (percent / 100) * capacity;
+
+        try {
+            await axios.put(`/api/farm/inventory/${item._id || item.id}`, { 
+                quantity: newQuantity,
+                capacity: capacity
+            });
+            fetchData();
+        } catch (err) {
+            console.error("Percent update error:", err);
         }
     };
 
@@ -246,12 +404,11 @@ const InventoryPage = () => {
                                 </div>
 
                                 <div className="flex flex-col items-center justify-center flex-1 mt-4">
-                                    {item.quantity > 0 ? (
-                                        <div className="relative h-24 w-24 flex items-center justify-center">
-                                            <div className="absolute inset-0 rounded-full border-[10px] border-[#E9EEF6]"></div>
-                                            <div className="absolute inset-0 rounded-full border-[10px] border-[#059669] border-t-transparent border-l-transparent" style={{ transform: 'rotate(45deg)' }}></div>
-                                            <span className="text-[14px] font-black text-[#1a1a2e]">100%</span>
-                                        </div>
+                                    {item.quantity >= 0 ? (
+                                        <StockCircle 
+                                            item={item} 
+                                            onUpdate={(percent) => handlePercentUpdate(item, percent)} 
+                                        />
                                     ) : (
                                         <>
                                             <img src={illustration} alt="Illustration" className="h-28 w-auto mb-4 opacity-80" />
@@ -260,11 +417,24 @@ const InventoryPage = () => {
                                             </p>
                                         </>
                                     )}
+
+                                    {/* Quick Status Buttons */}
+                                    <div className="flex gap-2 mt-6">
+                                        {['Full', 'Half', 'Empty'].map((status) => (
+                                            <button
+                                                key={status}
+                                                onClick={() => handleStatusUpdate(item, status)}
+                                                className="px-3 py-1.5 rounded-lg border border-gray-100 bg-[#F8FAFD] text-[10px] font-bold text-[#1a1a2e] hover:bg-[#059669] hover:text-white transition-all shadow-sm"
+                                            >
+                                                {status}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
 
                                 <button 
                                     onClick={() => navigate('/farm/inventory/restock')}
-                                    className="mt-8 flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-6 py-2.5 text-[14px] font-bold text-[#1a1a2e] hover:bg-gray-50 transition-all w-40 mx-auto"
+                                    className="mt-6 flex items-center justify-center gap-2 rounded-full border border-gray-300 bg-white px-6 py-2.5 text-[14px] font-bold text-[#1a1a2e] hover:bg-gray-50 transition-all w-40 mx-auto"
                                 >
                                     <Plus size={16} strokeWidth={3} />
                                     Restock
@@ -386,6 +556,20 @@ const InventoryPage = () => {
                                     </select>
                                     <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" />
                                 </div>
+                            </div>
+
+                            {/* Full Capacity Field */}
+                            <div className="relative">
+                                <label className="absolute -top-2.5 left-4 z-10 bg-white px-1 text-[11px] font-bold text-[#059669]">
+                                    Full Capacity ({newItem.unit})
+                                </label>
+                                <input 
+                                    type="number" 
+                                    placeholder="Enter full capacity (e.g. 500)"
+                                    value={newItem.capacity}
+                                    onChange={(e) => setNewItem({...newItem, capacity: e.target.value})}
+                                    className="w-full rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] placeholder:text-gray-300 shadow-sm transition-all bg-transparent relative z-0"
+                                />
                             </div>
 
                             <div className="flex justify-end pt-4">

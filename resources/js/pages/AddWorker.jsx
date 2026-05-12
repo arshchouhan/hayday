@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ChevronLeft, Info, ChevronDown, DollarSign, User, Mail, ClipboardList, Loader2 } from 'lucide-react';
+import { ChevronLeft, Info, ChevronDown, User, Mail, ClipboardList, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
 const AddWorker = () => {
@@ -294,7 +294,7 @@ const AddWorker = () => {
                                 onChange={(e) => setFormData({...formData, cost: e.target.value})}
                                 className="w-full rounded-xl border border-gray-200 px-5 py-3.5 pl-12 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] placeholder:text-gray-300 bg-transparent relative z-0"
                             />
-                            <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0" />
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none z-0 text-[16px] font-bold">₹</span>
                         </div>
                     </div>
                 </div>

@@ -12,12 +12,7 @@ class WorkerController extends Controller
 {
     public function index()
     {
-        $userId = \Illuminate\Support\Facades\Auth::id();
-        if (!$userId) {
-            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
-            $userId = $demoUser ? $demoUser->id : null;
-        }
-        return Worker::where('user_id', $userId)->get();
+        return Worker::all();
     }
 
     public function store(Request $request)
@@ -35,8 +30,7 @@ class WorkerController extends Controller
         
         $userId = \Illuminate\Support\Facades\Auth::id();
         if (!$userId) {
-            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
-            $userId = $demoUser ? $demoUser->id : null;
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
         $validated['user_id'] = $userId;
 

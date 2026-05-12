@@ -26,6 +26,7 @@ import Pedigree from '../pages/Pedigree';
 import AI from '../pages/AI';
 import MovementHistoryChart from './MovementHistoryChart';
 import WeightChart from './WeightChart';
+import ActivitySidebar from './ActivitySidebar';
 
 const ANIMAL_DETAIL_CACHE = new Map();
 
@@ -114,6 +115,7 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
     const [activeTab, setActiveTab] = useState('details');
     const [showCostDetail, setShowCostDetail] = useState(null); // null | 'breakdown' | 'average'
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(false);
     const [messageModal, setMessageModal] = useState({ open: false, title: '', message: '', type: 'error' });
 
     const fetchSecondaryData = (id) => {
@@ -398,6 +400,7 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
         'bg-white', 'bg-black', 'bg-blue-600', 'bg-green-600', 'bg-red-800',
         'bg-pink-300', 'bg-purple-700', 'bg-red-500', 'bg-yellow-400', 'bg-orange-500'
     ];
+    const attachments = Array.isArray(animal.attachments) ? animal.attachments : [];
 
     return (
         <section className="h-full min-h-0 w-full overflow-auto bg-[#F8FAFD] p-4 sm:p-8">
@@ -430,8 +433,15 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                         </div>
                         <div className="flex gap-3">
                             <button 
+                                onClick={() => setSidebarOpen(true)}
+                                className="flex items-center gap-2 rounded-full border border-[#80888F]/40 bg-white px-7 py-2 text-sm font-bold text-[#1a1a2e] transition-all hover:bg-gray-50 active:scale-95 shadow-sm"
+                            >
+                                <Activity size={16} className="text-[#1a1a2e]/60" />
+                                Choose Activity
+                            </button>
+                            <button 
                                 onClick={handleEdit}
-                                className="rounded-full border border-[#80888F]/40 bg-white px-7 py-2 text-sm font-bold text-[#1a1a2e] transition-all hover:bg-gray-50 active:scale-95"
+                                className="rounded-full border border-[#80888F]/40 bg-white px-7 py-2 text-sm font-bold text-[#1a1a2e] transition-all hover:bg-gray-50 active:scale-95 shadow-sm"
                             >
                                 Edit
                             </button>
@@ -518,7 +528,9 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                             <MovementHistoryChart
                                 movements={moveData.movements}
                                 groupMovements={moveData.groupMovements}
+                                currentLocation={moveData.current_location}
                                 onPeriodChange={setMovePeriod}
+                                loading={moveLoading}
                             />
                         </div>
 
@@ -728,16 +740,82 @@ export default function AnimalDetail({ animalId: propAnimalId }) {
                                     </div>
                                 </div>
                             )}
+                        </div>
 
+                        {/* Attachments */}
+                        <div className="rounded-lg border border-[#80888F] bg-white p-6 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <span className="flex items-center gap-2 text-[15px] font-bold text-[#1a1a2e]">
+                                        Attachments
+                                        <span className="flex h-5 w-5 items-center justify-center rounded-full border border-gray-300 text-[11px] text-gray-400 cursor-help">?</span>
+                                    </span>
+                                </div>
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                                    {attachments.length} file{attachments.length === 1 ? '' : 's'}
+                                </span>
+                            </div>
+
+                            {attachments.length === 0 ? (
+                                <div className="rounded-xl border border-dashed border-gray-200 bg-[#F8FAFD] p-6 text-center">
+                                    <p className="text-[13px] font-semibold text-gray-400">No attachments uploaded yet.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                    {attachments.map((attachment, index) => {
+                                        const fileUrl = attachment.file_path || attachment.url || '';
+                                        const fileName = attachment.file_name || attachment.name || `Attachment ${index + 1}`;
+                                        const fileType = attachment.file_type || attachment.type || '';
+
+                                        return (
+                                            <a
+                                                key={attachment.id || attachment._id || `${fileName}-${index}`}
+                                                href={fileUrl}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="group rounded-xl border border-gray-200 bg-[#F8FAFD] p-3 shadow-sm transition-all hover:border-[#1a1a2e] hover:shadow-md"
+                                            >
+                                                <div className="aspect-video overflow-hidden rounded-lg bg-white">
+                                                    {fileType.startsWith('image/') || /\.(png|jpe?g|webp|gif|svg)$/i.test(fileName) ? (
+                                                        <img src={fileUrl} alt={fileName} className="h-full w-full object-cover" />
+                                                    ) : (
+                                                        <div className="flex h-full items-center justify-center text-gray-300">
+                                                            <svg viewBox="0 0 24 24" className="h-12 w-12" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                                                <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" />
+                                                                <path d="M14 2v5h5" />
+                                                            </svg>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="mt-3">
+                                                    <p className="truncate text-[13px] font-bold text-[#1a1a2e] group-hover:text-[#059669]">
+                                                        {fileName}
+                                                    </p>
+                                                    <p className="truncate text-[11px] text-gray-400">
+                                                        {fileType || 'file'}
+                                                    </p>
+                                                </div>
+                                            </a>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
 
-                {activeTab === 'timeline' && <Timeline animal={animal} />}
+                {activeTab === 'timeline' && <Timeline animal={animal} onChooseActivity={() => setSidebarOpen(true)} />}
                 {activeTab === 'pedigree' && <PedigreeTree rootAnimal={animal} onRefresh={() => fetchAnimalData(true)} />}
                 {activeTab === 'ai' && <AI animal={animal} />}
 
             </div>
+
+            <ActivitySidebar 
+                open={sidebarOpen} 
+                onClose={() => setSidebarOpen(false)} 
+                selectedIds={[animalId]} 
+                navigate={navigate} 
+            />
 
             <DeleteConfirmationModal
                 isOpen={deleteModalOpen}

@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, Calendar, DollarSign, ChevronDown, Upload, Loader2, Weight } from 'lucide-react';
+import axios from 'axios';
+import { ChevronLeft, Info, Calendar, ChevronDown, Upload, Loader2, Weight } from 'lucide-react';
 
 const RestockInventory = () => {
     const navigate = useNavigate();
     const [inventoryType, setInventoryType] = useState('Feed');
     const [items, setItems] = useState([]);
+    const [workers, setWorkers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -20,18 +22,27 @@ const RestockInventory = () => {
 
     useEffect(() => {
         fetchItems();
+        fetchWorkers();
     }, [inventoryType]);
 
     const fetchItems = async () => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/farm/inventory?type=${inventoryType}`);
-            const data = await res.json();
-            setItems(data);
+            const res = await axios.get(`/api/farm/inventory?type=${inventoryType}`);
+            setItems(res.data);
         } catch (err) {
             console.error("Fetch items error:", err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchWorkers = async () => {
+        try {
+            const res = await axios.get('/api/farm/workers');
+            setWorkers(res.data);
+        } catch (err) {
+            console.error("Fetch workers error:", err);
         }
     };
 
@@ -42,16 +53,11 @@ const RestockInventory = () => {
         }
         setSaving(true);
         try {
-            const res = await fetch('/api/farm/inventory/restock', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
-            if (res.ok) {
-                navigate('/farm/inventory');
-            }
+            await axios.post('/api/farm/inventory/restock', formData);
+            navigate('/farm/inventory');
         } catch (err) {
             console.error("Save restock error:", err);
+            alert("Failed to save restock. Please try again.");
         } finally {
             setSaving(false);
         }
@@ -187,7 +193,7 @@ const RestockInventory = () => {
                     {/* Cost */}
                     <div className="relative mt-2 md:mt-0">
                         <label className="absolute -top-2.5 left-4 z-10 bg-white px-1 flex items-center gap-1 text-[11px] font-bold text-[#059669]">
-                            Cost <DollarSign size={12} className="text-[#059669]" />
+                            Cost ₹
                         </label>
                         <div className="relative">
                             <input 
@@ -205,13 +211,23 @@ const RestockInventory = () => {
                         <label className="absolute -top-2.5 left-4 z-10 bg-white px-1 flex items-center gap-1 text-[11px] font-bold text-[#059669]">
                             Supplier <Info size={12} className="text-[#059669]" />
                         </label>
-                        <input 
-                            type="text" 
-                            placeholder="Enter supplier name"
-                            value={formData.supplier}
-                            onChange={(e) => setFormData({...formData, supplier: e.target.value})}
-                            className="w-full rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] placeholder:text-gray-300 bg-transparent relative z-0"
-                        />
+                        <div className="relative">
+                            <select 
+                                value={formData.supplier}
+                                onChange={(e) => setFormData({...formData, supplier: e.target.value})}
+                                className="w-full appearance-none rounded-xl border border-gray-200 px-5 py-3.5 text-[14px] font-bold text-[#1a1a2e] outline-none focus:ring-1 focus:ring-[#059669] focus:border-[#059669] bg-transparent cursor-pointer relative z-0"
+                            >
+                                <option value="">Select supplier / worker</option>
+                                {workers.map(worker => (
+                                    <option key={worker._id || worker.id} value={worker.name}>
+                                        {worker.name} (Worker)
+                                    </option>
+                                ))}
+                                <option value="Market">Market</option>
+                                <option value="Direct Supplier">Direct Supplier</option>
+                            </select>
+                            <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#1a1a2e] pointer-events-none z-0" />
+                        </div>
                     </div>
                 </div>
 

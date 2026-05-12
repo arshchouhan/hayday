@@ -22,6 +22,8 @@ export default function FeedingSale() {
         payment_method: '',
         payment_date:   '',
         invoice_number: '',
+        cost:           '',
+        vendor:         '',
         notes:          '',
     });
     const [attachments, setAttachments] = useState([]);
@@ -98,6 +100,16 @@ export default function FeedingSale() {
                         value={form.payment_method} onChange={set('payment_method')} />
                     <FInput  label="Payment Date" type="date"
                         value={form.payment_date} onChange={set('payment_date')} />
+                </div>
+            </SectionCard>
+
+            <SectionCard title="Cost & Expenses">
+                <div className="grid grid-cols-3 gap-4">
+                    <FInput label="Associated Cost" type="number" placeholder="0.00" suffix="₹"
+                        value={form.cost} onChange={set('cost')} />
+                    <FSelect label="Cost Vendor" placeholder="Select vendor…"
+                        options={['Transport Co.', 'Processing Plant', 'Logistics', 'Other']}
+                        value={form.vendor} onChange={set('vendor')} />
                 </div>
             </SectionCard>
 

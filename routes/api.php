@@ -16,6 +16,7 @@ Route::get('/ping', function () {
     return response()->json(['status' => 'awake', 'time' => now()->toIso8601String()]);
 });
 
+
 // Public auth routes (no middleware)
 Route::post('/auth/register', [AuthController::class, 'register']);
 Route::post('/auth/login', [AuthController::class, 'login']);
@@ -62,6 +63,7 @@ Route::prefix('farm')->middleware('auth:sanctum')->group(function () {
     Route::get('/animals/{animalId}/cost-stats',       [ActivityController::class, 'getCostStats']);
     Route::get('/animals/{animalId}/timeline', [ActivityController::class, 'getTimeline']);
     Route::get('/locations/{locationId}/movement-history', [ActivityController::class, 'getLocationMovementHistory']);
+    Route::get('/dashboard/insights', [ActivityController::class, 'getDashboardInsights']);
 
     // Group Management
     Route::get('/groups', [GroupController::class, 'index']);
@@ -81,5 +83,6 @@ Route::prefix('farm')->middleware('auth:sanctum')->group(function () {
     Route::get('/inventory', [InventoryController::class, 'index']);
     Route::post('/inventory', [InventoryController::class, 'store']);
     Route::post('/inventory/restock', [InventoryController::class, 'restock']);
+    Route::put('/inventory/{id}', [InventoryController::class, 'update']);
     Route::delete('/inventory/{id}', [InventoryController::class, 'destroy']);
 });

@@ -171,8 +171,12 @@ class ActivityController extends Controller
         $months = ($period === '6m') ? 6 : (($period === '12m') ? 12 : 3);
         $since  = now()->subMonths($months);
 
-        $baseQuery = MovementRecord::withoutGlobalScopes()
-            ->where('animal_id', $animalId)
+        $animal = $this->findAnimal($animalId);
+        if (!$animal) {
+            return response()->json(['success' => false, 'message' => 'Animal not found or unauthorized'], 404);
+        }
+
+        $baseQuery = MovementRecord::where('animal_id', $animalId)
             ->get()
             ->map(function ($record) {
                 $record->normalized_treatment_date = Carbon::parse($record->treatment_date);
@@ -195,11 +199,31 @@ class ActivityController extends Controller
                 }
                 $locationData = $locationCache[$locationId];
             }
+            $fromLocationData = null;
+            if ($record->from_location) {
+                if (!isset($locationCache[$record->from_location])) {
+                    $locationCache[$record->from_location] = $this->resolveLocationLabel($record->from_location);
+                }
+                $fromLocationData = $locationCache[$record->from_location] ?? null;
+            }
+            if (!$locationData && $locationId) {
+                $locationData = [
+                    'id' => (string) $locationId,
+                    'name' => (string) $locationId,
+                ];
+            }
+            if (!$fromLocationData && $record->from_location) {
+                $fromLocationData = [
+                    'id' => (string) $record->from_location,
+                    'name' => (string) $record->from_location,
+                ];
+            }
             return [
                 'id'       => (string) $record->_id,
                 'date'     => $record->normalized_treatment_date->format('Y-m-d'),
                 'type'     => 'location',
                 'location' => $locationData,
+                'from_location' => $fromLocationData,
                 'notes'    => $record->notes,
             ];
         })->values();
@@ -238,13 +262,25 @@ class ActivityController extends Controller
             $history[] = ['label' => $label, 'count' => $count];
         }
 
+        $currentLocation = $animal?->location_id ? $this->resolveLocationLabel($animal->location_id) : null;
+
+        if (!$currentLocation) {
+            $latestLocationMove = $allLocationMovements->sortByDesc(fn ($r) => $r->normalized_treatment_date->timestamp)->first();
+            if ($latestLocationMove?->to_location) {
+                $currentLocation = $this->resolveLocationLabel($latestLocationMove->to_location) ?? [
+                    'id' => (string) $latestLocationMove->to_location,
+                    'name' => (string) $latestLocationMove->to_location,
+                ];
+            }
+        }
+
         return response()->json([
             'success'          => true,
             'data'             => $history,
             'movements'        => $movementRecords,
             'group_movements'  => $groupMovementRecords,
             'total'            => $allLocationMovements->count() + $allGroupMovements->count(),
-            'current_location' => $this->resolveLocationLabel($this->findAnimal($animalId)?->location_id),
+            'current_location' => $currentLocation,
         ]);
     }
 
@@ -306,10 +342,16 @@ class ActivityController extends Controller
             ->where('treatment_date', '>=', $since)
             ->get(['treatment_date', 'type', 'cost', 'notes']);
 
-        $healthCost   = $healthRecords->sum('cost');
-        $movementCost = $movementRecords->sum('cost');
-        $breedingCost = $breedingRecords->sum('cost');
-        $total        = $healthCost + $movementCost + $breedingCost;
+        // ── Inventory Restock Costs (Allocated per animal) ────────────────────
+        $inventoryRecords = \App\Models\InventoryHistory::where('purchase_date', '>=', $since)
+            ->get(['purchase_date', 'cost_per_animal', 'inventory_id', 'cost']);
+
+        $healthCost    = $healthRecords->sum('cost');
+        $movementCost  = $movementRecords->sum('cost');
+        $breedingCost  = $breedingRecords->sum('cost');
+        $inventoryCost = $inventoryRecords->sum('cost_per_animal');
+
+        $total         = $healthCost + $movementCost + $breedingCost + $inventoryCost;
 
         // ── Build breakdown array for the tooltip ────────────────────────────
         $breakdown = [];
@@ -352,6 +394,22 @@ class ActivityController extends Controller
                     'label'  => ucfirst($r->type ?? 'Breeding Activity'),
                     'amount' => round($r->cost, 2),
                 ])->values(),
+            ];
+        }
+
+        if ($inventoryCost > 0) {
+            $breakdown[] = [
+                'category' => 'Inventory & Feed',
+                'amount'   => round($inventoryCost, 2),
+                'count'    => $inventoryRecords->where('cost_per_animal', '>', 0)->count(),
+                'items'    => $inventoryRecords->where('cost_per_animal', '>', 0)->map(function($r) {
+                    $invItem = \App\Models\Inventory::find($r->inventory_id);
+                    return [
+                        'date'   => Carbon::parse($r->purchase_date)->format('M d, Y'),
+                        'label'  => 'Restock: ' . ($invItem->name ?? 'Unknown Item'),
+                        'amount' => round($r->cost_per_animal, 2),
+                    ];
+                })->values(),
             ];
         }
 
@@ -497,6 +555,82 @@ class ActivityController extends Controller
         }
 
         return response()->json(['success' => true, 'data' => $history, 'total' => $movements->count()]);
+    }
+
+    /**
+     * Get insights for the activity dashboard (Pregnant animals and Watchlist).
+     */
+    public function getDashboardInsights(Request $request)
+    {
+        try {
+            // 1. Ready for Calving (Pregnant animals)
+            // Cattle collection contains the breeding_status
+            $calvingReady = Cattle::where('breeding_status', 'Pregnant')
+                ->limit(5)
+                ->get()
+                ->map(function ($animal) {
+                    return [
+                        'id' => (string) $animal->id,
+                        'ear_tag' => $animal->ear_tag,
+                        'status' => 'Pregnant',
+                        'type' => 'cow'
+                    ];
+                });
+
+            // 2. Animals to keep an eye on (Watchlist)
+            // Recent breeding or health activities in the last 48 hours
+            $since = now()->subHours(48);
+
+            $recentBreeding = BreedingRecord::where('created_at', '>=', $since)
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
+
+            $recentHealth = \App\Models\HealthRecord::where('created_at', '>=', $since)
+                ->orderBy('created_at', 'desc')
+                ->limit(5)
+                ->get();
+
+            $watchlist = [];
+
+            foreach ($recentBreeding as $rb) {
+                $animal = $this->findAnimal($rb->animal_id);
+                if ($animal) {
+                    $watchlist[] = [
+                        'animal_id' => (string) $animal->id,
+                        'ear_tag' => $animal->ear_tag,
+                        'activity' => ucfirst($rb->type) . ' recorded',
+                        'time_ago' => $rb->created_at->diffForHumans(),
+                        'type' => 'breeding'
+                    ];
+                }
+            }
+
+            foreach ($recentHealth as $rh) {
+                $animal = $this->findAnimal($rh->animal_id);
+                if ($animal) {
+                    $watchlist[] = [
+                        'animal_id' => (string) $animal->id,
+                        'ear_tag' => $animal->ear_tag,
+                        'activity' => ucfirst($rh->type) . ' treatment',
+                        'time_ago' => $rh->created_at->diffForHumans(),
+                        'type' => 'health'
+                    ];
+                }
+            }
+
+            // Sort watchlist by created_at equivalent (implicitly handled by how we build it if we wanted strict, but these are top 5 of each)
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'calving_ready' => $calvingReady,
+                    'watchlist' => array_slice($watchlist, 0, 5) // Top 5 combined
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     private function resolveLocationLabel($locationId)

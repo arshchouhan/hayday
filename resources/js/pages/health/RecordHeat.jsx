@@ -19,6 +19,9 @@ export default function RecordHeat() {
         observed_by:      '',
         location:         '',
         standing_heat:    'No',
+        cost:             '',
+        payment_date:     '',
+        vendor:           '',
         notes:            '',
     });
     const [attachments, setAttachments] = useState([]);
@@ -80,6 +83,18 @@ export default function RecordHeat() {
                 <div className="mt-5">
                     <Pill label="Standing Heat Confirmed" options={['Yes', 'No']}
                         value={form.standing_heat} onChange={v => setPill('standing_heat', v)} />
+                </div>
+            </SectionCard>
+
+            <SectionCard title="Cost & Payment">
+                <div className="grid grid-cols-3 gap-4">
+                    <FInput label="Cost" type="number" placeholder="0.00" suffix="₹"
+                        value={form.cost} onChange={set('cost')} />
+                    <FInput label="Payment Date" type="date"
+                        value={form.payment_date} onChange={set('payment_date')} />
+                    <FSelect label="Vendor" placeholder="Select vendor…"
+                        options={['Default Vendor', 'Farm Supply Co.', 'Vet Clinic', 'AI Centre']}
+                        value={form.vendor} onChange={set('vendor')} />
                 </div>
             </SectionCard>
 

@@ -20,7 +20,8 @@ class InventoryHistory extends Model
         'supplier',
         'purchase_date',
         'purchased_by',
-        'notes'
+        'notes',
+        'cost_per_animal'
     ];
 
     public function inventory(): BelongsTo

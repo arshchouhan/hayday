@@ -29,15 +29,19 @@ class MovementRecord extends Model
         'reason',
         'moved_by',
         'effective_date',
+        'cost',
+        'payment_date',
+        'vendor',
         'notes',
-        'attachments',
-        'cost'
+        'attachments'
     ];
 
     protected $casts = [
         'treatment_date' => 'date',
-        'attachments'    => 'array',
+        'payment_date'   => 'date',
+        'effective_date' => 'date',
         'cost'           => 'float',
+        'attachments'    => 'array',
     ];
 
     public function animal(): BelongsTo

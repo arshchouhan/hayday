@@ -39,15 +39,19 @@ class SalesRecord extends Model
         'weight_at_sale',
         'weight',
         'condition_score',
+        'cost',
+        'vendor',
         'notes',
         'attachments'
     ];
 
     protected $casts = [
         'treatment_date' => 'date',
+        'payment_date'   => 'date',
         'sale_price'     => 'float',
         'weight_at_sale' => 'float',
         'weight'         => 'float',
+        'cost'           => 'float',
         'attachments'    => 'array',
     ];
 

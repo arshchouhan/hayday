@@ -19,6 +19,7 @@ class Inventory extends Model
         'subtype',
         'unit',
         'quantity',
+        'capacity',
         'supplier',
         'last_purchase_date'
     ];

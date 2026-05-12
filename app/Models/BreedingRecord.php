@@ -46,6 +46,8 @@ class BreedingRecord extends Model
         'expected_calving',
         'stillborn',
         'cost',
+        'payment_date',
+        'vendor',
         'notes',
         'attachments'
     ];
@@ -53,6 +55,8 @@ class BreedingRecord extends Model
     protected $casts = [
         'treatment_date'  => 'date',
         'next_check_date' => 'date',
+        'payment_date'    => 'date',
+        'cost'            => 'float',
         'attachments'     => 'array',
     ];
 

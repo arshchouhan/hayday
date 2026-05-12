@@ -21,4 +21,8 @@ class Worker extends Model
         'cost',
         'status'
     ];
+
+    protected $casts = [
+        'cost' => 'float',
+    ];
 }

@@ -276,7 +276,7 @@ export default function Navbar() {
                                         className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#1a1a2e] text-white shadow-md hover:scale-105 transition-all overflow-hidden"
                                     >
                                         {user?.profile_image ? (
-                                            <img src={user.profile_image} alt={user.name} className="h-full w-full object-cover" />
+                                            <img src={user.profile_image} alt={user.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                                         ) : (
                                             <span className="text-[12px] font-black">{getInitials(user?.name)}</span>
                                         )}

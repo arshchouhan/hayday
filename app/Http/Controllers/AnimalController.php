@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Animal;
+use App\Models\AnimalAttachment;
 use App\Models\Cattle;
 use App\Models\Sheep;
 use App\Models\Breed;
@@ -12,6 +13,7 @@ use App\Models\Worker;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use MongoDB\BSON\ObjectId;
 use MongoDB\BSON\UTCDateTime;
 
@@ -41,11 +43,12 @@ class AnimalController extends Controller
 
         $matchStage = [];
 
-        // Authentication filter - no demo fallback for protected route
+        // Authentication filter - REQUIRED
         $userId = \Illuminate\Support\Facades\Auth::id();
-        if ($userId) {
-            $matchStage['user_id'] = (string) $userId;
+        if (!$userId) {
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
+        $matchStage['user_id'] = (string) $userId;
 
         if ($search !== '') {
             $matchStage['ear_tag'] = [
@@ -237,28 +240,84 @@ class AnimalController extends Controller
         }
 
         // Step 2: single eager-load for normal relations
-        $animal = $modelClass::with(['breed', 'location', 'group'])->find($id);
+        $animal = $modelClass::with(['breed', 'location', 'group', 'attachments'])->find($id);
+        $animalId = (string) $animal->id;
+
+        $safeId = function ($value) {
+            $id = (string) ($value ?? '');
+            return $id === '' ? null : $id;
+        };
+
+        $isInvalidParentLink = function (?string $parentId, string $childId): bool {
+            return $parentId !== null && $parentId === $childId;
+        };
+
+        $sireId = $safeId($animal->sire_id);
+        $damId = $safeId($animal->dam_id);
+
+        // If both direct parents are accidentally same record, prefer sire and clear dam for display.
+        if ($sireId !== null && $damId !== null && $sireId === $damId) {
+            $damId = null;
+        }
 
         // Manually populate pedigree to bypass MongoDB cross-collection strictness
-        $sire = $this->findAnimalAcrossCollections($animal->sire_id);
+        $sire = null;
+        if ($sireId !== null && !$isInvalidParentLink($sireId, $animalId)) {
+            $candidateSire = $this->findAnimalAcrossCollections($sireId);
+            if ($candidateSire && (string) $candidateSire->id !== $animalId) {
+                $sire = $candidateSire;
+            }
+        }
+
+        $dam = null;
+        if ($damId !== null && !$isInvalidParentLink($damId, $animalId)) {
+            $candidateDam = $this->findAnimalAcrossCollections($damId);
+            if ($candidateDam && (string) $candidateDam->id !== $animalId) {
+                $dam = $candidateDam;
+            }
+        }
+
         if ($sire) {
-            $gSire = $this->findAnimalAcrossCollections($sire->sire_id);
-            if ($gSire) $sire->setRelation('sire', $gSire);
-            
-            $gDam = $this->findAnimalAcrossCollections($sire->dam_id);
-            if ($gDam) $sire->setRelation('dam', $gDam);
-            
+            $sireIdStr = (string) $sire->id;
+            $sireSireId = $safeId($sire->sire_id);
+            $sireDamId = $safeId($sire->dam_id);
+
+            if ($sireSireId !== null && $sireSireId !== $animalId && $sireSireId !== $sireIdStr) {
+                $gSire = $this->findAnimalAcrossCollections($sireSireId);
+                if ($gSire && (string) $gSire->id !== $animalId && (string) $gSire->id !== $sireIdStr) {
+                    $sire->setRelation('sire', $gSire);
+                }
+            }
+
+            if ($sireDamId !== null && $sireDamId !== $animalId && $sireDamId !== $sireIdStr) {
+                $gDam = $this->findAnimalAcrossCollections($sireDamId);
+                if ($gDam && (string) $gDam->id !== $animalId && (string) $gDam->id !== $sireIdStr) {
+                    $sire->setRelation('dam', $gDam);
+                }
+            }
+
             $animal->setRelation('sire', $sire);
         }
 
-        $dam = $this->findAnimalAcrossCollections($animal->dam_id);
         if ($dam) {
-            $gSire2 = $this->findAnimalAcrossCollections($dam->sire_id);
-            if ($gSire2) $dam->setRelation('sire', $gSire2);
-            
-            $gDam2 = $this->findAnimalAcrossCollections($dam->dam_id);
-            if ($gDam2) $dam->setRelation('dam', $gDam2);
-            
+            $damIdStr = (string) $dam->id;
+            $damSireId = $safeId($dam->sire_id);
+            $damDamId = $safeId($dam->dam_id);
+
+            if ($damSireId !== null && $damSireId !== $animalId && $damSireId !== $damIdStr) {
+                $gSire2 = $this->findAnimalAcrossCollections($damSireId);
+                if ($gSire2 && (string) $gSire2->id !== $animalId && (string) $gSire2->id !== $damIdStr) {
+                    $dam->setRelation('sire', $gSire2);
+                }
+            }
+
+            if ($damDamId !== null && $damDamId !== $animalId && $damDamId !== $damIdStr) {
+                $gDam2 = $this->findAnimalAcrossCollections($damDamId);
+                if ($gDam2 && (string) $gDam2->id !== $animalId && (string) $gDam2->id !== $damIdStr) {
+                    $dam->setRelation('dam', $gDam2);
+                }
+            }
+
             $animal->setRelation('dam', $dam);
         }
 
@@ -306,6 +365,7 @@ class AnimalController extends Controller
             'castration_date' => 'nullable|date',
             'castration_method' => 'nullable|string|max:255',
             'donor_cow_id' => 'nullable|string',
+            'attachment_files.*' => 'nullable|file|max:5120',
         ]);
 
         if ($validator->fails()) {
@@ -341,6 +401,8 @@ class AnimalController extends Controller
         if (! $saved) {
             throw new \Exception('Model save() returned false');
         }
+
+        $this->storeAttachments($request, $animal);
         \Illuminate\Support\Facades\Log::info('Animal saved successfully ID: ' . $animal->id);
 
         $notifications = app(NotificationService::class);
@@ -370,8 +432,7 @@ class AnimalController extends Controller
     {
         $userId = \Illuminate\Support\Facades\Auth::id();
         if (!$userId) {
-            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
-            $userId = $demoUser ? $demoUser->id : null;
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $sires = Animal::where('user_id', $userId)->whereIn('type', ['bull', 'ram', 'steer'])->get(['id', 'ear_tag', 'animal_name'])
@@ -395,8 +456,7 @@ class AnimalController extends Controller
     {
         $userId = \Illuminate\Support\Facades\Auth::id();
         if (!$userId) {
-            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
-            $userId = $demoUser ? $demoUser->id : null;
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $type = $request->query('type'); // male or female
@@ -429,7 +489,58 @@ class AnimalController extends Controller
         $animal = Animal::find($id) ?? Cattle::find($id) ?? Sheep::find($id);
         if (!$animal) return response()->json(['message' => 'Animal not found'], 404);
 
+        // Guard pedigree assignments to avoid self/looped lineage.
+        if ($request->has('sire_id') || $request->has('dam_id')) {
+            $incomingSireId = $request->has('sire_id') ? (string) ($request->input('sire_id') ?? '') : (string) ($animal->sire_id ?? '');
+            $incomingDamId = $request->has('dam_id') ? (string) ($request->input('dam_id') ?? '') : (string) ($animal->dam_id ?? '');
+            $animalId = (string) $animal->id;
+
+            if ($incomingSireId !== '' && $incomingSireId === $animalId) {
+                return response()->json([
+                    'message' => 'Invalid pedigree assignment.',
+                    'errors' => ['sire_id' => ['An animal cannot be its own sire.']],
+                ], 422);
+            }
+
+            if ($incomingDamId !== '' && $incomingDamId === $animalId) {
+                return response()->json([
+                    'message' => 'Invalid pedigree assignment.',
+                    'errors' => ['dam_id' => ['An animal cannot be its own dam.']],
+                ], 422);
+            }
+
+            if ($incomingSireId !== '' && $incomingDamId !== '' && $incomingSireId === $incomingDamId) {
+                return response()->json([
+                    'message' => 'Invalid pedigree assignment.',
+                    'errors' => ['dam_id' => ['Sire and dam must be different animals.']],
+                ], 422);
+            }
+
+            // Prevent immediate two-node cycles: child -> parent and parent -> child
+            if ($incomingSireId !== '') {
+                $sire = $this->findAnimalAcrossCollections($incomingSireId);
+                if ($sire && ((string) ($sire->sire_id ?? '') === $animalId || (string) ($sire->dam_id ?? '') === $animalId)) {
+                    return response()->json([
+                        'message' => 'Invalid pedigree assignment.',
+                        'errors' => ['sire_id' => ['Selected sire creates a circular pedigree link.']],
+                    ], 422);
+                }
+            }
+
+            if ($incomingDamId !== '') {
+                $dam = $this->findAnimalAcrossCollections($incomingDamId);
+                if ($dam && ((string) ($dam->sire_id ?? '') === $animalId || (string) ($dam->dam_id ?? '') === $animalId)) {
+                    return response()->json([
+                        'message' => 'Invalid pedigree assignment.',
+                        'errors' => ['dam_id' => ['Selected dam creates a circular pedigree link.']],
+                    ], 422);
+                }
+            }
+        }
+
         $animal->update($request->all());
+
+        $this->storeAttachments($request, $animal);
 
         $notifications = app(NotificationService::class);
         $notifications->logActivityAlert([
@@ -507,5 +618,28 @@ class AnimalController extends Controller
         $animalLabel = $animal->ear_tag ?: $animal->animal_name ?: 'Animal ' . $animal->id;
 
         return "{$animalLabel} {$suffix}";
+    }
+
+    private function storeAttachments(Request $request, $animal): void
+    {
+        if (!$request->hasFile('attachment_files')) {
+            return;
+        }
+
+        foreach ((array) $request->file('attachment_files') as $file) {
+            if (!$file || !$file->isValid()) {
+                continue;
+            }
+
+            $storedPath = $file->store('animal-attachments/' . (string) $animal->id, 'public');
+
+            AnimalAttachment::create([
+                'user_id' => (string) ($animal->user_id ?? $request->user()?->id ?? ''),
+                'animal_id' => (string) $animal->id,
+                'file_path' => Storage::disk('public')->url($storedPath),
+                'file_name' => $file->getClientOriginalName(),
+                'file_type' => $file->getClientMimeType(),
+            ]);
+        }
     }
 }

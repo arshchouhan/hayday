@@ -10,13 +10,8 @@ class GroupController extends Controller
 {
     public function index()
     {
-        $userId = \Illuminate\Support\Facades\Auth::id();
-        if (!$userId) {
-            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
-            $userId = $demoUser ? $demoUser->id : null;
-        }
 
-        $groups = Group::where('user_id', $userId)->get();
+        $groups = Group::all();
         return $groups->map(function ($group) {
             $group->animals_count = $group->animals()->count();
             return $group;
@@ -32,8 +27,7 @@ class GroupController extends Controller
 
         $userId = \Illuminate\Support\Facades\Auth::id();
         if (!$userId) {
-            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
-            $userId = $demoUser ? $demoUser->id : null;
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
         $validated['user_id'] = $userId;
 

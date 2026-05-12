@@ -1,20 +1,20 @@
 import React from 'react';
-import hayIcon from '../assets/noun-hay-7549821.svg';
+import loaderIcon from '../assets/198070322_3f302672-6b8c-4494-a9fe-ab4d59db64cb.svg';
 
 export default function Loader({ message = "Loading..." }) {
     return (
         <div className="flex h-full w-full items-center justify-center bg-[#F8FAFD] rounded-md">
             <div className="flex flex-col items-center gap-6">
-                <div className="relative flex h-32 w-32 items-center justify-center">
+                <div className="relative flex h-44 w-44 items-center justify-center">
                     {/* Pulsing background effect */}
                     <div className="absolute inset-0 rounded-full bg-[#D7E3EF] animate-ping opacity-30"></div>
                     <div className="absolute inset-4 rounded-full bg-[#D7E3EF]/50 animate-pulse opacity-50"></div>
                     
-                    {/* The Logo (Hay Icon) */}
+                    {/* The Logo (New Loader Icon) */}
                     <img 
-                        src={hayIcon} 
+                        src={loaderIcon} 
                         alt="Loading" 
-                        className="relative z-10 h-24 w-24 animate-bounce drop-shadow-2xl transition-all duration-1000" 
+                        className="relative z-10 h-32 w-32 animate-bounce drop-shadow-2xl transition-all duration-1000" 
                         style={{ 
                             filter: 'drop-shadow(0 20px 13px rgb(0 0 0 / 0.03)) drop-shadow(0 8px 5px rgb(0 0 0 / 0.08))' 
                         }}

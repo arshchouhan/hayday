@@ -4,6 +4,7 @@ import axios from "axios";
 import App from "./app";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
+import { LanguageProvider } from "./context/LanguageContext";
 
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
@@ -36,7 +37,9 @@ ReactDOM.createRoot(document.getElementById("app")).render(
   <React.StrictMode>
     <AuthProvider>
       <NotificationProvider>
-        <App />
+        <LanguageProvider>
+          <App />
+        </LanguageProvider>
       </NotificationProvider>
     </AuthProvider>
   </React.StrictMode>

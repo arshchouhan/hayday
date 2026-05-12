@@ -348,6 +348,49 @@ class NotificationService
             }
         }
 
+        // 7. Calving alert
+        if ($animal->breeding_status === 'Pregnant') {
+            $latestBreeding = \App\Models\BreedingRecord::where('animal_id', (string) $animal->getKey())
+                ->orderBy('treatment_date', 'desc')
+                ->first();
+            
+            if ($latestBreeding && $latestBreeding->expected_calving) {
+                $due = Carbon::parse($latestBreeding->expected_calving);
+                if ($due->isFuture() && $due->diffInDays(now()) <= 14) { // 2 weeks notice
+                    $issues[] = $this->issue(
+                        'calving-near',
+                        'Calving approaching',
+                        "{$animalLabel} is due to calve soon (Expected: {$due->format('M d, Y')}).",
+                        'info',
+                        $detailsUrl,
+                        ['reason' => 'calving_soon', 'due_date' => $due->toDateString()]
+                    );
+                }
+            }
+        }
+
+        // 8. Weight loss alert
+        $weights = \App\Models\SalesRecord::where('animal_id', (string) $animal->getKey())
+            ->where('type', 'weight')
+            ->orderBy('treatment_date', 'desc')
+            ->limit(2)
+            ->get();
+        
+        if ($weights->count() === 2) {
+            $latest = (float) $weights[0]->weight;
+            $previous = (float) $weights[1]->weight;
+            if ($latest < $previous * 0.95 && $previous > 0) {
+                $issues[] = $this->issue(
+                    'weight-loss',
+                    'Significant weight loss',
+                    "{$animalLabel} has lost " . round($previous - $latest, 1) . "kg since the last recording.",
+                    'danger',
+                    $detailsUrl,
+                    ['reason' => 'weight_drop', 'drop_amount' => $previous - $latest]
+                );
+            }
+        }
+
         return $issues;
     }
 

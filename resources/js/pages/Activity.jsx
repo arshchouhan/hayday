@@ -51,6 +51,8 @@ const Activity = () => {
     const [loading, setLoading] = useState(false);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
+    const [insights, setInsights] = useState({ calving_ready: [], watchlist: [] });
+    const [insightsLoading, setInsightsLoading] = useState(true);
 
     const handleAnimalChange = (val) => {
         if (val === selectedAnimal) return;
@@ -85,6 +87,27 @@ const Activity = () => {
     };
 
     useEffect(() => {
+        const fetchInsights = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/farm/dashboard/insights', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    setInsights(result.data);
+                }
+            } catch (error) {
+                console.error('Failed to fetch dashboard insights:', error);
+            } finally {
+                setInsightsLoading(false);
+            }
+        };
+
+        fetchInsights();
         updateCarouselScrollState();
 
         const carousel = carouselRef.current;
@@ -198,19 +221,51 @@ const Activity = () => {
                             <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1a1a2e] text-sm text-white">?</button>
                         </div>
                         {selectedAnimal && (
-                            <div className="flex min-h-[150px] flex-col items-center justify-center rounded-2xl bg-[#F1F5F9] px-3 py-4 text-center">
-                                <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
-                                    <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8">
-                                        <path d="M3 13c0-2.8 2.2-5 5-5h6.5c3.1 0 5.5 2.4 5.5 5.5V16a2 2 0 0 1-2 2h-1" />
-                                        <path d="M7 10V7m10 3V7" />
-                                        <circle cx="8" cy="14" r="1" />
-                                        <circle cx="14" cy="14" r="1" />
-                                    </svg>
-                                </div>
-                                <p className="mb-3 text-[14px] font-medium text-slate-600">No cows marked as pregnant</p>
-                                <button className="rounded-full border border-gray-300 bg-white px-5 py-1.5 text-[14px] font-semibold text-[#1a1a2e] hover:bg-gray-50">
-                                    Mark As Pregnant
-                                </button>
+                            <div className="flex min-h-[150px] flex-col gap-2">
+                                {insightsLoading ? (
+                                    <div className="flex flex-1 items-center justify-center rounded-2xl bg-[#F1F5F9] py-8">
+                                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#1a1a2e] border-t-transparent"></div>
+                                    </div>
+                                ) : insights.calving_ready.length === 0 ? (
+                                    <div className="flex flex-1 flex-col items-center justify-center rounded-2xl bg-[#F1F5F9] px-3 py-4 text-center">
+                                        <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700">
+                                            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="1.8">
+                                                <path d="M3 13c0-2.8 2.2-5 5-5h6.5c3.1 0 5.5 2.4 5.5 5.5V16a2 2 0 0 1-2 2h-1" />
+                                                <path d="M7 10V7m10 3V7" />
+                                                <circle cx="8" cy="14" r="1" />
+                                                <circle cx="14" cy="14" r="1" />
+                                            </svg>
+                                        </div>
+                                        <p className="mb-3 text-[14px] font-medium text-slate-600">No cows marked as pregnant</p>
+                                        <button 
+                                            onClick={() => navigate('/farm/activity/breeding')}
+                                            className="rounded-full border border-gray-300 bg-white px-5 py-1.5 text-[14px] font-semibold text-[#1a1a2e] hover:bg-gray-50"
+                                        >
+                                            Mark As Pregnant
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {insights.calving_ready.map((animal) => (
+                                            <div 
+                                                key={animal.id}
+                                                onClick={() => navigate(`/farm/details/${animal.id}`)}
+                                                className="flex cursor-pointer items-center justify-between rounded-xl bg-emerald-50 p-3 transition-colors hover:bg-emerald-100"
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white shadow-sm font-black text-[#1a1a2e]">
+                                                        {animal.ear_tag.slice(-4)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[15px] font-bold text-[#1a1a2e]">{animal.ear_tag}</p>
+                                                        <p className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">{animal.status}</p>
+                                                    </div>
+                                                </div>
+                                                <svg viewBox="0 0 24 24" className="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="3"><path d="M9 18l6-6-6-6"/></svg>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </section>
@@ -221,11 +276,31 @@ const Activity = () => {
                             <button className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1a1a2e] text-sm text-white">?</button>
                         </div>
                         {selectedAnimal && (
-                            <div className="rounded-2xl bg-slate-100 p-3">
-                                <p className="mb-2 text-[18px] font-bold tracking-wide text-[#1a1a2e]">453534534</p>
-                                <div className="inline-flex rounded-full bg-white px-3 py-1.5 text-[13px] font-medium text-[#1a1a2e]">
-                                    Breeding performed 8 hours ago
-                                </div>
+                            <div className="flex min-h-[150px] flex-col gap-2">
+                                {insightsLoading ? (
+                                    <div className="flex flex-1 items-center justify-center rounded-2xl bg-slate-50 py-8">
+                                        <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-400 border-t-transparent"></div>
+                                    </div>
+                                ) : insights.watchlist.length === 0 ? (
+                                    <div className="flex flex-1 flex-col items-center justify-center rounded-2xl bg-slate-50 px-3 py-4 text-center">
+                                        <p className="text-[14px] font-medium text-slate-400">All animals are doing well.</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {insights.watchlist.map((item, idx) => (
+                                            <div 
+                                                key={idx}
+                                                onClick={() => navigate(`/farm/details/${item.animal_id}`)}
+                                                className="rounded-2xl bg-slate-100 p-3 cursor-pointer hover:bg-slate-200 transition-colors"
+                                            >
+                                                <p className="mb-2 text-[18px] font-bold tracking-wide text-[#1a1a2e]">{item.ear_tag}</p>
+                                                <div className="inline-flex rounded-full bg-white px-3 py-1.5 text-[13px] font-medium text-[#1a1a2e]">
+                                                    {item.activity} {item.time_ago}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
                     </section>

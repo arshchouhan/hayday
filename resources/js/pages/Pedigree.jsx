@@ -13,8 +13,13 @@ export default function Pedigree() {
     // Initial load - maybe fetch some animals to choose from
     useEffect(() => {
         setLoading(true);
-        fetch('/api/animals')
-            .then(res => res.json())
+        fetch('/api/farm/animals')
+            .then(async (res) => {
+                if (!res.ok) {
+                    throw new Error(`Failed to fetch animals: ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 setAnimals(data);
                 // Auto-select the first one for demonstration if available
@@ -33,7 +38,10 @@ export default function Pedigree() {
     const fetchAnimalDetails = async (id) => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/animals/${id}`);
+            const res = await fetch(`/api/farm/animals/${id}`);
+            if (!res.ok) {
+                throw new Error(`Failed to fetch animal details: ${res.status}`);
+            }
             const data = await res.json();
             setSelectedAnimal(data);
             setIsSearching(false);

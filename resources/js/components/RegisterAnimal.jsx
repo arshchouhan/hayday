@@ -46,8 +46,21 @@ const CustomSelect = ({ label, required, placeholder, value, onChange, options =
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const selectedOption = options.find(opt => (opt.id || opt._id || opt) === value);
-    const displayText = selectedOption ? (selectedOption.name || selectedOption.ear_tag || selectedOption) : placeholder;
+    const getOptionId = (opt) => (opt && (opt.id ?? opt._id)) ?? opt;
+    const getOptionLabel = (opt) => {
+        if (opt === null || opt === undefined) return '';
+        if (typeof opt === 'string' || typeof opt === 'number') return String(opt);
+        return opt.name ?? opt.ear_tag ?? opt.animal_name ?? opt.label ?? String(getOptionId(opt));
+    };
+
+    const selectedOption = options.find(opt => {
+        const optId = getOptionId(opt);
+        if (opt === value) return true;
+        if (optId !== undefined && optId === value) return true;
+        return false;
+    });
+
+    const displayText = selectedOption ? getOptionLabel(selectedOption) : placeholder;
 
     return (
         <div className="relative w-full" ref={dropdownRef}>
@@ -76,9 +89,9 @@ const CustomSelect = ({ label, required, placeholder, value, onChange, options =
                             <div className="px-4 py-2 text-[13px] text-gray-400 italic">No options available</div>
                         ) : (
                             options.map((opt, i) => {
-                                const optId = opt.id || opt._id || opt;
-                                const optLabel = opt.name || opt.ear_tag || opt;
-                                const isSelected = optId === value;
+                                const optId = getOptionId(opt);
+                                const optLabel = getOptionLabel(opt);
+                                const isSelected = optId === value || opt === value;
                                 return (
                                     <div
                                         key={i}
@@ -117,8 +130,21 @@ const GreenFloatingSelect = ({ label, required, placeholder, value, onChange, op
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const selectedOption = options.find(opt => (opt.id || opt._id || opt) === value);
-    const displayText = selectedOption ? (selectedOption.name || selectedOption.ear_tag || selectedOption) : placeholder;
+    const getOptionId = (opt) => (opt && (opt.id ?? opt._id)) ?? opt;
+    const getOptionLabel = (opt) => {
+        if (opt === null || opt === undefined) return '';
+        if (typeof opt === 'string' || typeof opt === 'number') return String(opt);
+        return opt.name ?? opt.ear_tag ?? opt.animal_name ?? opt.label ?? String(getOptionId(opt));
+    };
+
+    const selectedOption = options.find(opt => {
+        const optId = getOptionId(opt);
+        if (opt === value) return true;
+        if (optId !== undefined && optId === value) return true;
+        return false;
+    });
+
+    const displayText = selectedOption ? getOptionLabel(selectedOption) : placeholder;
 
     return (
         <div className="relative w-full" ref={dropdownRef}>
@@ -145,9 +171,9 @@ const GreenFloatingSelect = ({ label, required, placeholder, value, onChange, op
                             <div className="px-4 py-2 text-[13px] text-gray-400 italic">No options available</div>
                         ) : (
                             options.map((opt, i) => {
-                                const optId = opt.id || opt._id || opt;
-                                const optLabel = opt.name || opt.ear_tag || opt;
-                                const isSelected = optId === value;
+                                const optId = getOptionId(opt);
+                                const optLabel = getOptionLabel(opt);
+                                const isSelected = optId === value || opt === value;
                                 return (
                                     <div
                                         key={i}
@@ -255,6 +281,7 @@ export default function RegisterAnimal({ onSelectAnimal }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSwitchingModel, setIsSwitchingModel] = useState(false);
     const [errors, setErrors] = useState({});
+    const [attachments, setAttachments] = useState([]);
 
     const [formData, setFormData] = useState({
         ear_tag: '',
@@ -330,6 +357,13 @@ export default function RegisterAnimal({ onSelectAnimal }) {
                     castration_date: data.castration_date ? data.castration_date.split('T')[0] : '',
                     death_date: data.death_date ? data.death_date.split('T')[0] : '',
                 });
+                setAttachments((data.attachments || []).map((attachment) => ({
+                    id: attachment.id || attachment._id,
+                    name: attachment.file_name,
+                    url: attachment.file_path,
+                    type: attachment.file_type,
+                    existing: true,
+                })));
             }).catch(err => {
                 console.error('Error fetching animal for edit:', err);
                 alert('Could not load animal data');
@@ -401,11 +435,26 @@ export default function RegisterAnimal({ onSelectAnimal }) {
             donor_cow_id: formData.conception === 'IVF' ? formData.donor_cow_id : null,
         };
 
+        const formPayload = new FormData();
+        Object.entries(payload).forEach(([key, value]) => {
+            if (value !== null && value !== undefined && value !== '') {
+                formPayload.append(key, value);
+            }
+        });
+
+        attachments
+            .filter((item) => item instanceof File)
+            .forEach((file) => formPayload.append('attachment_files[]', file));
+
+        if (isEdit) {
+            formPayload.append('_method', 'PUT');
+        }
+
         try {
             const url = isEdit ? `/api/farm/animals/${editId}` : '/api/farm/animals';
-            const method = isEdit ? 'put' : 'post';
-            
-            const response = await axios[method](url, payload);
+            const response = await axios.post(url, formPayload, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
             if (response.data.success) {
                 // Clear cache so dashboard refetches fresh data
                 clearDashboardCache();
@@ -431,6 +480,16 @@ export default function RegisterAnimal({ onSelectAnimal }) {
         'bg-white', 'bg-black', 'bg-blue-600', 'bg-green-600', 'bg-red-800',
         'bg-pink-300', 'bg-purple-700', 'bg-red-500', 'bg-yellow-400', 'bg-orange-500'
     ];
+
+    const addAttachments = (fileList) => {
+        const nextFiles = Array.from(fileList || []);
+        if (nextFiles.length === 0) return;
+        setAttachments((prev) => [...prev, ...nextFiles]);
+    };
+
+    const removeAttachment = (index) => {
+        setAttachments((prev) => prev.filter((_, itemIndex) => itemIndex !== index));
+    };
 
     return (
         <div className="relative w-full space-y-8 pb-4">
@@ -608,20 +667,61 @@ export default function RegisterAnimal({ onSelectAnimal }) {
 
                 <div className="relative w-full">
                     <FloatingLabel label="Attachments" />
-                    <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#80888F] bg-transparent py-12 text-center">
+                    <div
+                        className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#80888F] bg-transparent py-12 text-center"
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            addAttachments(e.dataTransfer.files);
+                        }}
+                    >
                         <p className="text-[15px] font-bold text-[#1a1a2e]">Drag and drop file here</p>
                         <p className="my-2 text-[13px] text-gray-400">Or</p>
-                        <button className="flex items-center gap-2 rounded-full bg-[#1a1a2e] px-8 py-2.5 text-[13px] font-bold text-white transition hover:bg-black shadow-md">
+                        <button
+                            type="button"
+                            onClick={() => document.getElementById('animal-attachment-input')?.click()}
+                            className="flex items-center gap-2 rounded-full bg-[#1a1a2e] px-8 py-2.5 text-[13px] font-bold text-white transition hover:bg-black shadow-md"
+                        >
                             <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-5 5 5 5-5m-5 5V3" />
                             </svg>
                             Choose File
                         </button>
+                        <input
+                            id="animal-attachment-input"
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => addAttachments(e.target.files)}
+                        />
                         <div className="mt-4 space-y-1">
                             <p className="text-[11px] text-gray-400">Max 4 files supported, each 5 mb</p>
                             <p className="text-[11px] text-gray-400">Images Only</p>
                         </div>
                     </div>
+
+                    {attachments.length > 0 && (
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            {attachments.map((attachment, index) => (
+                                <div key={`${attachment.name}-${index}`} className="flex items-center justify-between rounded-lg border border-[#D7E3EF] bg-white px-3 py-2 shadow-sm">
+                                    <div className="min-w-0">
+                                        <p className="truncate text-[13px] font-bold text-[#1a1a2e]">
+                                            {attachment.name || attachment.file_name || `Attachment ${index + 1}`}
+                                        </p>
+                                        <p className="text-[11px] text-gray-400">{attachment.existing ? 'Saved file' : 'New file'}</p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => removeAttachment(index)}
+                                        className="ml-3 rounded-full px-2 py-1 text-[11px] font-bold text-red-500 hover:bg-red-50"
+                                    >
+                                        Remove
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

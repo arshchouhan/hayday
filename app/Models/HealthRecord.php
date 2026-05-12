@@ -40,19 +40,22 @@ class HealthRecord extends Model
         'physical_exam',
         'semen_analysis',
         'overall_rating',
+        'cost',
+        'payment_date',
+        'vendor',
         'notes',
-        'attachments',
-        'cost'
+        'attachments'
     ];
 
     protected $casts = [
-        'treatment_date' => 'date',
-        'followup_date'  => 'date',
-        'expected_return'=> 'date',
-        'next_check_date'=> 'date',
-        'breeding_date'  => 'date',
-        'attachments'    => 'array',
-        'cost'           => 'float',
+        'treatment_date'  => 'date',
+        'followup_date'   => 'date',
+        'expected_return' => 'date',
+        'next_check_date' => 'date',
+        'breeding_date'   => 'date',
+        'payment_date'    => 'date',
+        'cost'            => 'float',
+        'attachments'     => 'array',
     ];
 
     public function animal(): BelongsTo

@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Inventory;
 use App\Models\InventoryHistory;
+use App\Models\Animal;
+use App\Models\Cattle;
+use App\Models\Sheep;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
@@ -13,8 +16,7 @@ class InventoryController extends Controller
     {
         $userId = \Illuminate\Support\Facades\Auth::id();
         if (!$userId) {
-            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
-            $userId = $demoUser ? $demoUser->id : null;
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
 
         $type = $request->query('type', 'Feed');
@@ -23,6 +25,18 @@ class InventoryController extends Controller
                 $q->where('user_id', $userId);
             })->with('inventory')->latest()->get();
         }
+
+        // Auto-ensure default items exist for the user if they don't have them
+        if ($type === 'Feed') {
+            $defaults = ['Hay', 'Silage', 'Grain', 'Grass', 'Supplements'];
+            foreach ($defaults as $name) {
+                Inventory::firstOrCreate(
+                    ['user_id' => (string)$userId, 'name' => $name, 'type' => 'Feed'],
+                    ['unit' => 'kg', 'quantity' => 0]
+                );
+            }
+        }
+
         return Inventory::where('user_id', $userId)->where('type', $type)->get();
     }
 
@@ -33,14 +47,14 @@ class InventoryController extends Controller
             'type' => 'required|string',
             'subtype' => 'nullable|string',
             'unit' => 'required|string',
+            'capacity' => 'nullable|numeric',
         ]);
 
-        $validated['quantity'] = 0; // Initialize empty
+        $validated['quantity'] = $validated['capacity'] ?? 0;
         
         $userId = \Illuminate\Support\Facades\Auth::id();
         if (!$userId) {
-            $demoUser = \App\Models\User::where('email', 'demo@gmail.com')->first();
-            $userId = $demoUser ? $demoUser->id : null;
+            return response()->json(['message' => 'Unauthorized'], 401);
         }
         $validated['user_id'] = $userId;
 
@@ -60,6 +74,27 @@ class InventoryController extends Controller
         return response()->json($item, 201);
     }
 
+    public function update(Request $request, $id)
+    {
+        $item = Inventory::findOrFail($id);
+        $item->update($request->all());
+
+        if ($request->has('quantity')) {
+            app(NotificationService::class)->logActivityRecorded($request->user(), 'inventory update', $item->name, [
+                'category' => 'activity',
+                'level' => 'info',
+                'action_url' => '/farm/inventory',
+                'metadata' => [
+                    'event' => 'inventory_updated',
+                    'inventory_id' => (string) $item->getKey(),
+                    'new_quantity' => $item->quantity,
+                ],
+            ]);
+        }
+
+        return response()->json($item);
+    }
+
     public function restock(Request $request)
     {
         $validated = $request->validate([
@@ -68,17 +103,23 @@ class InventoryController extends Controller
             'cost' => 'nullable|numeric',
             'supplier' => 'nullable|string',
             'purchase_date' => 'required|date',
-            'purchased_by' => 'nullable|string',
+            'notes' => 'nullable|string',
         ]);
 
         $item = Inventory::findOrFail($validated['inventory_id']);
         
         // Update stock
-        $item->increment('quantity', $validated['quantity_added']);
+        $item->increment('quantity', (float)$validated['quantity_added']);
         $item->update([
             'last_purchase_date' => $validated['purchase_date'],
             'supplier' => $validated['supplier'] ?? $item->supplier
         ]);
+
+        // Calculate cost per animal for reflection in stats
+        // We'll store this in the history so we can sum it up for any animal
+        $animalCount = Animal::count() + Cattle::count() + Sheep::count();
+        $validated['cost_per_animal'] = $animalCount > 0 ? ($validated['cost'] ?? 0) / $animalCount : 0;
+        $validated['user_id'] = \Illuminate\Support\Facades\Auth::id();
 
         // Log history
         $history = InventoryHistory::create($validated);
@@ -91,6 +132,7 @@ class InventoryController extends Controller
                 'event' => 'inventory_restocked',
                 'inventory_id' => (string) $item->getKey(),
                 'quantity_added' => $validated['quantity_added'],
+                'cost' => $validated['cost'] ?? 0,
             ],
         ]);
 

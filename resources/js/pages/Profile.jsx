@@ -157,7 +157,7 @@ export default function Profile() {
                                     className="hidden"
                                 />
                                 {previewUrl ? (
-                                    <img src={previewUrl} alt={form.name} className="h-full w-full object-cover" />
+                                    <img src={previewUrl} alt={form.name} referrerPolicy="no-referrer" className="h-full w-full object-cover" />
                                 ) : (
                                     <span className="text-[18px] font-black">{initials}</span>
                                 )}

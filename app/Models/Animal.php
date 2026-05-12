@@ -80,6 +80,6 @@ class Animal extends Model
 
     public function attachments(): HasMany
     {
-        return $this->hasMany(AnimalAttachment::class);
+        return $this->hasMany(AnimalAttachment::class, 'animal_id');
     }
 }

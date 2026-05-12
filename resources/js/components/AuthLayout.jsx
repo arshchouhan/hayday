@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import loginVideo from '../assets/loginvide.mp4';
 import hayIcon from '../assets/noun-hay-7549821.svg';
+import { useLanguage } from '../context/LanguageContext';
 
-export const FloatingInput = ({ label, type = 'text', placeholder, value, onChange, required, icon, isPassword, phonePrefix, showPassword, setShowPassword }) => {
+export const FloatingInput = ({ label, type = 'text', placeholder, value, onChange, required, icon, isPassword, phonePrefix, showPassword, setShowPassword, error }) => {
     const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
 
     return (
@@ -25,7 +26,7 @@ export const FloatingInput = ({ label, type = 'text', placeholder, value, onChan
                     value={value}
                     onChange={onChange}
                     placeholder={placeholder}
-                    className={`w-full rounded-lg border border-[#80888F] bg-[#E9EEF6] py-3 px-4 text-[14px] font-medium text-[#1a1a2e] outline-none transition-all focus:border-[#1a1a2e] focus:ring-1 focus:ring-[#1a1a2e] placeholder:text-[#80888F] shadow-sm ${phonePrefix ? 'pl-[95px]' : ''} ${isPassword ? 'pr-12' : ''}`}
+                    className={`w-full rounded-lg py-3 px-4 text-[14px] font-medium text-[#1a1a2e] outline-none transition-all placeholder:text-[#80888F] shadow-sm ${phonePrefix ? 'pl-[95px]' : ''} ${isPassword ? 'pr-12' : ''} ${error ? 'border-red-500 ring-1 ring-red-500 bg-white' : 'border border-[#80888F] bg-[#E9EEF6] focus:border-[#1a1a2e] focus:ring-1 focus:ring-[#1a1a2e]'}`}
                 />
                 {isPassword && (
                     <button
@@ -41,20 +42,14 @@ export const FloatingInput = ({ label, type = 'text', placeholder, value, onChan
                     </button>
                 )}
             </div>
+            {error && <p className="mt-2 text-[12px] font-bold text-red-500">{Array.isArray(error) ? error[0] : error}</p>}
         </div>
     );
 };
 
 const AuthLayout = ({ children, title, subtitle }) => {
-    const [selectedLanguage, setSelectedLanguage] = useState({ name: 'English', flag: '🇺🇸' });
+    const { selectedLanguage, setSelectedLanguage, languages, t } = useLanguage();
     const [showLanguageDropdown, setShowLanguageDropdown] = useState(false);
-
-    const languages = [
-        { name: 'English', flag: '🇬🇧' },
-        { name: 'Indian English', flag: '🇮🇳' },
-        { name: 'US English', flag: '🇺🇸' },
-        { name: 'Hindi', flag: '🇮🇳' }
-    ];
 
     const handleLanguageSelect = (language) => {
         setSelectedLanguage(language);
@@ -82,7 +77,7 @@ const AuthLayout = ({ children, title, subtitle }) => {
 
                 <div className="mt-auto pt-10 flex items-center justify-between border-t border-[#E9EEF6]">
                     <div className="flex items-center gap-1 bg-[#DCE9E3] px-3 py-1.5 rounded-full">
-                        <span className="text-[11px] font-medium text-[#80888F]">Powered by</span>
+                        <span className="text-[11px] font-medium text-[#80888F]">{t('poweredBy')}</span>
                         <a
                             href="https://ment2be.arshchouhan.me/"
                             target="_blank"
@@ -93,7 +88,7 @@ const AuthLayout = ({ children, title, subtitle }) => {
                         </a>
                     </div>
                     <Link to="/" className="text-[11px] font-bold text-[#1a1a2e] hover:text-[#80888F] bg-[#DCE9E3] px-3 py-1.5 rounded-full">
-                        About HayDay
+                        {t('aboutHayDay')}
                     </Link>
                 </div>
             </div>

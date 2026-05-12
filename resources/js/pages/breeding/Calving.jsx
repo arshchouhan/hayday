@@ -21,6 +21,9 @@ export default function Calving() {
         assisted_by:      '',
         location:         '',
         stillborn:        'No',
+        cost:             '',
+        payment_date:     '',
+        vendor:           '',
         notes:            '',
     });
     const [attachments, setAttachments] = useState([]);
@@ -87,6 +90,18 @@ export default function Calving() {
                 <div className="mt-5">
                     <Pill label="Stillborn" options={['Yes', 'No']}
                         value={form.stillborn} onChange={v => setPill('stillborn', v)} />
+                </div>
+            </SectionCard>
+
+            <SectionCard title="Cost & Payment">
+                <div className="grid grid-cols-3 gap-4">
+                    <FInput label="Veterinary Cost" type="number" placeholder="0.00" suffix="₹"
+                        value={form.cost} onChange={set('cost')} />
+                    <FInput label="Payment Date" type="date"
+                        value={form.payment_date} onChange={set('payment_date')} />
+                    <FSelect label="Vendor" placeholder="Select vendor…"
+                        options={['Veterinary Clinic', 'Farm Supply Co.', 'Vet Professional', 'Hospital']}
+                        value={form.vendor} onChange={set('vendor')} />
                 </div>
             </SectionCard>
 
