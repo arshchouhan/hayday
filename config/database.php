@@ -118,6 +118,11 @@ return [
             'driver' => 'mongodb',
             'dsn' => env('MONGODB_URI', 'mongodb://127.0.0.1:27017'),
             'database' => env('DB_DATABASE', 'hayday_app'),
+            'options' => array_filter([
+                'tls' => env('MONGODB_TLS', true),
+                'tlsCAFile' => env('MONGODB_TLS_CA_FILE'),
+                'tlsAllowInvalidCertificates' => env('MONGODB_TLS_ALLOW_INVALID_CERTIFICATES', false),
+            ]),
         ],
 
     ],

@@ -25,6 +25,9 @@ When deploying to Render, set these in the **Environment** tab:
 
 ```
 MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net/hayday
+# Optional when the host does not trust the Atlas certificate chain by default.
+# MONGODB_TLS_CA_FILE=/path/to/cacert.pem
+# MONGODB_TLS_ALLOW_INVALID_CERTIFICATES=false
 APP_KEY=base64:xxxxx
 APP_ENV=production
 APP_DEBUG=false

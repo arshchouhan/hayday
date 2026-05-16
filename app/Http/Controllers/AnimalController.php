@@ -142,6 +142,8 @@ class AnimalController extends Controller
 
         $total = $meta[0]['total'] ?? 0;
         $summary = $summaryRows[0] ?? [];
+        $locationCount = Location::where('user_id', $userId)->count();
+        $groupCount = Group::where('user_id', $userId)->count();
         $workerCount = Worker::where('user_id', $userId)->count();
 
         return response()->json([
@@ -151,8 +153,8 @@ class AnimalController extends Controller
                 'page' => $page,
                 'per_page' => $perPage,
                 'last_page' => (int) max(1, ceil($total / $perPage)),
-                'location_count' => $summary['location_count'] ?? 0,
-                'group_count' => $summary['group_count'] ?? 0,
+                'location_count' => $locationCount,
+                'group_count' => $groupCount,
                 'worker_count' => $workerCount,
             ],
         ]);
